@@ -7,6 +7,4 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     latest.rustChannels.nightly.rust
   ];
-
-  # CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
 }
