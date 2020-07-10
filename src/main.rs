@@ -1,3 +1,12 @@
+#![feature(proc_macro_hygiene, decl_macro)]
+
+use rocket::{get, routes};
+
+#[get("/")]
+fn hello() -> &'static str {
+    "Hello, Commboard!"
+}
+
 fn main() {
-    println!("Hello, world!");
+    rocket::ignite().mount("/", routes![hello]).launch();
 }
