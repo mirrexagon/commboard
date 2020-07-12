@@ -6,5 +6,6 @@ in
 pkgs.mkShell {
   buildInputs = with pkgs; [
     latest.rustChannels.nightly.rust
+    nodejs
   ];
 }
