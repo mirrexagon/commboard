@@ -26,7 +26,9 @@ fn main() {
 
     assert!(
         build_output.status.success(),
-        "Failed to build UI: npm exited with {:#?}",
-        build_output.status.code()
+        "Failed to build UI: npm exited with {:?}\n\n{}\n\n{}",
+        build_output.status.code(),
+        String::from_utf8_lossy(&build_output.stdout),
+        String::from_utf8_lossy(&build_output.stderr)
     );
 }
