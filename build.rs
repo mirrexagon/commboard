@@ -1,18 +1,19 @@
-use std::path::Path;
 use std::process::Command;
 
 use walkdir::WalkDir;
 
 const UI_DIR: &str = "ui";
-const UI_WATCH_DIR: &str = "ui/src";
+const UI_WATCH_DIRS: [&str; 2] = ["ui/src", "ui/public"];
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
     // Re-run build script if the UI code changes.
-    for entry in WalkDir::new(UI_WATCH_DIR) {
-        let entry = entry.expect("Could not read directory for adding to rerun-if-changed");
-        println!("cargo:rerun-if-changed={}", entry.path().display());
+    for dir in &UI_WATCH_DIRS {
+        for entry in WalkDir::new(dir) {
+            let entry = entry.expect("Could not read directory for adding to rerun-if-changed");
+            println!("cargo:rerun-if-changed={}", entry.path().display());
+        }
     }
 
     // Build the UI.
