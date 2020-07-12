@@ -1,6 +1,18 @@
 {
-  "dependencies": {
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1"
-  }
+    "scripts": {
+        "build": "webpack --mode production && cp -v public/* build/"
+    },
+    "browserslist": "> 0.25%, not dead",
+    "dependencies": {
+        "react": "^16.13.1",
+        "react-dom": "^16.13.1"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.10.4",
+        "@babel/preset-env": "^7.10.4",
+        "@babel/preset-react": "^7.10.4",
+        "babel-loader": "^8.1.0",
+        "webpack": "^4.43.0",
+        "webpack-cli": "^3.3.12"
+    }
 }
