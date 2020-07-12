@@ -24,9 +24,13 @@ pub struct Board {
 }
 
 #[derive(Debug)]
-pub enum BoardView<'a> {
-    All { cards: Vec<&'a Card> },
-    ByCategory { columns: Vec<BoardViewColumn<'a>> },
+pub struct BoardView<'a> {
+    cards: Vec<&'a Card>,
+}
+
+#[derive(Debug)]
+pub struct BoardViewByCategory<'a> {
+    columns: Vec<BoardViewColumn<'a>>,
 }
 
 #[derive(Debug)]
@@ -79,24 +83,11 @@ impl Board {
         self.modify_card(id, |card| card.tags = tags.to_vec())
     }
 
-    /// Get a read-only view of the board, based on an optional filter
-    /// string and an optional category to group by.
-    pub fn get_board_view(
-        &self,
-        filter: Option<&str>,
-        group_by_category: Option<&str>,
-    ) -> BoardView {
-        match group_by_category {
-            Some(group_by_category) => self.get_board_view_by_category(filter, group_by_category),
-            None => self.get_board_view_all(filter),
-        }
-    }
-
-    fn get_board_view_by_category(
+    pub fn get_board_view_by_category(
         &self,
         filter: Option<&str>,
         group_by_category: &str,
-    ) -> BoardView {
+    ) -> BoardViewByCategory {
         // TODO: Save custom order of columns for each category, instead of using alphabetical order.
 
         let mut columns: Vec<BoardViewColumn> = Vec::new();
@@ -119,11 +110,13 @@ impl Board {
             }
         }
 
-        BoardView::ByCategory { columns }
+        columns.sort_by(|a, b| a.name.cmp(b.name));
+
+        BoardViewByCategory { columns }
     }
 
-    fn get_board_view_all(&self, filter: Option<&str>) -> BoardView {
-        BoardView::All {
+    pub fn get_board_view(&self, filter: Option<&str>) -> BoardView {
+        BoardView {
             cards: self.get_cards(filter),
         }
     }
