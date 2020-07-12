@@ -2,6 +2,12 @@
 Boards of category-tagged cards.
 
 
+## Usage
+Run `commboard <name>.json`, where the JSON file is the boards file. If it doesn't exist, it will be created.
+
+Every modification to the boards will write this file. TODO: Is this okay for performance and disk health?
+
+
 ## Basics
 A board is a collection of cards. Boards are completely separate from each other. Only one board can be viewed at a time.
 
