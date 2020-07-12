@@ -2,7 +2,7 @@
 
 mod board;
 
-use rocket::{get, http::RawStr, routes, State};
+use rocket::{get, http::RawStr, response::content, routes, State};
 
 use board::{Board, BoardId, Tag};
 
@@ -11,15 +11,15 @@ fn index() -> &'static str {
     "TODO: UI"
 }
 
-#[get("/board/<id>?<filter>&<groupby>")]
-fn get_board_view(
-    board: State<Board>,
-    id: Result<u64, &RawStr>,
-    filter: Option<String>,
-    groupby: Option<String>,
-) -> &'static str {
-    "Hello, Commboard!"
-}
+// #[get("/board/<id>?<filter>&<groupby>")]
+// fn get_board_view(
+//     board: State<Board>,
+//     id: Result<u64, &RawStr>,
+//     filter: Option<String>,
+//     groupby: Option<String>,
+// ) -> content::Json<String> {
+//     let view = board.get_board_view(filter.as_deref(), groupby.as_deref());
+// }
 
 fn main() {
     let mut board = Board::new(BoardId(0));
@@ -58,8 +58,10 @@ fn main() {
         );
     }
 
-    rocket::ignite()
-        .mount("/", routes![get_board_view])
-        .manage(board)
-        .launch();
+    println!("{:#?}", board.get_board_view(None, Some("status")));
+
+    // rocket::ignite()
+    //     .mount("/", routes![get_board_view])
+    //     .manage(board)
+    //     .launch();
 }
