@@ -1,4 +1,6 @@
+use std::path::Path;
 use std::process::Command;
+
 use walkdir::WalkDir;
 
 const UI_DIR: &str = "ui";
@@ -14,7 +16,7 @@ fn main() {
     }
 
     // Build the UI.
-    let output = Command::new("npm")
+    let build_output = Command::new("npm")
         .current_dir(UI_DIR)
         .arg("run")
         .arg("build")
@@ -22,8 +24,8 @@ fn main() {
         .expect("Failed to build UI");
 
     assert!(
-        output.status.success(),
+        build_output.status.success(),
         "Failed to build UI: npm exited with {:#?}",
-        output.status.code()
+        build_output.status.code()
     );
 }

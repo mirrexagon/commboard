@@ -2,6 +2,11 @@
 Boards of category-tagged cards.
 
 
+## Building
+1. In `ui/`, run `npm install`.
+2. In the repo root, run `cargo build`.
+
+
 ## Usage
 Run `commboard <name>.json`, where the JSON file is the boards file. If it doesn't exist, it will be created.
 
