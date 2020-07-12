@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+use serde::Serialize;
+
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize)]
 pub struct CardId(pub u64);
 
 impl CardId {
@@ -7,7 +9,7 @@ impl CardId {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize)]
 pub struct Card {
     pub id: CardId,
     pub text: String,
@@ -46,7 +48,7 @@ impl Card {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Tag {
     pub category: String,
     pub value: String,

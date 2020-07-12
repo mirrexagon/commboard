@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::HashMap;
 
 mod card;
@@ -8,7 +8,7 @@ pub use card::{Card, CardId, Tag};
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Boards {
     boards: Vec<Board>,
 }
@@ -16,24 +16,24 @@ pub struct Boards {
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 pub struct BoardId(pub u64);
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Board {
     id: BoardId,
     cards: Vec<Card>,
     next_card_id: CardId,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct BoardView<'a> {
     pub cards: Vec<&'a Card>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct BoardViewByCategory<'a> {
     pub columns: Vec<BoardViewColumn<'a>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct BoardViewColumn<'a> {
     pub name: &'a str,
     pub cards: Vec<&'a Card>,
