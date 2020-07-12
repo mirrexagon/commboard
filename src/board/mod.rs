@@ -4,6 +4,7 @@ mod view;
 use serde::{Deserialize, Serialize};
 
 pub use card::{Card, CardId, Tag};
+pub use view::{ViewAll, ViewByCategory};
 
 #[cfg(test)]
 mod tests;

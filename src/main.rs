@@ -4,31 +4,37 @@ mod board;
 
 use rocket::{get, http::RawStr, response::content, routes, State};
 
-use board::{Board, BoardId, Tag};
+use board::{Board, BoardId, Tag, ViewAll, ViewByCategory};
 
 #[get("/")]
-fn index() -> &'static str {
-    "TODO: UI"
+fn index() -> content::Html<&'static str> {
+    content::Html(include_str!("../ui/build/index.html"))
 }
 
-#[get("/board/<id>?<filter>&<groupby>")]
+#[get("/bundle.js")]
+fn index_bundle() -> content::JavaScript<&'static str> {
+    content::JavaScript(include_str!("../ui/build/bundle.js"))
+}
+
+#[get("/board/<id>/view?<filter>")]
 fn get_board_view(
     board: State<Board>,
     id: Result<u64, &RawStr>,
     filter: Option<String>,
-    groupby: Option<String>,
 ) -> content::Json<String> {
-    let json_output;
+    content::Json(serde_json::to_string(&board.get_view(filter.as_deref())).unwrap())
+}
 
-    if let Some(group_by_category) = groupby {
-        let view = board.get_view_by_category(filter.as_deref(), &group_by_category);
-        json_output = serde_json::to_string(&view).unwrap();
-    } else {
-        let view = board.get_view(filter.as_deref());
-        json_output = serde_json::to_string(&view).unwrap();
-    };
-
-    content::Json(json_output)
+#[get("/board/<id>/viewbycategory?<filter>&<groupby>")]
+fn get_board_view_by_category(
+    board: State<Board>,
+    id: Result<u64, &RawStr>,
+    filter: Option<String>,
+    groupby: String,
+) -> content::Json<String> {
+    content::Json(
+        serde_json::to_string(&board.get_view_by_category(filter.as_deref(), &groupby)).unwrap(),
+    )
 }
 
 fn main() {
@@ -68,7 +74,15 @@ fn main() {
     );
 
     rocket::ignite()
-        .mount("/", routes![index, get_board_view])
+        .mount(
+            "/",
+            routes![
+                index,
+                index_bundle,
+                get_board_view,
+                get_board_view_by_category
+            ],
+        )
         .manage(board)
         .launch();
 }
