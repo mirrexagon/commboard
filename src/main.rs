@@ -32,6 +32,7 @@ fn get_board_view(
 }
 
 fn main() {
+    // TODO: Use Boards, with multiple boards
     let mut board = Board::new(BoardId(0));
 
     let card1 = board.add_card();
