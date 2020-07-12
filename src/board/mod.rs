@@ -1,20 +1,22 @@
 mod card;
 mod view;
 
+use serde::{Deserialize, Serialize};
+
 pub use card::{Card, CardId, Tag};
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Boards {
     boards: Vec<Board>,
 }
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BoardId(pub u64);
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
     id: BoardId,
     cards: Vec<Card>,

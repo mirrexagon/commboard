@@ -68,7 +68,7 @@ fn main() {
     );
 
     rocket::ignite()
-        .mount("/", routes![get_board_view])
+        .mount("/", routes![index, get_board_view])
         .manage(board)
         .launch();
 }
