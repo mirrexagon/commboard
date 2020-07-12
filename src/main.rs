@@ -21,10 +21,10 @@ fn get_board_view(
     let json_output;
 
     if let Some(group_by_category) = groupby {
-        let view = board.get_board_view_by_category(filter.as_deref(), &group_by_category);
+        let view = board.get_view_by_category(filter.as_deref(), &group_by_category);
         json_output = serde_json::to_string(&view).unwrap();
     } else {
-        let view = board.get_board_view(filter.as_deref());
+        let view = board.get_view(filter.as_deref());
         json_output = serde_json::to_string(&view).unwrap();
     };
 

@@ -1,7 +1,5 @@
-use serde::Serialize;
-use std::collections::HashMap;
-
 mod card;
+mod view;
 
 pub use card::{Card, CardId, Tag};
 
@@ -21,22 +19,6 @@ pub struct Board {
     id: BoardId,
     cards: Vec<Card>,
     next_card_id: CardId,
-}
-
-#[derive(Debug, Serialize)]
-pub struct BoardView<'a> {
-    pub cards: Vec<&'a Card>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct BoardViewByCategory<'a> {
-    pub columns: Vec<BoardViewColumn<'a>>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct BoardViewColumn<'a> {
-    pub name: &'a str,
-    pub cards: Vec<&'a Card>,
 }
 
 impl Board {
@@ -83,42 +65,16 @@ impl Board {
         self.modify_card(id, |card| card.tags = tags.to_vec())
     }
 
-    pub fn get_board_view_by_category(
-        &self,
-        filter: Option<&str>,
-        group_by_category: &str,
-    ) -> BoardViewByCategory {
-        // TODO: Save custom order of columns for each category, instead of using alphabetical order.
-
-        let mut columns: Vec<BoardViewColumn> = Vec::new();
-        let mut value_to_column_index: HashMap<String, usize> = HashMap::new();
-
-        for card in self.get_cards(filter) {
-            let matching_tags = card.get_tags_with_category(group_by_category);
-
-            for tag in matching_tags {
-                if let Some(&column_index) = value_to_column_index.get(&tag.value) {
-                    columns[column_index].cards.push(card);
-                } else {
-                    let column_index = columns.len();
-                    columns.push(BoardViewColumn {
-                        name: &tag.value,
-                        cards: vec![card],
-                    });
-                    value_to_column_index.insert(tag.value.clone(), column_index);
-                }
-            }
-        }
-
-        columns.sort_by(|a, b| a.name.cmp(b.name));
-
-        BoardViewByCategory { columns }
+    pub fn get_view(&self, filter: Option<&str>) -> view::ViewAll {
+        view::ViewAll::new(self, filter)
     }
 
-    pub fn get_board_view(&self, filter: Option<&str>) -> BoardView {
-        BoardView {
-            cards: self.get_cards(filter),
-        }
+    pub fn get_view_by_category(
+        &self,
+        filter: Option<&str>,
+        category: &str,
+    ) -> view::ViewByCategory {
+        view::ViewByCategory::new(self, filter, category)
     }
 
     fn get_cards(&self, filter: Option<&str>) -> Vec<&Card> {
