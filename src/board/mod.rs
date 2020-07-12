@@ -25,12 +25,12 @@ pub struct Board {
 
 #[derive(Debug)]
 pub struct BoardView<'a> {
-    cards: Vec<&'a Card>,
+    pub cards: Vec<&'a Card>,
 }
 
 #[derive(Debug)]
 pub struct BoardViewByCategory<'a> {
-    columns: Vec<BoardViewColumn<'a>>,
+    pub columns: Vec<BoardViewColumn<'a>>,
 }
 
 #[derive(Debug)]
