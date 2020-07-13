@@ -20,6 +20,8 @@ A card is a block of text (TODO: Markdown rendering, including embedding images)
 
 Tags are of the form `category:value`, eg. `status:in-progress`. Any character up to the first `:` is treated as the category name, and the rest is the value.
 
+TODO: Actually represent tags internally as categories and columns to which cards belong, instead of having tags belonging to the card?
+
 Tags without a `:` are treated as a category with an empty value.
 TODO: Tags without colon probably makes more sense as one category and multiple values instead of multiple categories and one value.
 Advantage: You could group on the empty category and have each value show in a different column, like normal tags. If using categories with empty value, you couldn't group by those bare tags
