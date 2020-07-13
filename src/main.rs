@@ -36,12 +36,12 @@ fn get_board_view(
     ))
 }
 
-#[get("/board/<id>/viewbycategory?<filter>&<groupby>")]
+#[get("/board/<id>/viewbycategory/<category>?<filter>")]
 fn get_board_view_by_category(
     state: State<Mutex<AppState>>,
     id: Option<u64>,
     filter: Option<String>,
-    groupby: String,
+    category: String,
 ) -> Option<content::Json<String>> {
     let mut state = state.lock().unwrap();
 
@@ -49,7 +49,7 @@ fn get_board_view_by_category(
     let board = state.get_board_mut(id)?;
 
     Some(content::Json(
-        serde_json::to_string(&board.get_view_by_category(filter.as_deref(), &groupby)).unwrap(),
+        serde_json::to_string(&board.get_view_by_category(filter.as_deref(), &category)).unwrap(),
     ))
 }
 
