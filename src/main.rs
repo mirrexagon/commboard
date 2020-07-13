@@ -11,6 +11,8 @@ fn index() -> content::Html<&'static str> {
     content::Html(include_str!("../ui/build/index.html"))
 }
 
+// TODO: Try rust-embed to embed the whole build directory in the binary.
+// https://github.com/pyros2097/rust-embed/issues/111#issuecomment-633823642
 #[get("/bundle.js")]
 fn index_bundle() -> content::JavaScript<&'static str> {
     content::JavaScript(include_str!("../ui/build/bundle.js"))
