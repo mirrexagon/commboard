@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::Serialize;
 
-use super::{Board, Card, CardId, Tag};
+use crate::state::{board::Board, card::Card};
 
 #[derive(Debug, Serialize)]
 pub struct ViewAll<'a> {

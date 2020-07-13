@@ -1,3 +1,9 @@
+pub mod view;
+
+use serde::{Deserialize, Serialize};
+
+use crate::state::card::{Card, CardId};
+
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BoardId(pub u64);
 
@@ -23,7 +29,7 @@ impl Board {
     pub fn new(id: BoardId) -> Self {
         Self {
             id,
-            name: format!("Board {}", id),
+            name: format!("Board {}", id.0),
             cards: Vec::new(),
             next_card_id: CardId(0),
         }
@@ -38,7 +44,8 @@ impl Board {
         let id = self.get_next_card_id();
         self.cards.push(Card::new(id));
 
-        &mut self.cards[self.cards.len() - 1]
+        let index = self.cards.len() - 1;
+        &mut self.cards[index]
     }
 
     /// Returns `false` if no card with the given ID exists in the board.
@@ -90,7 +97,7 @@ impl Board {
         view::ViewByCategory::new(self, filter, category)
     }
 
-    fn get_cards_with_filter(&self, filter: Option<&str>) -> Vec<&Card> {
+    pub fn get_cards_with_filter(&self, filter: Option<&str>) -> Vec<&Card> {
         // TODO: Implement filtering.
         self.cards.iter().collect()
     }

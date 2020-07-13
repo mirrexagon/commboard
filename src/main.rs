@@ -1,10 +1,12 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
-mod board;
+use std::sync::Mutex;
 
-use rocket::{get, http::RawStr, response::content, routes, State};
+use rocket::{get, response::content, routes, State};
 
-use board::{Boards, Board, BoardId, Tag, ViewAll, ViewByCategory};
+use state::{board::BoardId, card::Tag, AppState};
+
+mod state;
 
 #[get("/")]
 fn index() -> content::Html<&'static str> {
@@ -20,60 +22,72 @@ fn index_bundle() -> content::JavaScript<&'static str> {
 
 #[get("/board/<id>/view?<filter>")]
 fn get_board_view(
-    board: State<Board>,
-    id: Result<u64, &RawStr>,
+    state: State<Mutex<AppState>>,
+    id: Option<u64>,
     filter: Option<String>,
 ) -> Option<content::Json<String>> {
-    content::Json(serde_json::to_string(&board.get_view(filter.as_deref())).unwrap())
+    let mut state = state.lock().unwrap();
+
+    let id = BoardId(id?);
+    let board = state.get_board_mut(id)?;
+
+    Some(content::Json(
+        serde_json::to_string(&board.get_view(filter.as_deref())).unwrap(),
+    ))
 }
 
 #[get("/board/<id>/viewbycategory?<filter>&<groupby>")]
 fn get_board_view_by_category(
-    board: State<Board>,
-    id: Result<u64, &RawStr>,
+    state: State<Mutex<AppState>>,
+    id: Option<u64>,
     filter: Option<String>,
     groupby: String,
 ) -> Option<content::Json<String>> {
-    content::Json(
+    let mut state = state.lock().unwrap();
+
+    let id = BoardId(id?);
+    let board = state.get_board_mut(id)?;
+
+    Some(content::Json(
         serde_json::to_string(&board.get_view_by_category(filter.as_deref(), &groupby)).unwrap(),
-    )
+    ))
 }
 
 fn main() {
-    let mut boards = Boards::new();
-    let mut board_id = Boards::add_board;
+    let state = Mutex::new(AppState::new());
+    {
+        let mut state = state.lock().unwrap();
+        let board = state.add_board();
 
-    let card1 = board.add_card();
-    board.set_card_text(card1, "Task 1");
-    board.set_card_tags(
-        card1,
-        &[
-            Tag::from_tag_string("status:todo").unwrap(),
-            Tag::from_tag_string("artist:tester").unwrap(),
-            Tag::from_tag_string("rating:bad").unwrap(),
-        ],
-    );
+        {
+            let card1 = board.add_card();
+            card1.text = "Task 1".to_owned();
+            card1.tags = vec![
+                Tag::from_tag_string("status:todo").unwrap(),
+                Tag::from_tag_string("artist:tester").unwrap(),
+                Tag::from_tag_string("rating:bad").unwrap(),
+            ];
+        }
 
-    let card2 = board.add_card();
-    board.set_card_text(card2, "Task 2");
-    board.set_card_tags(
-        card2,
-        &[
-            Tag::from_tag_string("status:in-progress").unwrap(),
-            Tag::from_tag_string("artist:tester").unwrap(),
-            Tag::from_tag_string("rating:bad").unwrap(),
-        ],
-    );
+        {
+            let card2 = board.add_card();
+            card2.text = "Task 2".to_owned();
+            card2.tags = vec![
+                Tag::from_tag_string("status:in-progress").unwrap(),
+                Tag::from_tag_string("artist:tester").unwrap(),
+                Tag::from_tag_string("rating:bad").unwrap(),
+            ];
+        }
 
-    let card3 = board.add_card();
-    board.set_card_text(card3, "Task 3");
-    board.set_card_tags(
-        card3,
-        &[
-            Tag::from_tag_string("status:in-progress").unwrap(),
-            Tag::from_tag_string("rating:good").unwrap(),
-        ],
-    );
+        {
+            let card3 = board.add_card();
+            card3.text = "Task 3".to_owned();
+            card3.tags = vec![
+                Tag::from_tag_string("status:in-progress").unwrap(),
+                Tag::from_tag_string("rating:good").unwrap(),
+            ];
+        }
+    }
 
     rocket::ignite()
         .mount(
@@ -85,6 +99,6 @@ fn main() {
                 get_board_view_by_category
             ],
         )
-        .manage(board)
+        .manage(state)
         .launch();
 }

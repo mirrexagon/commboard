@@ -1,23 +1,20 @@
-mod board;
-mod card;
-mod view;
+pub mod board;
+pub mod card;
 
 use serde::{Deserialize, Serialize};
 
-pub use board::{Board, BoardId};
-pub use card::{Card, CardId, Tag};
-pub use view::{ViewAll, ViewByCategory};
+use board::{Board, BoardId};
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Boards {
+pub struct AppState {
     boards: Vec<Board>,
-    next_board_id: BoardId
+    next_board_id: BoardId,
 }
 
-impl Boards {
+impl AppState {
     pub fn new() -> Self {
         Self {
             boards: Vec::new(),
@@ -29,7 +26,8 @@ impl Boards {
         let id = self.get_next_board_id();
         self.boards.push(Board::new(id));
 
-        &mut self.boards[self.boards.len() - 1]
+        let index = self.boards.len() - 1;
+        &mut self.boards[index]
     }
 
     /// Returns `false` if no board with the given ID exists.
@@ -55,7 +53,7 @@ impl Boards {
     pub fn get_board_mut(&mut self, id: BoardId) -> Option<&mut Board> {
         for board in &mut self.boards {
             if board.id() == id {
-                return board;
+                return Some(board);
             }
         }
 
