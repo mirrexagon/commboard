@@ -5,7 +5,7 @@ in
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    latest.rustChannels.nightly.rust
+    (rustChannelOf { date = "2020-07-12"; channel = "nightly"; }).rust
     nodejs
   ];
 }
