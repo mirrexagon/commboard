@@ -20,8 +20,6 @@ A card is a block of text (TODO: Markdown rendering, including embedding images)
 
 Tags are of the form `category:value`, eg. `status:in-progress`. Any character up to the first `:` is treated as the category name, and the rest is the value. Both parts of the tag (category and value) are required.
 
-TODO: Actually represent tags internally as categories and columns to which cards belong, instead of having tags belonging to the card?
-
 TODO: Tags have colors that are based on category. Initial color is generated from category name, but can be changed?
 
 

@@ -17,6 +17,10 @@ pub struct Boards {
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BoardId(pub u64);
 
+// TODO: Keep track of order of columns for each category, and keep track of
+// order of cards in each column for each category - the single all card order
+// can't express all possible sets of orders between categories
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
     id: BoardId,
