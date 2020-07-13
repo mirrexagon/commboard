@@ -4,7 +4,7 @@ mod board;
 
 use rocket::{get, http::RawStr, response::content, routes, State};
 
-use board::{Board, BoardId, Tag, ViewAll, ViewByCategory};
+use board::{Boards, Board, BoardId, Tag, ViewAll, ViewByCategory};
 
 #[get("/")]
 fn index() -> content::Html<&'static str> {
@@ -23,7 +23,7 @@ fn get_board_view(
     board: State<Board>,
     id: Result<u64, &RawStr>,
     filter: Option<String>,
-) -> content::Json<String> {
+) -> Option<content::Json<String>> {
     content::Json(serde_json::to_string(&board.get_view(filter.as_deref())).unwrap())
 }
 
@@ -33,15 +33,15 @@ fn get_board_view_by_category(
     id: Result<u64, &RawStr>,
     filter: Option<String>,
     groupby: String,
-) -> content::Json<String> {
+) -> Option<content::Json<String>> {
     content::Json(
         serde_json::to_string(&board.get_view_by_category(filter.as_deref(), &groupby)).unwrap(),
     )
 }
 
 fn main() {
-    // TODO: Use Boards, with multiple boards
-    let mut board = Board::new(BoardId(0));
+    let mut boards = Boards::new();
+    let mut board_id = Boards::add_board;
 
     let card1 = board.add_card();
     board.set_card_text(card1, "Task 1");

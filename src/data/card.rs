@@ -11,7 +11,7 @@ impl CardId {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Card {
-    pub id: CardId,
+    id: CardId,
     pub text: String,
     pub tags: Vec<Tag>,
 }
@@ -23,6 +23,10 @@ impl Card {
             text: String::new(),
             tags: Vec::new(),
         }
+    }
+
+    pub fn id(&self) -> CardId {
+        self.id
     }
 
     pub fn has_category(&self, category: &str) -> bool {
@@ -55,18 +59,11 @@ pub struct Tag {
 }
 
 impl Tag {
-    pub fn new(category: &str, value: &str) -> Self {
-        Self {
-            category: category.to_owned(),
-            value: value.to_owned(),
-        }
-    }
-
     /// Returns `None` if there is no `:` in the string.
     pub fn from_tag_string(tag_string: &str) -> Option<Self> {
         tag_string.find(':').map(|index| {
             let (category, value) = tag_string.split_at(index);
-            Self::new(category, &value[1..])
+            Self { category: category.to_owned(), value: (&value[1..]).to_owned() }
         })
     }
 }

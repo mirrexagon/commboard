@@ -12,7 +12,7 @@ pub struct ViewAll<'a> {
 impl<'a> ViewAll<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>) -> Self {
         Self {
-            cards: board.get_cards(filter),
+            cards: board.get_cards_with_filter(filter),
         }
     }
 }
@@ -24,12 +24,10 @@ pub struct ViewByCategory<'a> {
 
 impl<'a> ViewByCategory<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>, category: &str) -> Self {
-        // TODO: Save custom order of columns for each category, instead of using alphabetical order.
-
         let mut columns: Vec<Column> = Vec::new();
         let mut value_to_column_index: HashMap<String, usize> = HashMap::new();
 
-        for card in board.get_cards(filter) {
+        for card in board.get_cards_with_filter(filter) {
             let matching_tags = card.get_tags_with_category(category);
 
             for tag in matching_tags {
