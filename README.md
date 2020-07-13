@@ -18,18 +18,11 @@ A board is a collection of cards. Boards are completely separate from each other
 
 A card is a block of text (TODO: Markdown rendering, including embedding images), with any number of tags.
 
-Tags are of the form `category:value`, eg. `status:in-progress`. Any character up to the first `:` is treated as the category name, and the rest is the value.
+Tags are of the form `category:value`, eg. `status:in-progress`. Any character up to the first `:` is treated as the category name, and the rest is the value. Both parts of the tag (category and value) are required.
 
 TODO: Actually represent tags internally as categories and columns to which cards belong, instead of having tags belonging to the card?
 
-Tags without a `:` are treated as a category with an empty value.
-TODO: Tags without colon probably makes more sense as one category and multiple values instead of multiple categories and one value.
-Advantage: You could group on the empty category and have each value show in a different column, like normal tags. If using categories with empty value, you couldn't group by those bare tags
-Disadvantage: All such tags would all be the same color by default, because they are in the same category.
-
 TODO: Tags have colors that are based on category. Initial color is generated from category name, but can be changed?
-
-TODO: Rename category to something more appropriate?
 
 
 ## Filtering
