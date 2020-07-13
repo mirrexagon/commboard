@@ -50,4 +50,6 @@ While grouping is active:
 - Any cards without the selected category are hidden.
 - Cards can be dragged between columns, which will change their
 
-Cards can have multiple tags with the same category and different values. This will make a card show in two different columns when cards are grouped by that category. They are the same card, so updates to one will be reflected in the other. However, dragging an instance of a multiply-columned card to a differen column will only modify the tag corresponding to the . A multiply-columned card instance cannot be dragged into
+Cards can have multiple tags with the same category and different values. This will make a card show in two different columns when cards are grouped by that category. They are the same card, so updates to one will be reflected in the other.
+
+However, dragging an instance of a multiply-columned card to a differen column will only modify the tag corresponding to the column it was dragged from. A multiply-columned card instance cannot be dragged into a column that another instance is occupying.
