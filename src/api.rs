@@ -13,11 +13,7 @@ use rocket::{
 
 use rocket_contrib::json::Json;
 
-use crate::state::{
-    board::BoardId,
-    card::{CardId, Tag},
-    AppState,
-};
+use crate::state::{board::BoardId, card::CardId, tag::Tag, AppState};
 
 #[derive(Debug, Serialize)]
 struct BoardInfo<'a> {
@@ -190,12 +186,12 @@ pub fn set_card_tags(
 
     let new_tags = new_tags
         .iter()
-        .map(|tag_string| Tag::from_tag_string(tag_string))
-        .collect::<Option<Vec<_>>>();
+        .map(|tag_string| Tag::new(tag_string))
+        .collect::<Result<Vec<_>, _>>();
 
-    card.tags = new_tags.ok_or(SetCardsTagsError::InvalidTag(status::BadRequest(Some(
-        "A supplied tag was invalid",
-    ))))?;
+    card.tags = new_tags.map_err(|_| {
+        SetCardsTagsError::InvalidTag(status::BadRequest(Some("A supplied tag was invalid")))
+    })?;
 
     Ok(())
 }

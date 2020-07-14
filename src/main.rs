@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 use rocket::{get, response::content, routes};
 
-use state::{card::Tag, AppState};
+use state::{tag::Tag, AppState};
 
 mod api;
 mod state;
@@ -31,9 +31,9 @@ fn main() {
             let card1 = board.add_card();
             card1.text = "Task 1".to_owned();
             card1.tags = vec![
-                Tag::from_tag_string("status:todo").unwrap(),
-                Tag::from_tag_string("artist:tester").unwrap(),
-                Tag::from_tag_string("rating:bad").unwrap(),
+                Tag::new("status:todo").unwrap(),
+                Tag::new("artist:tester").unwrap(),
+                Tag::new("rating:bad").unwrap(),
             ];
         }
 
@@ -41,9 +41,9 @@ fn main() {
             let card2 = board.add_card();
             card2.text = "Task 2".to_owned();
             card2.tags = vec![
-                Tag::from_tag_string("status:in-progress").unwrap(),
-                Tag::from_tag_string("artist:tester").unwrap(),
-                Tag::from_tag_string("rating:bad").unwrap(),
+                Tag::new("status:in-progress").unwrap(),
+                Tag::new("artist:tester").unwrap(),
+                Tag::new("rating:bad").unwrap(),
             ];
         }
 
@@ -51,8 +51,8 @@ fn main() {
             let card3 = board.add_card();
             card3.text = "Task 3".to_owned();
             card3.tags = vec![
-                Tag::from_tag_string("status:in-progress").unwrap(),
-                Tag::from_tag_string("rating:good").unwrap(),
+                Tag::new("status:in-progress").unwrap(),
+                Tag::new("rating:good").unwrap(),
             ];
         }
     }

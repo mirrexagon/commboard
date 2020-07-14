@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::state::tag::Tag;
+
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CardId(pub u64);
 
@@ -31,7 +33,7 @@ impl Card {
 
     pub fn has_category(&self, category: &str) -> bool {
         for tag in &self.tags {
-            if tag.category == category {
+            if tag.category() == category {
                 return true;
             }
         }
@@ -43,27 +45,11 @@ impl Card {
         let mut tags_with_category = Vec::new();
 
         for tag in &self.tags {
-            if tag.category == category {
+            if tag.category() == category {
                 tags_with_category.push(tag)
             }
         }
 
         tags_with_category
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Tag {
-    pub category: String,
-    pub value: String,
-}
-
-impl Tag {
-    /// Returns `None` if there is no `:` in the string.
-    pub fn from_tag_string(tag_string: &str) -> Option<Self> {
-        tag_string.find(':').map(|index| {
-            let (category, value) = tag_string.split_at(index);
-            Self { category: category.to_owned(), value: (&value[1..]).to_owned() }
-        })
     }
 }

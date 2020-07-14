@@ -1,5 +1,6 @@
 pub mod board;
 pub mod card;
+pub mod tag;
 
 use serde::{Deserialize, Serialize};
 

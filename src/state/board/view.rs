@@ -34,15 +34,15 @@ impl<'a> ViewByCategory<'a> {
             let matching_tags = card.get_tags_with_category(category);
 
             for tag in matching_tags {
-                if let Some(&column_index) = value_to_column_index.get(&tag.value) {
+                if let Some(&column_index) = value_to_column_index.get(tag.value()) {
                     columns[column_index].cards.push(card);
                 } else {
                     let column_index = columns.len();
                     columns.push(Column {
-                        name: &tag.value,
+                        name: tag.value(),
                         cards: vec![card],
                     });
-                    value_to_column_index.insert(tag.value.clone(), column_index);
+                    value_to_column_index.insert(tag.value().to_owned(), column_index);
                 }
             }
         }
