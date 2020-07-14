@@ -2,10 +2,11 @@
 
 use std::sync::Mutex;
 
-use rocket::{get, response::content, routes, State};
+use rocket::{get, response::content, routes};
 
-use state::{board::BoardId, card::Tag, AppState};
+use state::{card::Tag, AppState};
 
+mod api;
 mod state;
 
 #[get("/")]
@@ -18,39 +19,6 @@ fn index() -> content::Html<&'static str> {
 #[get("/bundle.js")]
 fn index_bundle() -> content::JavaScript<&'static str> {
     content::JavaScript(include_str!("../ui/build/bundle.js"))
-}
-
-#[get("/board/<id>/view?<filter>")]
-fn get_board_view(
-    state: State<Mutex<AppState>>,
-    id: Option<u64>,
-    filter: Option<String>,
-) -> Option<content::Json<String>> {
-    let mut state = state.lock().unwrap();
-
-    let id = BoardId(id?);
-    let board = state.get_board_mut(id)?;
-
-    Some(content::Json(
-        serde_json::to_string(&board.get_view(filter.as_deref())).unwrap(),
-    ))
-}
-
-#[get("/board/<id>/viewbycategory/<category>?<filter>")]
-fn get_board_view_by_category(
-    state: State<Mutex<AppState>>,
-    id: Option<u64>,
-    filter: Option<String>,
-    category: String,
-) -> Option<content::Json<String>> {
-    let mut state = state.lock().unwrap();
-
-    let id = BoardId(id?);
-    let board = state.get_board_mut(id)?;
-
-    Some(content::Json(
-        serde_json::to_string(&board.get_view_by_category(filter.as_deref(), &category)).unwrap(),
-    ))
 }
 
 fn main() {
@@ -95,8 +63,8 @@ fn main() {
             routes![
                 index,
                 index_bundle,
-                get_board_view,
-                get_board_view_by_category
+                api::get_board_view,
+                api::get_board_view_by_category
             ],
         )
         .manage(state)

@@ -49,6 +49,10 @@ impl AppState {
         }
     }
 
+    pub fn get_boards(&self) -> &[Board] {
+        &self.boards[..]
+    }
+
     /// Returns `None` if the specified board does not exist.
     pub fn get_board_mut(&mut self, id: BoardId) -> Option<&mut Board> {
         for board in &mut self.boards {
