@@ -1,13 +1,13 @@
 use std::sync::Mutex;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use rocket::{
     delete, get,
     http::RawStr,
     post, put,
     request::{FromParam, Request},
-    response::{self, content, status, Responder, Response},
+    response::{self, content, status, Responder},
     State,
 };
 
@@ -57,6 +57,23 @@ pub fn delete_board(state: State<Mutex<AppState>>, board_id: BoardId) -> Option<
     } else {
         None
     }
+}
+
+#[put("/board/<board_id>/name", data = "<new_name>")]
+pub fn set_board_name(
+    state: State<Mutex<AppState>>,
+    board_id: BoardId,
+    new_name: String,
+) -> Result<(), status::NotFound<&str>> {
+    let mut state = state.lock().unwrap();
+
+    let board = state
+        .get_board_mut(board_id)
+        .ok_or(status::NotFound("No such board"))?;
+
+    board.name = new_name;
+
+    Ok(())
 }
 
 #[get("/board/<board_id>/view?<filter>")]
@@ -187,7 +204,7 @@ impl<'r> FromParam<'r> for BoardId {
     type Error = <u64 as FromParam<'r>>::Error;
 
     fn from_param(param: &'r RawStr) -> Result<Self, Self::Error> {
-        u64::from_param(param).map(|num| BoardId(num))
+        u64::from_param(param).map(BoardId)
     }
 }
 
@@ -195,7 +212,7 @@ impl<'r> FromParam<'r> for CardId {
     type Error = <u64 as FromParam<'r>>::Error;
 
     fn from_param(param: &'r RawStr) -> Result<Self, Self::Error> {
-        u64::from_param(param).map(|num| CardId(num))
+        u64::from_param(param).map(CardId)
     }
 }
 

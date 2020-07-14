@@ -6,12 +6,14 @@ use crate::state::{board::Board, card::Card};
 
 #[derive(Debug, Serialize)]
 pub struct ViewAll<'a> {
+    pub name: &'a str,
     pub cards: Vec<&'a Card>,
 }
 
 impl<'a> ViewAll<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>) -> Self {
         Self {
+            name: &board.name,
             cards: board.get_cards_with_filter(filter),
         }
     }
@@ -19,6 +21,7 @@ impl<'a> ViewAll<'a> {
 
 #[derive(Debug, Serialize)]
 pub struct ViewByCategory<'a> {
+    pub name: &'a str,
     pub columns: Vec<Column<'a>>,
 }
 
@@ -46,7 +49,10 @@ impl<'a> ViewByCategory<'a> {
 
         columns.sort_by(|a, b| a.name.cmp(b.name));
 
-        ViewByCategory { columns }
+        ViewByCategory {
+            name: &board.name,
+            columns,
+        }
     }
 }
 

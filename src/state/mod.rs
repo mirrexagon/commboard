@@ -70,3 +70,9 @@ impl AppState {
         next_board_id
     }
 }
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
