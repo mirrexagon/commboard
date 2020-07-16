@@ -21,7 +21,7 @@ struct BoardInfo<'a> {
     pub name: &'a str,
 }
 
-#[get("/board")]
+#[get("/boards")]
 pub fn get_boards(state: State<Mutex<AppState>>) -> content::Json<String> {
     let state = state.lock().unwrap();
 
@@ -37,14 +37,14 @@ pub fn get_boards(state: State<Mutex<AppState>>) -> content::Json<String> {
     content::Json(serde_json::to_string(&boards_info_only).unwrap())
 }
 
-#[post("/board")]
+#[post("/boards")]
 pub fn add_board(state: State<Mutex<AppState>>) -> BoardId {
     let mut state = state.lock().unwrap();
 
     state.add_board().id()
 }
 
-#[delete("/board/<board_id>")]
+#[delete("/boards/<board_id>")]
 pub fn delete_board(state: State<Mutex<AppState>>, board_id: BoardId) -> Option<status::NoContent> {
     let mut state = state.lock().unwrap();
 
@@ -55,7 +55,7 @@ pub fn delete_board(state: State<Mutex<AppState>>, board_id: BoardId) -> Option<
     }
 }
 
-#[put("/board/<board_id>/name", data = "<new_name>")]
+#[put("/boards/<board_id>/name", data = "<new_name>")]
 pub fn set_board_name(
     state: State<Mutex<AppState>>,
     board_id: BoardId,
@@ -72,7 +72,7 @@ pub fn set_board_name(
     Ok(())
 }
 
-#[get("/board/<board_id>/view?<filter>")]
+#[get("/boards/<board_id>/view?<filter>")]
 pub fn get_board_view(
     state: State<Mutex<AppState>>,
     board_id: u64,
@@ -87,7 +87,7 @@ pub fn get_board_view(
     ))
 }
 
-#[get("/board/<board_id>/viewbycategory/<category>?<filter>")]
+#[get("/boards/<board_id>/viewbycategory/<category>?<filter>")]
 pub fn get_board_view_by_category(
     state: State<Mutex<AppState>>,
     board_id: BoardId,
@@ -103,7 +103,7 @@ pub fn get_board_view_by_category(
     ))
 }
 
-#[post("/board/<board_id>/card")]
+#[post("/boards/<board_id>/cards")]
 pub fn add_card(
     state: State<Mutex<AppState>>,
     board_id: BoardId,
@@ -117,7 +117,7 @@ pub fn add_card(
     Ok(board.add_card().id())
 }
 
-#[delete("/board/<board_id>/card/<card_id>")]
+#[delete("/boards/<board_id>/cards/<card_id>")]
 pub fn delete_card(
     state: State<Mutex<AppState>>,
     board_id: BoardId,
@@ -136,7 +136,7 @@ pub fn delete_card(
     }
 }
 
-#[put("/board/<board_id>/card/<card_id>/text", data = "<new_text>")]
+#[put("/boards/<board_id>/cards/<card_id>/text", data = "<new_text>")]
 pub fn set_card_text(
     state: State<Mutex<AppState>>,
     board_id: BoardId,
@@ -164,7 +164,7 @@ pub enum SetCardsTagsError {
     InvalidTag(status::BadRequest<&'static str>),
 }
 
-#[put("/board/<board_id>/card/<card_id>/tags", data = "<new_tags>")]
+#[put("/boards/<board_id>/cards/<card_id>/tags", data = "<new_tags>")]
 pub fn set_card_tags(
     state: State<Mutex<AppState>>,
     board_id: BoardId,
