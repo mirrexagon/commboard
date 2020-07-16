@@ -4,30 +4,15 @@ use serde::Serialize;
 
 use crate::state::{board::Board, card::Card};
 
-#[derive(Debug, Serialize)]
-pub struct ViewAll<'a> {
-    pub name: &'a str,
-    pub cards: Vec<&'a Card>,
-}
-
-impl<'a> ViewAll<'a> {
-    pub fn new(board: &'a Board, filter: Option<&str>) -> Self {
-        Self {
-            name: &board.name,
-            cards: board.get_cards_with_filter(filter),
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct ViewByCategory<'a> {
     pub name: &'a str,
-    pub columns: Vec<Column<'a>>,
+    pub columns: Vec<ViewByCategoryColumn<'a>>,
 }
 
 impl<'a> ViewByCategory<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>, category: &str) -> Self {
-        let mut columns: Vec<Column> = Vec::new();
+        let mut columns: Vec<ViewByCategoryColumn> = Vec::new();
         let mut value_to_column_index: HashMap<String, usize> = HashMap::new();
 
         for card in board.get_cards_with_filter(filter) {
@@ -38,7 +23,7 @@ impl<'a> ViewByCategory<'a> {
                     columns[column_index].cards.push(card);
                 } else {
                     let column_index = columns.len();
-                    columns.push(Column {
+                    columns.push(ViewByCategoryColumn {
                         name: tag.value(),
                         cards: vec![card],
                     });
@@ -56,8 +41,8 @@ impl<'a> ViewByCategory<'a> {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct Column<'a> {
+#[derive(Debug)]
+pub struct ViewByCategoryColumn<'a> {
     pub name: &'a str,
     pub cards: Vec<&'a Card>,
 }

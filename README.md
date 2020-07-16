@@ -41,7 +41,7 @@ Cards can be arranged grouped by a single category. This is like treating the ca
 
 While grouping is active:
 - Any cards without the selected category are hidden.
-- Cards can be dragged between columns, which will change their
+- Cards can be dragged between columns.
 
 Cards can have multiple tags with the same category and different values. This will make a card show in two different columns when cards are grouped by that category. They are the same card, so updates to one will be reflected in the other.
 

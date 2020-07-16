@@ -67,7 +67,7 @@ fn main() {
                 api::add_board,
                 api::delete_board,
                 api::set_board_name,
-                api::get_board_view,
+                api::get_board,
                 api::get_board_view_by_category,
                 api::add_card,
                 api::delete_card,

@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::state::tag::Tag;
+use super::Tag;
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CardId(pub u64);
+pub struct CardId(u64);
 
 impl CardId {
-    pub fn next(&self) -> CardId {
+    pub fn next(self) -> CardId {
         CardId(self.0 + 1)
     }
 }

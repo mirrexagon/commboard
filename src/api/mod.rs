@@ -15,6 +15,8 @@ use rocket_contrib::json::Json;
 
 use crate::state::{board::BoardId, card::CardId, tag::Tag, AppState};
 
+mod structs;
+
 #[derive(Debug, Serialize)]
 struct BoardInfo<'a> {
     pub id: BoardId,
@@ -55,6 +57,21 @@ pub fn delete_board(state: State<Mutex<AppState>>, board_id: BoardId) -> Option<
     }
 }
 
+#[get("/boards/<board_id>?<filter>")]
+pub fn get_board(
+    state: State<Mutex<AppState>>,
+    board_id: u64,
+    filter: Option<String>,
+) -> Option<content::Json<String>> {
+    let mut state = state.lock().unwrap();
+
+    let board = state.get_board_mut(BoardId(board_id))?;
+
+    Some(content::Json(
+        serde_json::to_string(&board.get_view(filter.as_deref())).unwrap(),
+    ))
+}
+
 #[put("/boards/<board_id>/name", data = "<new_name>")]
 pub fn set_board_name(
     state: State<Mutex<AppState>>,
@@ -70,21 +87,6 @@ pub fn set_board_name(
     board.name = new_name;
 
     Ok(())
-}
-
-#[get("/boards/<board_id>/view?<filter>")]
-pub fn get_board_view(
-    state: State<Mutex<AppState>>,
-    board_id: u64,
-    filter: Option<String>,
-) -> Option<content::Json<String>> {
-    let mut state = state.lock().unwrap();
-
-    let board = state.get_board_mut(BoardId(board_id))?;
-
-    Some(content::Json(
-        serde_json::to_string(&board.get_view(filter.as_deref())).unwrap(),
-    ))
 }
 
 #[get("/boards/<board_id>/viewbycategory/<category>?<filter>")]

@@ -1,14 +1,20 @@
-pub mod view;
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::state::card::{Card, CardId};
+mod card;
+mod tag;
+mod view;
+
+pub use card::{Card, CardId};
+pub use tag::Tag;
+pub use view::ViewByCategory;
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
-pub struct BoardId(pub u64);
+pub struct BoardId(u64);
 
 impl BoardId {
-    pub fn next(&self) -> BoardId {
+    pub fn next(self) -> BoardId {
         BoardId(self.0 + 1)
     }
 }
@@ -20,9 +26,25 @@ impl BoardId {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
     id: BoardId,
-    pub name: String,
+    name: String,
+
+    /// Is a `Vec` because this is the order cards are shown in without
+    /// grouping on.
     cards: Vec<Card>,
     next_card_id: CardId,
+
+    /// Map of category name to info.
+    categories: HashMap<String, CategoryInfo>,
+}
+
+struct CategoryInfo {
+    /// Order of columns in the category.
+    columns: Vec<ColumnInfo>,
+}
+
+struct ColumnInfo {
+    /// Order of columns in the column.
+    cards: Vec<CardId>,
 }
 
 impl Board {
@@ -37,6 +59,14 @@ impl Board {
 
     pub fn id(&self) -> BoardId {
         self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn set_name<S: Into<String>(name: S) {
+        self.name = name.into();
     }
 
     // -- Cards --
@@ -65,6 +95,21 @@ impl Board {
         } else {
             false
         }
+    }
+
+    /// Returns `false` if no card with the given ID exists in the board.
+    pub fn set_card_text<S: Into<String>>(&mut self, id: CardId, text: S) -> bool {
+        match self.get_card_mut(id) {
+            Some(card) => {
+                card.text = text.into();
+                true
+            }
+            None => false,
+        }
+    }
+
+    // TODO: Possible errors: no such card, card already has tag.
+    pub fn add_card_tag<S: Into<String>>(&mut self, id: CardId, tag: S) {
     }
 
     /// Returns `None` if the specified card doesn't exist in the board.
