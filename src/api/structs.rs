@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::state::board::{Board
+use crate::state::board::{Board, Card, Tag};
 
 #[derive(Debug, Serialize)]
 pub struct ApiBoard<'a> {
@@ -9,8 +9,7 @@ pub struct ApiBoard<'a> {
 }
 
 impl<'a> ApiBoard<'a> {
-    pub fn new(board: &Board) -> {
-    }
+    pub fn new(board: &'a Board) -> Self {}
 }
 
 #[derive(Debug, Serialize)]

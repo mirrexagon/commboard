@@ -2,10 +2,14 @@ use serde::{Deserialize, Serialize};
 
 use super::Tag;
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct CardId(u64);
 
 impl CardId {
+    pub fn new(id: u64) -> CardId {
+        CardId(id)
+    }
+
     pub fn next(self) -> CardId {
         CardId(self.0 + 1)
     }

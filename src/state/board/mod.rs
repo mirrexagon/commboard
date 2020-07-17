@@ -10,10 +10,14 @@ pub use card::{Card, CardId};
 pub use tag::Tag;
 pub use view::ViewByCategory;
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BoardId(u64);
 
 impl BoardId {
+    pub fn new(id: u64) -> BoardId {
+        BoardId(id)
+    }
+
     pub fn next(self) -> BoardId {
         BoardId(self.0 + 1)
     }
@@ -28,23 +32,8 @@ pub struct Board {
     id: BoardId,
     name: String,
 
-    /// Is a `Vec` because this is the order cards are shown in without
-    /// grouping on.
-    cards: Vec<Card>,
+    cards: HashMap<CardId, Card>,
     next_card_id: CardId,
-
-    /// Map of category name to info.
-    categories: HashMap<String, CategoryInfo>,
-}
-
-struct CategoryInfo {
-    /// Order of columns in the category.
-    columns: Vec<ColumnInfo>,
-}
-
-struct ColumnInfo {
-    /// Order of columns in the column.
-    cards: Vec<CardId>,
 }
 
 impl Board {
@@ -52,8 +41,9 @@ impl Board {
         Self {
             id,
             name: format!("Board {}", id.0),
-            cards: Vec::new(),
-            next_card_id: CardId(0),
+
+            cards: HashMap::new(),
+            next_card_id: CardId::new(0),
         }
     }
 
@@ -65,36 +55,27 @@ impl Board {
         &self.name
     }
 
-    pub fn set_name<S: Into<String>(name: S) {
+    pub fn set_name<S: Into<String>>(&mut self, name: S) {
         self.name = name.into();
     }
 
     // -- Cards --
-    pub fn add_card(&mut self) -> &mut Card {
+    pub fn add_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
-        self.cards.push(Card::new(id));
-
-        let index = self.cards.len() - 1;
-        &mut self.cards[index]
+        self.cards.insert(id, Card::new(id));
+        id
     }
 
     /// Returns `false` if no card with the given ID exists in the board.
     pub fn delete_card(&mut self, id: CardId) -> bool {
-        let mut index = None;
+        if let Some(_) = self.cards.remove(&id) {
+            self.
 
-        for (i, card) in self.cards.iter().enumerate() {
-            if card.id() == id {
-                index = Some(i);
-                break;
-            }
-        }
-
-        if let Some(index) = index {
-            self.cards.remove(index);
             true
         } else {
             false
         }
+
     }
 
     /// Returns `false` if no card with the given ID exists in the board.
@@ -109,11 +90,10 @@ impl Board {
     }
 
     // TODO: Possible errors: no such card, card already has tag.
-    pub fn add_card_tag<S: Into<String>>(&mut self, id: CardId, tag: S) {
-    }
+    pub fn add_card_tag<S: Into<String>>(&mut self, id: CardId, tag: S) {}
 
     /// Returns `None` if the specified card doesn't exist in the board.
-    pub fn get_card_mut(&mut self, id: CardId) -> Option<&mut Card> {
+    fn get_card_mut(&mut self, id: CardId) -> Option<&mut Card> {
         for card in &mut self.cards {
             if card.id() == id {
                 return Some(card);

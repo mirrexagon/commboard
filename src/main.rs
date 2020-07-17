@@ -4,9 +4,9 @@ use std::sync::Mutex;
 
 use rocket::{get, response::content, routes};
 
-use state::{tag::Tag, AppState};
+use state::{board::Tag, AppState};
 
-mod api;
+//mod api;
 mod state;
 
 #[get("/")]
@@ -22,6 +22,7 @@ fn index_bundle() -> content::JavaScript<&'static str> {
 }
 
 fn main() {
+    /*
     let state = Mutex::new(AppState::new());
     {
         let mut state = state.lock().unwrap();
@@ -77,4 +78,5 @@ fn main() {
         )
         .manage(state)
         .launch();
+        */
 }
