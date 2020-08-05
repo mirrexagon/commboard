@@ -1,48 +1,68 @@
-use std::collections::HashMap;
+use super::CardId;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
+// All actions here should panic as the caller is meant to validate its arguments
+// (eg. when a card is deleted, it should ensure that card actually exists
+// before calling here).
 
-use crate::state::board::{Board, Card};
-
-#[derive(Debug)]
-pub struct ViewByCategory<'a> {
-    pub name: &'a str,
-    pub columns: Vec<ViewByCategoryColumn<'a>>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ViewDefault {
+    card_order: Vec<CardId>,
 }
 
-impl<'a> ViewByCategory<'a> {
-    pub fn new(board: &'a Board, filter: Option<&str>, category: &str) -> Self {
-        let mut columns: Vec<ViewByCategoryColumn> = Vec::new();
-        let mut value_to_column_index: HashMap<String, usize> = HashMap::new();
-
-        for card in board.get_cards_with_filter(filter) {
-            let matching_tags = card.get_tags_with_category(category);
-
-            for tag in matching_tags {
-                if let Some(&column_index) = value_to_column_index.get(tag.value()) {
-                    columns[column_index].cards.push(card);
-                } else {
-                    let column_index = columns.len();
-                    columns.push(ViewByCategoryColumn {
-                        name: tag.value(),
-                        cards: vec![card],
-                    });
-                    value_to_column_index.insert(tag.value().to_owned(), column_index);
-                }
-            }
+impl ViewDefault {
+    pub fn new() -> Self {
+        Self {
+            card_order: Vec::new(),
         }
+    }
 
-        columns.sort_by(|a, b| a.name.cmp(b.name));
+    pub fn get_view(&self) -> &Vec<CardId> {
+        &self.card_order
+    }
 
-        ViewByCategory {
-            name: &board.name,
-            columns,
-        }
+    pub fn add_card_append(&mut self, card: CardId) {
+        self.add_card_at_index(card, self.card_order.len())
+    }
+
+    pub fn add_card_at_index(&mut self, card: CardId, index: usize) {
+        todo!()
+    }
+
+    pub fn move_card_to(&mut self, card: CardId, index: usize) {
+        todo!()
+    }
+
+    pub fn delete_card(&mut self, card: CardId) {
+        todo!()
     }
 }
 
-#[derive(Debug)]
-pub struct ViewByCategoryColumn<'a> {
-    pub name: &'a str,
-    pub cards: Vec<&'a Card>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ViewByCategory {}
+
+impl ViewByCategory {
+    pub fn new() -> Self {
+        todo!()
+    }
+
+    pub fn get_view(&self) -> &Vec<CardId> {
+        todo!()
+    }
+
+    pub fn add_card_append(&mut self, card: CardId) {
+        todo!()
+    }
+
+    pub fn add_card_at_index(&mut self, card: CardId, index: usize) {
+        todo!()
+    }
+
+    pub fn move_card_to(&mut self, card: CardId, index: usize) {
+        todo!()
+    }
+
+    pub fn delete_card(&mut self, card: CardId) {
+        todo!()
+    }
 }
