@@ -75,7 +75,7 @@ impl Board {
         let id = self.get_next_card_id();
         self.cards.insert(id, Card::new(id));
 
-        self.view_default.add_card_append(id);
+        self.view_default.add_card(id, None);
 
         id
     }
@@ -126,11 +126,11 @@ impl Board {
     }
 
     // -- Views --
-    pub fn get_view_default(&self, filter: Option<&str>) -> ViewDefault {
+    pub fn get_view_default(&self, filter: Option<&str>) -> &ViewDefault {
         todo!()
     }
 
-    pub fn get_view_by_category(&self, filter: Option<&str>, category: &str) -> ViewByCategory {
+    pub fn get_view_by_category(&self, filter: Option<&str>, category: &str) -> &ViewByCategory {
         todo!()
     }
 
