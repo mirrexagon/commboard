@@ -1,9 +1,7 @@
 use super::{CardId, Tag};
 use serde::{Deserialize, Serialize};
 
-// All actions here should panic as the caller is meant to validate its arguments
-// (eg. when a card is deleted, it should ensure that card actually exists
-// before calling here).
+// TODO: Send errors back up instead of panicking on error.
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ViewDefault {
@@ -41,9 +39,9 @@ impl ViewDefault {
         };
     }
 
-    pub fn move_card_to(&mut self, card_to_move: CardId, index: usize) {
+    pub fn move_card(&mut self, card_to_move: CardId, new_index: usize) {
         self.delete_card(card_to_move);
-        self.add_card(card_to_move, Some(index));
+        self.add_card(card_to_move, Some(new_index));
     }
 
     pub fn delete_card(&mut self, card_to_delete: CardId) {
@@ -74,7 +72,7 @@ impl ViewByCategory {
     }
 
     pub fn add_card_tag(&mut self, card: CardId, tag: &Tag, index: Option<usize>) {
-        let column = self.get_category_column(tag);
+        let column = self.get_column(tag);
 
         if let Some(_) = column.cards.iter().position(|id| *id == card) {
             panic!(
@@ -96,7 +94,7 @@ impl ViewByCategory {
     }
 
     pub fn remove_card_tag(&mut self, card: CardId, tag: &Tag) {
-        let column = self.get_category_column(tag);
+        let column = self.get_column(tag);
 
         match column.cards.iter().position(|id| *id == card) {
             Some(pos) => column.cards.remove(pos),
@@ -107,11 +105,21 @@ impl ViewByCategory {
         };
     }
 
-    pub fn move_card_within_column_to(&mut self, card: CardId, tag: &Tag, index: usize) {
+    pub fn move_card_within_column(&mut self, card: CardId, tag: &Tag, new_index: usize) {
+        self.remove_card_tag(card, tag);
+        self.add_card_tag(card, tag, Some(new_index));
+    }
+
+    pub fn move_column_within_category(&mut self, tag: &Tag, new_index: usize) {
         todo!()
     }
 
-    fn get_category_column(&mut self, tag: &Tag) -> &mut Column {
+    pub fn move_category(&mut self, category: &str, new_index: usize) {
+        todo!()
+    }
+
+    /// Creates the category/column if it doesn't exist, appended to the end.
+    fn get_column(&mut self, tag: &Tag) -> &mut Column {
         todo!()
     }
 }

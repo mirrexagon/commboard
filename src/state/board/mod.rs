@@ -70,6 +70,8 @@ impl Board {
     // TODO: Expose card manipulation from views, eg. Default can insert at index,
     // by category has more complex insertions and moves.
 
+    // NEXT: Wire up view stuff to calls here.
+
     /// Add a card with no tags to the end of the default view.
     pub fn add_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
