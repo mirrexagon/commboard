@@ -4,9 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use board::{Board, BoardId};
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppState {
     boards: Vec<Board>,
@@ -17,7 +14,7 @@ impl AppState {
     pub fn new() -> Self {
         Self {
             boards: Vec::new(),
-            next_board_id: BoardId(0),
+            next_board_id: BoardId::new(0),
         }
     }
 
