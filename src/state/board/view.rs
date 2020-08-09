@@ -169,7 +169,41 @@ impl ViewByCategory {
 
     /// Creates the category/column if it doesn't exist, appended to the end.
     fn get_column(&mut self, tag: &Tag) -> &mut Column {
-        todo!()
+        let category_pos = match self
+            .categories
+            .iter()
+            .position(|category| category.name == tag.category())
+        {
+            Some(pos) => pos,
+            None => {
+                self.categories.push(Category {
+                    name: tag.category().to_owned(),
+                    columns: Vec::new(),
+                });
+
+                self.categories.len() - 1
+            }
+        };
+
+        let category = self.categories[category_pos];
+
+        let column_pos = match category
+            .columns
+            .iter()
+            .position(|column| column.name == tag.value())
+        {
+            Some(pos) => pos,
+            None => {
+                category.columns.push(Column {
+                    name: tag.value().to_owned(),
+                    cards: Vec::new(),
+                });
+
+                category.columns.len() - 1
+            }
+        };
+
+        &mut category.columns[column_pos]
     }
 }
 
