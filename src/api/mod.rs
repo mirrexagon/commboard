@@ -13,9 +13,14 @@ use rocket::{
 
 use rocket_contrib::json::Json;
 
-use crate::state::{board::BoardId, card::CardId, tag::Tag, AppState};
+use crate::state::{
+    board::{BoardId, CardId, Tag},
+    AppState,
+};
 
 mod structs;
+
+use structs::*;
 
 #[derive(Debug, Serialize)]
 struct BoardInfo<'a> {
@@ -24,33 +29,27 @@ struct BoardInfo<'a> {
 }
 
 #[get("/boards")]
-pub fn get_boards(state: State<Mutex<AppState>>) -> content::Json<String> {
+pub fn get_boards(state: State<Mutex<AppState>>) -> Json<ApiBoards> {
     let state = state.lock().unwrap();
+    let boards = state.boards_mut();
 
-    let boards_info_only: Vec<_> = state
-        .get_boards()
-        .iter()
-        .map(|board| BoardInfo {
-            id: board.id(),
-            name: &board.name,
-        })
-        .collect();
-
-    content::Json(serde_json::to_string(&boards_info_only).unwrap())
+    Json(ApiBoards::new(boards))
 }
 
 #[post("/boards")]
 pub fn add_board(state: State<Mutex<AppState>>) -> BoardId {
-    let mut state = state.lock().unwrap();
+    let state = state.lock().unwrap();
+    let boards = state.boards_mut();
 
-    state.add_board().id()
+    state.boards_mut().add_board().id()
 }
 
 #[delete("/boards/<board_id>")]
 pub fn delete_board(state: State<Mutex<AppState>>, board_id: BoardId) -> Option<status::NoContent> {
-    let mut state = state.lock().unwrap();
+    let state = state.lock().unwrap();
+    let boards = state.boards_mut();
 
-    if state.delete_board(board_id) {
+    if boards.delete_board(board_id) {
         Some(status::NoContent)
     } else {
         None
@@ -58,18 +57,17 @@ pub fn delete_board(state: State<Mutex<AppState>>, board_id: BoardId) -> Option<
 }
 
 #[get("/boards/<board_id>?<filter>")]
-pub fn get_board(
+pub fn get_board_view_default(
     state: State<Mutex<AppState>>,
     board_id: u64,
     filter: Option<String>,
-) -> Option<content::Json<String>> {
-    let mut state = state.lock().unwrap();
+) -> Option<Json<ApiBoardViewDefault>> {
+    let state = state.lock().unwrap();
+    let boards = state.boards_mut();
 
-    let board = state.get_board_mut(BoardId(board_id))?;
+    let board = boards.get_board_mut(BoardId::new(board_id))?;
 
-    Some(content::Json(
-        serde_json::to_string(&board.get_view(filter.as_deref())).unwrap(),
-    ))
+    Some(Json(ApiBoardViewDefault::new(board, filter.as_deref())))
 }
 
 #[put("/boards/<board_id>/name", data = "<new_name>")]

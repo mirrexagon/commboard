@@ -2,7 +2,28 @@ use std::collections::HashMap;
 
 use serde::Serialize;
 
-use crate::state::board::{Board, BoardId, Card, CardId, Tag};
+use crate::state::{
+    board::{Board, BoardId, Card, CardId, Tag},
+    boards::Boards,
+    AppState,
+};
+
+#[derive(Debug, Serialize)]
+pub struct ApiBoards<'a> {
+    boards: Vec<ApiBoardInfo<'a>>,
+}
+
+impl<'a> ApiBoards<'a> {
+    pub fn new(boards: &'a Boards) -> Self {
+        Self {
+            boards: boards
+                .get_boards()
+                .iter()
+                .map(|board| ApiBoardInfo::new(board))
+                .collect(),
+        }
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct ApiBoardViewDefault<'a> {
@@ -84,6 +105,21 @@ impl<'a> ApiBoard<'a> {
                 .iter()
                 .map(|(card_id, card)| (*card_id, ApiCard::new(card)))
                 .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct ApiBoardInfo<'a> {
+    id: BoardId,
+    name: &'a str,
+}
+
+impl<'a> ApiBoardInfo<'a> {
+    pub fn new(board: &'a Board) -> Self {
+        Self {
+            id: board.id(),
+            name: board.name(),
         }
     }
 }
