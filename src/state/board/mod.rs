@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -60,6 +60,10 @@ impl Board {
 
     pub fn set_name<S: Into<String>>(&mut self, name: S) {
         self.name = name.into();
+    }
+
+    pub fn cards(&self) -> &HashMap<CardId, Card> {
+        &self.cards
     }
 
     // -- Cards --
@@ -124,16 +128,21 @@ impl Board {
     }
 
     // -- Views --
-    pub fn get_view_default(&self, filter: Option<&str>) -> &ViewDefault {
-        todo!()
+    pub fn get_view_default(&self) -> &ViewDefault {
+        &self.view_default
     }
 
-    pub fn get_view_by_category(&self, filter: Option<&str>, category: &str) -> &ViewByCategory {
-        todo!()
+    pub fn get_view_by_category(&self) -> &ViewByCategory {
+        &self.view_by_category
     }
 
-    pub fn get_cards_with_filter(&self, filter: Option<&str>) -> Vec<&Card> {
-        // TODO: Implement filtering.
-        self.cards.iter().map(|(id, card)| card).collect()
+    pub fn get_cards_with_filter(&self, filter: Option<&str>) -> HashSet<CardId> {
+        // TODO: Implement more complex filtering. This is just string matching on the text.
+
+        self.cards
+            .iter()
+            .filter(|(id, card)| filter.is_none() || card.text.contains(filter.unwrap()))
+            .map(|(id, card)| *id)
+            .collect()
     }
 }

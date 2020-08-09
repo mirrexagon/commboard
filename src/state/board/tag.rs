@@ -19,6 +19,10 @@ impl Tag {
         Ok(Self { tag, colon_index })
     }
 
+    pub fn tag(&self) -> &str {
+        &self.tag[..]
+    }
+
     pub fn category(&self) -> &str {
         &self.tag[..self.colon_index]
     }

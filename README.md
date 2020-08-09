@@ -33,6 +33,8 @@ By default, all cards are visible. Which cards are visible can be filtered using
 
 These can be combined with `&&` and `||`, and grouped with parentheses.
 
+TODO: Also add text filtering
+
 
 ## Grouping
 By default, all cards are displayed without any grouping.

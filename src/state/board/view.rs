@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+
 use super::{CardId, Tag};
 use serde::{Deserialize, Serialize};
 
 // TODO: Send errors back up instead of panicking on error.
+// TODO: Figure out how to make returned filtered views unmodifiable.
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewDefault {
     card_order: Vec<CardId>,
 }
@@ -12,6 +15,17 @@ impl ViewDefault {
     pub fn new() -> Self {
         Self {
             card_order: Vec::new(),
+        }
+    }
+
+    pub fn get_filtered(&self, cards_to_include: &HashSet<CardId>) -> Self {
+        Self {
+            card_order: self
+                .card_order
+                .iter()
+                .filter(|card_id| cards_to_include.contains(card_id))
+                .map(|card_id| *card_id)
+                .collect(),
         }
     }
 
@@ -55,7 +69,7 @@ impl ViewDefault {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewByCategory {
     categories: Vec<Category>,
 }
@@ -65,6 +79,10 @@ impl ViewByCategory {
         Self {
             categories: Vec::new(),
         }
+    }
+
+    pub fn get_filtered(&self, cards_to_include: &HashSet<CardId>) -> Self {
+        todo!();
     }
 
     pub fn get_view(&self) -> &[Category] {
@@ -124,13 +142,14 @@ impl ViewByCategory {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Category {
-    columns: Vec<Column>,
+    pub name: String,
+    pub columns: Vec<Column>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Column {
-    name: String,
-    cards: Vec<CardId>,
+    pub name: String,
+    pub cards: Vec<CardId>,
 }

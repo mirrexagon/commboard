@@ -6,7 +6,7 @@ use rocket::{get, response::content, routes};
 
 use state::{board::Tag, AppState};
 
-//mod api;
+mod api;
 mod state;
 
 #[get("/")]
