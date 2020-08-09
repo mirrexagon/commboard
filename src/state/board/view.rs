@@ -82,7 +82,38 @@ impl ViewByCategory {
     }
 
     pub fn get_filtered(&self, cards_to_include: &HashSet<CardId>) -> Self {
-        todo!();
+        let result = Self {
+            categories: Vec::new(),
+        };
+
+        for old_category in self.categories {
+            let new_columns = Vec::new();
+
+            for old_column in old_category.columns {
+                let filtered_cards: Vec<CardId> = old_column
+                    .cards
+                    .iter()
+                    .filter(|card_id| cards_to_include.contains(card_id))
+                    .map(|card_id| *card_id)
+                    .collect();
+
+                if !filtered_cards.is_empty() {
+                    new_columns.push(Column {
+                        name: old_column.name.clone(),
+                        cards: filtered_cards,
+                    });
+                }
+            }
+
+            if !new_columns.is_empty() {
+                result.categories.push(Category {
+                    name: old_category.name.clone(),
+                    columns: new_columns,
+                });
+            }
+        }
+
+        result
     }
 
     pub fn get_view(&self) -> &[Category] {
