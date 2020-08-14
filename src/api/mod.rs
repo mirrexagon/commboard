@@ -7,11 +7,9 @@ use rocket::{
     http::RawStr,
     post, put,
     request::{FromParam, Request},
-    response::{self, status, Responder},
+    response::{self, content::Json, status, Responder},
     State,
 };
-
-use rocket_contrib::json::Json;
 
 use crate::state::{
     board::{BoardId, CardId, Tag},
@@ -29,11 +27,11 @@ struct BoardInfo<'a> {
 }
 
 #[get("/boards")]
-pub fn get_boards(state: State<Mutex<AppState>>) -> Json<ApiBoards> {
+pub fn get_boards(state: State<Mutex<AppState>>) -> Json<String> {
     let mut state = state.lock().unwrap();
     let boards = state.boards_mut();
 
-    Json(ApiBoards::new(boards))
+    Json(serde_json::to_string(&ApiBoards::new(boards)).unwrap())
 }
 
 #[post("/boards")]
@@ -41,7 +39,7 @@ pub fn add_board(state: State<Mutex<AppState>>) -> BoardId {
     let mut state = state.lock().unwrap();
     let boards = state.boards_mut();
 
-    state.boards_mut().add_board().id()
+    boards.add_board().id()
 }
 
 #[delete("/boards/<board_id>")]
@@ -61,13 +59,15 @@ pub fn get_board_view_default(
     state: State<Mutex<AppState>>,
     board_id: u64,
     filter: Option<String>,
-) -> Option<Json<ApiBoardViewDefault>> {
+) -> Option<Json<String>> {
     let mut state = state.lock().unwrap();
     let boards = state.boards_mut();
 
     let board = boards.get_board_mut(BoardId::new(board_id))?;
 
-    Some(Json(ApiBoardViewDefault::new(board, filter.as_deref())))
+    Some(Json(
+        serde_json::to_string(&ApiBoardViewDefault::new(board, filter.as_deref())).unwrap(),
+    ))
 }
 
 #[put("/boards/<board_id>/name", data = "<new_name>")]
@@ -94,17 +94,20 @@ pub fn get_board_view_by_category(
     board_id: BoardId,
     filter: Option<String>,
     category: String,
-) -> Option<Json<ApiBoardViewByCategory>> {
+) -> Option<Json<String>> {
     let mut state = state.lock().unwrap();
     let boards = state.boards_mut();
 
     let board = boards.get_board_mut(board_id)?;
 
-    Some(Json(ApiBoardViewByCategory::new(
-        board,
-        &category,
-        filter.as_deref(),
-    )))
+    Some(Json(
+        serde_json::to_string(&ApiBoardViewByCategory::new(
+            board,
+            &category,
+            filter.as_deref(),
+        ))
+        .unwrap(),
+    ))
 }
 
 #[post("/boards/<board_id>/cards")]

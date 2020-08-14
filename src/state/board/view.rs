@@ -82,14 +82,14 @@ impl ViewByCategory {
     }
 
     pub fn get_filtered(&self, cards_to_include: &HashSet<CardId>) -> Self {
-        let result = Self {
+        let mut result = Self {
             categories: Vec::new(),
         };
 
-        for old_category in self.categories {
-            let new_columns = Vec::new();
+        for old_category in &self.categories {
+            let mut new_columns = Vec::new();
 
-            for old_column in old_category.columns {
+            for old_column in &old_category.columns {
                 let filtered_cards: Vec<CardId> = old_column
                     .cards
                     .iter()
@@ -185,7 +185,7 @@ impl ViewByCategory {
             }
         };
 
-        let category = self.categories[category_pos];
+        let category = &mut self.categories[category_pos];
 
         let column_pos = match category
             .columns

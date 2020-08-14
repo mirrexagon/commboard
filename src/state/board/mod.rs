@@ -118,7 +118,7 @@ impl Board {
         if let None = card.tags.iter().position(|t| t == tag) {
             false
         } else {
-            card.tags.push(*tag.clone());
+            card.tags.push(tag.clone());
             true
         }
     }

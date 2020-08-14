@@ -48,19 +48,20 @@ impl<'a> ApiBoardViewDefault<'a> {
 #[derive(Debug, Serialize)]
 pub struct ApiBoardViewByCategory<'a> {
     board: ApiBoard<'a>,
-    columns: Vec<ApiViewByCategoryColumn<'a>>,
+    columns: Vec<ApiViewByCategoryColumn>,
 }
 
 impl<'a> ApiBoardViewByCategory<'a> {
     pub fn new(board: &'a Board, by_category: &str, filter: Option<&str>) -> Self {
         // TODO: Move this logic to the board.
-        let categories = board
+        let view = board
             .get_view_by_category()
-            .get_filtered(&board.get_cards_with_filter(filter))
-            .get_view();
+            .get_filtered(&board.get_cards_with_filter(filter));
+
+        let categories = view.get_view();
 
         // If there is no category with the desired name, return no columns.
-        let columns = Vec::new();
+        let mut columns = Vec::new();
 
         for category in categories {
             if category.name == by_category {
@@ -68,8 +69,8 @@ impl<'a> ApiBoardViewByCategory<'a> {
                     .columns
                     .iter()
                     .map(|column| ApiViewByCategoryColumn {
-                        name: &column.name,
-                        cards: &column.cards[..],
+                        name: column.name.clone(),
+                        cards: column.cards.clone(),
                     })
                     .collect()
             }
@@ -83,9 +84,9 @@ impl<'a> ApiBoardViewByCategory<'a> {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ApiViewByCategoryColumn<'a> {
-    name: &'a str,
-    cards: &'a [CardId],
+pub struct ApiViewByCategoryColumn {
+    name: String,
+    cards: Vec<CardId>,
 }
 
 #[derive(Debug, Serialize)]
