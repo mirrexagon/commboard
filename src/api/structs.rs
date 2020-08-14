@@ -46,12 +46,12 @@ impl<'a> ApiBoardViewDefault<'a> {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ApiBoardViewByColumn<'a> {
+pub struct ApiBoardViewByCategory<'a> {
     board: ApiBoard<'a>,
-    columns: Vec<ApiViewByColumnColumn<'a>>,
+    columns: Vec<ApiViewByCategoryColumn<'a>>,
 }
 
-impl<'a> ApiBoardViewByColumn<'a> {
+impl<'a> ApiBoardViewByCategory<'a> {
     pub fn new(board: &'a Board, by_category: &str, filter: Option<&str>) -> Self {
         // TODO: Move this logic to the board.
         let categories = board
@@ -67,7 +67,7 @@ impl<'a> ApiBoardViewByColumn<'a> {
                 columns = category
                     .columns
                     .iter()
-                    .map(|column| ApiViewByColumnColumn {
+                    .map(|column| ApiViewByCategoryColumn {
                         name: &column.name,
                         cards: &column.cards[..],
                     })
@@ -83,7 +83,7 @@ impl<'a> ApiBoardViewByColumn<'a> {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ApiViewByColumnColumn<'a> {
+pub struct ApiViewByCategoryColumn<'a> {
     name: &'a str,
     cards: &'a [CardId],
 }

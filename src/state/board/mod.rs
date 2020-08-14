@@ -11,6 +11,8 @@ pub use tag::Tag;
 
 use view::{ViewByCategory, ViewDefault};
 
+// TODO: Errors using enums instead of bools
+
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BoardId(u64);
 
@@ -21,6 +23,10 @@ impl BoardId {
 
     pub fn next(self) -> BoardId {
         BoardId(self.0 + 1)
+    }
+
+    pub fn as_integer(&self) -> u64 {
+        self.0
     }
 }
 
@@ -70,8 +76,6 @@ impl Board {
     // TODO: Expose card manipulation from views, eg. Default can insert at index,
     // by category has more complex insertions and moves.
 
-    // NEXT: Wire up view stuff to calls here.
-
     /// Add a card with no tags to the end of the default view.
     pub fn add_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
@@ -105,10 +109,34 @@ impl Board {
     }
 
     // TODO: Possible errors: no such card, card already has tag.
-    pub fn add_card_tag<S: Into<String>>(&mut self, id: CardId, tag: S) {}
+    pub fn add_card_tag(&mut self, id: CardId, tag: &Tag) -> bool {
+        let card = match self.get_card_mut(id) {
+            Some(card) => card,
+            None => return false,
+        };
+
+        if let None = card.tags.iter().position(|t| t == tag) {
+            false
+        } else {
+            card.tags.push(*tag.clone());
+            true
+        }
+    }
 
     // TODO: Possible errors: no such card, card doesn't have tag.
-    pub fn delete_card_tag<S: Into<String>>(&mut self, id: CardId, tag: S) {}
+    pub fn delete_card_tag(&mut self, id: CardId, tag: &Tag) -> bool {
+        let card = match self.get_card_mut(id) {
+            Some(card) => card,
+            None => return false,
+        };
+
+        if let Some(pos) = card.tags.iter().position(|t| t == tag) {
+            card.tags.remove(pos);
+            true
+        } else {
+            false
+        }
+    }
 
     /// Returns `None` if the specified card doesn't exist in the board.
     fn get_card_mut(&mut self, id_to_get: CardId) -> Option<&mut Card> {

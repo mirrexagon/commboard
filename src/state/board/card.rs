@@ -13,6 +13,10 @@ impl CardId {
     pub fn next(self) -> CardId {
         CardId(self.0 + 1)
     }
+
+    pub fn as_integer(&self) -> u64 {
+        self.0
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,4 +60,6 @@ impl Card {
 
         tags_with_category
     }
+
+    // TODO: Order tags? Probably alphabetically.
 }
