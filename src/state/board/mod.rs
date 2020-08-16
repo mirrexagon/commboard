@@ -99,7 +99,7 @@ impl Board {
 
     /// Returns `false` if no card with the given ID exists in the board.
     pub fn set_card_text<S: Into<String>>(&mut self, id: CardId, text: S) -> bool {
-        match self.get_card_mut(id) {
+        match self.cards.get_mut(&id) {
             Some(card) => {
                 card.text = text.into();
                 true
@@ -110,22 +110,22 @@ impl Board {
 
     // TODO: Possible errors: no such card, card already has tag.
     pub fn add_card_tag(&mut self, id: CardId, tag: &Tag) -> bool {
-        let card = match self.get_card_mut(id) {
+        let card = match self.cards.get_mut(&id) {
             Some(card) => card,
             None => return false,
         };
 
         if let None = card.tags.iter().position(|t| t == tag) {
-            false
-        } else {
             card.tags.push(tag.clone());
             true
+        } else {
+            false
         }
     }
 
     // TODO: Possible errors: no such card, card doesn't have tag.
     pub fn delete_card_tag(&mut self, id: CardId, tag: &Tag) -> bool {
-        let card = match self.get_card_mut(id) {
+        let card = match self.cards.get_mut(&id) {
             Some(card) => card,
             None => return false,
         };
@@ -136,17 +136,6 @@ impl Board {
         } else {
             false
         }
-    }
-
-    /// Returns `None` if the specified card doesn't exist in the board.
-    fn get_card_mut(&mut self, id_to_get: CardId) -> Option<&mut Card> {
-        for (id, card) in &mut self.cards {
-            if *id == id_to_get {
-                return Some(card);
-            }
-        }
-
-        None
     }
 
     fn get_next_card_id(&mut self) -> CardId {

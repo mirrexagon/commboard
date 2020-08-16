@@ -134,6 +134,8 @@ struct ApiCard<'a> {
 
 impl<'a> ApiCard<'a> {
     pub fn new(card: &'a Card) -> Self {
+        dbg!(&card.tags);
+
         Self {
             id: card.id(),
             text: &card.text,
