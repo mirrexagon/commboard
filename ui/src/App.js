@@ -1,9 +1,15 @@
 import React from 'react';
-import './App.css';
+import styles from './App.css';
+
+import BoardViewDefault from './BoardViewDefault.js'
 
 class App extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
     render() {
-        return <h1>Commboard</h1>;
+        return <BoardViewDefault />;
     }
 }
 
