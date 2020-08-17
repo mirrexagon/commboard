@@ -1,6 +1,7 @@
 {
     "scripts": {
-        "build": "webpack --mode production && cp -v public/* build/"
+        "build": "webpack --mode production && cp -v public/* build/",
+        "build-dev": "webpack --mode development && cp -v public/* build/"
     },
     "browserslist": "> 0.25%, not dead",
     "dependencies": {

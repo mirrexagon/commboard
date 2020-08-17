@@ -16,11 +16,18 @@ fn main() {
         }
     }
 
+    let profile = std::env::var("PROFILE").unwrap();
+    let npm_action = match profile.as_str() {
+        "debug" => "build-dev",
+        "release" => "build",
+        _ => unimplemented!(),
+    };
+
     // Build the UI.
     let build_output = Command::new("npm")
         .current_dir(UI_DIR)
         .arg("run")
-        .arg("build")
+        .arg(npm_action)
         .output()
         .expect("Failed to build UI");
 

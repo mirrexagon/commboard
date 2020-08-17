@@ -4,8 +4,9 @@ import styles from './BoardViewDefault.css';
 class BoardViewDefault extends React.Component {
     constructor(props) {
         super(props);
+
         this.state = {
-            date: new Date()
+            boardView: null,
         };
     }
 
@@ -13,7 +14,7 @@ class BoardViewDefault extends React.Component {
         fetch('localhost:8000/boards/0')
         .then(res => res.json())
         .then((data) => {
-              this.setState({ contacts: data })
+              this.setState({ boardView: data })
         })
         .catch(console.log);
     }
