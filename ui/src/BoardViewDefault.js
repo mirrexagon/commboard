@@ -11,8 +11,8 @@ class BoardViewDefault extends React.Component {
     }
 
     componentDidMount() {
-        fetch('localhost:8000/boards/0')
-        .then(res => res.json())
+        fetch('http://localhost:8000/boards/0')
+        .then(res => res.text())
         .then((data) => {
               this.setState({ boardView: data })
         })
@@ -20,6 +20,7 @@ class BoardViewDefault extends React.Component {
     }
 
     render() {
+        return <code>{this.state.boardView}</code>;
     }
 }
 
