@@ -35,12 +35,7 @@ impl<'a> ApiBoardViewDefault<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>) -> Self {
         Self {
             board: ApiBoard::new(board),
-            // TODO: Move this logic to the board.
-            card_order: board
-                .get_view_default()
-                .get_filtered(&board.get_cards_with_filter(filter))
-                .get_view()
-                .to_vec(),
+            card_order: board.get_view_default(filter).card_order,
         }
     }
 }
@@ -53,17 +48,12 @@ pub struct ApiBoardViewByCategory<'a> {
 
 impl<'a> ApiBoardViewByCategory<'a> {
     pub fn new(board: &'a Board, by_category: &str, filter: Option<&str>) -> Self {
-        // TODO: Move this logic to the board.
-        let view = board
-            .get_view_by_category()
-            .get_filtered(&board.get_cards_with_filter(filter));
-
-        let categories = view.get_view();
+        let view = board.get_view_by_category(filter);
 
         // If there is no category with the desired name, return no columns.
         let mut columns = Vec::new();
 
-        for category in categories {
+        for category in view.categories {
             if category.name == by_category {
                 columns = category
                     .columns

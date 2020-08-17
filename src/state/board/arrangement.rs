@@ -6,20 +6,25 @@ use serde::{Deserialize, Serialize};
 // TODO: Send errors back up instead of panicking on error.
 // TODO: Figure out how to make returned filtered views unmodifiable.
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ViewDefault {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Default {
     card_order: Vec<CardId>,
 }
 
-impl ViewDefault {
+#[derive(Debug, Serialize)]
+pub struct DefaultView {
+    pub card_order: Vec<CardId>,
+}
+
+impl Default {
     pub fn new() -> Self {
         Self {
             card_order: Vec::new(),
         }
     }
 
-    pub fn get_filtered(&self, cards_to_include: &HashSet<CardId>) -> Self {
-        Self {
+    pub fn get_view(&self, cards_to_include: &HashSet<CardId>) -> DefaultView {
+        DefaultView {
             card_order: self
                 .card_order
                 .iter()
@@ -27,10 +32,6 @@ impl ViewDefault {
                 .map(|card_id| *card_id)
                 .collect(),
         }
-    }
-
-    pub fn get_view(&self) -> &[CardId] {
-        &self.card_order
     }
 
     pub fn add_card(&mut self, card: CardId, index: Option<usize>) {
@@ -69,20 +70,25 @@ impl ViewDefault {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ViewByCategory {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ByCategory {
     categories: Vec<Category>,
 }
 
-impl ViewByCategory {
+#[derive(Debug, Serialize)]
+pub struct ByCategoryView {
+    pub categories: Vec<Category>,
+}
+
+impl ByCategory {
     pub fn new() -> Self {
         Self {
             categories: Vec::new(),
         }
     }
 
-    pub fn get_filtered(&self, cards_to_include: &HashSet<CardId>) -> Self {
-        let mut result = Self {
+    pub fn get_view(&self, cards_to_include: &HashSet<CardId>) -> ByCategoryView {
+        let mut result = ByCategoryView {
             categories: Vec::new(),
         };
 
@@ -114,10 +120,6 @@ impl ViewByCategory {
         }
 
         result
-    }
-
-    pub fn get_view(&self) -> &[Category] {
-        &self.categories
     }
 
     pub fn add_card_tag(&mut self, card: CardId, tag: &Tag, index: Option<usize>) {
@@ -207,13 +209,13 @@ impl ViewByCategory {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Category {
     pub name: String,
     pub columns: Vec<Column>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Column {
     pub name: String,
     pub cards: Vec<CardId>,

@@ -2,14 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
+mod arrangement;
 mod card;
 mod tag;
-mod view;
 
 pub use card::{Card, CardId};
 pub use tag::Tag;
-
-use view::{ViewByCategory, ViewDefault};
 
 // TODO: Errors using enums instead of bools
 
@@ -38,21 +36,21 @@ pub struct Board {
     cards: HashMap<CardId, Card>,
     next_card_id: CardId,
 
-    view_default: ViewDefault,
-    view_by_category: ViewByCategory,
+    arrangement_default: arrangement::Default,
+    arrangement_by_category: arrangement::ByCategory,
 }
 
 impl Board {
     pub fn new(id: BoardId) -> Self {
         Self {
             id,
-            name: format!("Board {}", id.0),
+            name: format!("Board {}", id.as_integer()),
 
             cards: HashMap::new(),
             next_card_id: CardId::new(0),
 
-            view_default: ViewDefault::new(),
-            view_by_category: ViewByCategory::new(),
+            arrangement_default: arrangement::Default::new(),
+            arrangement_by_category: arrangement::ByCategory::new(),
         }
     }
 
@@ -81,7 +79,7 @@ impl Board {
         let id = self.get_next_card_id();
         self.cards.insert(id, Card::new(id));
 
-        self.view_default.add_card(id, None);
+        self.arrangement_default.add_card(id, None);
 
         id
     }
@@ -89,7 +87,7 @@ impl Board {
     /// Returns `false` if no card with the given ID exists in the board.
     pub fn delete_card(&mut self, id: CardId) -> bool {
         if let Some(_) = self.cards.remove(&id) {
-            self.view_default.delete_card(id);
+            self.arrangement_default.delete_card(id);
 
             true
         } else {
@@ -145,15 +143,17 @@ impl Board {
     }
 
     // -- Views --
-    pub fn get_view_default(&self) -> &ViewDefault {
-        &self.view_default
+    pub fn get_view_default(&self, filter: Option<&str>) -> arrangement::DefaultView {
+        self.arrangement_default
+            .get_view(&self.get_cards_with_filter(filter))
     }
 
-    pub fn get_view_by_category(&self) -> &ViewByCategory {
-        &self.view_by_category
+    pub fn get_view_by_category(&self, filter: Option<&str>) -> arrangement::ByCategoryView {
+        self.arrangement_by_category
+            .get_view(&self.get_cards_with_filter(filter))
     }
 
-    pub fn get_cards_with_filter(&self, filter: Option<&str>) -> HashSet<CardId> {
+    fn get_cards_with_filter(&self, filter: Option<&str>) -> HashSet<CardId> {
         // TODO: Implement more complex filtering. This is just string matching on the text.
 
         self.cards
