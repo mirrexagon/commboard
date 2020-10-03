@@ -5,7 +5,6 @@ use serde::Serialize;
 use crate::state::{
     board::{Board, BoardId, Card, CardId, Tag},
     boards::Boards,
-    AppState,
 };
 
 #[derive(Debug, Serialize)]
@@ -133,12 +132,10 @@ impl<'a> ApiCard<'a> {
 }
 
 #[derive(Debug, Serialize)]
-struct ApiTag<'a> {
-    tag: &'a str,
-}
+struct ApiTag<'a>(&'a str);
 
 impl<'a> ApiTag<'a> {
     pub fn new(tag: &'a Tag) -> Self {
-        Self { tag: tag.tag() }
+        Self(tag.tag())
     }
 }
