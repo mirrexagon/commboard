@@ -4,10 +4,10 @@ import styles from './Card.css';
 
 class Card extends React.Component {
     render() {
-        return <code>{this.state.boardView}</code>;
+        return (<div>
+            <p>{this.props.text}</p>
+        </div>);
     }
-
-
 }
 
 Card.propTypes = {
