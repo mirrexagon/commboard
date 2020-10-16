@@ -23,8 +23,12 @@ class BoardViewDefault extends React.Component {
     }
 
     render() {
-        const card = this.state.boardViewDefault.board.cards[0];
-        return <Card text={card.text} tags={card.tags} />;
+        if (this.state.boardViewDefault) {
+            const card = this.state.boardViewDefault.board.cards[0];
+            return <Card text={card.text} tags={card.tags} />;
+        } else {
+            return null;
+        }
     }
 }
 
