@@ -43,7 +43,7 @@ impl Card {
         self.id
     }
 
-    /// Add a tag to a card.
+    /// Adds a tag to the card.
     pub fn add_tag(&mut self, tag: Tag) -> Result<(), CardError> {
         if !self.tags.contains(&tag) {
             self.tags.insert(tag);
@@ -53,7 +53,7 @@ impl Card {
         }
     }
 
-    /// Delete a tag from a card.
+    /// Deletes a tag from the card.
     pub fn delete_tag(&mut self, tag: &Tag) -> Result<(), CardError> {
         if self.tags.contains(&tag) {
             self.tags.remove(tag);
@@ -63,7 +63,7 @@ impl Card {
         }
     }
 
-    /// Get a vector of all tags in this card, in alphabetical order.
+    /// Returns a vector of all tags in this card, in alphabetical order.
     pub fn get_tags(&self) -> Vec<&Tag> {
         let mut tags_vec: Vec<_> = self.tags.iter().collect();
         tags_vec.sort();
