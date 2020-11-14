@@ -1,4 +1,7 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use super::Tag;
 
@@ -23,7 +26,7 @@ impl CardId {
 pub struct Card {
     id: CardId,
     pub text: String,
-    pub tags: Vec<Tag>,
+    tags: HashSet<Tag>,
 }
 
 impl Card {
@@ -31,14 +34,43 @@ impl Card {
         Self {
             id,
             text: String::new(),
-            tags: Vec::new(),
+            tags: HashSet::new(),
         }
     }
 
+    // Returns the `CardId` of this card.
     pub fn id(&self) -> CardId {
         self.id
     }
 
+    /// Add a tag to a card.
+    pub fn add_tag(&mut self, tag: Tag) -> Result<(), CardError> {
+        if !self.tags.contains(&tag) {
+            self.tags.insert(tag);
+            Ok(())
+        } else {
+            Err(CardError::AlreadyHasTag)
+        }
+    }
+
+    /// Delete a tag from a card.
+    pub fn delete_tag(&mut self, tag: &Tag) -> Result<(), CardError> {
+        if self.tags.contains(&tag) {
+            self.tags.remove(tag);
+            Ok(())
+        } else {
+            Err(CardError::NoSuchTag)
+        }
+    }
+
+    /// Get a vector of all tags in this card, in alphabetical order.
+    pub fn get_tags(&self) -> Vec<&Tag> {
+        let mut tags_vec: Vec<_> = self.tags.iter().collect();
+        tags_vec.sort();
+        tags_vec
+    }
+
+    /// Returns `true` if the card has at least one tag with the given category.
     pub fn has_category(&self, category: &str) -> bool {
         for tag in &self.tags {
             if tag.category() == category {
@@ -49,17 +81,19 @@ impl Card {
         false
     }
 
+    /// Returns a vector of all tags with the given category, in alphabetical order.
     pub fn get_tags_with_category(&self, category: &str) -> Vec<&Tag> {
-        let mut tags_with_category = Vec::new();
-
-        for tag in &self.tags {
-            if tag.category() == category {
-                tags_with_category.push(tag)
-            }
-        }
-
-        tags_with_category
+        self.get_tags()
+            .into_iter()
+            .filter(|tag| tag.category() == category)
+            .collect()
     }
+}
 
-    // TODO: Order tags? Probably alphabetically.
+#[derive(Debug, Error)]
+pub enum CardError {
+    #[error("card already has this tag")]
+    AlreadyHasTag,
+    #[error("no such tag in card")]
+    NoSuchTag,
 }

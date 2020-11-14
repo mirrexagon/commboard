@@ -25,7 +25,8 @@ fn main() {
     let boards = Mutex::new(Boards::new());
     {
         let mut boards = boards.lock().unwrap();
-        let board = boards.new_board();
+        let board_id = boards.new_board();
+        let board = boards.get_board_mut(board_id).unwrap();
 
         {
             let card1 = board.add_card();
@@ -73,6 +74,6 @@ fn main() {
                 api::delete_card_tag,
             ],
         )
-        .manage(state)
+        .manage(boards)
         .launch();
 }

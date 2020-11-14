@@ -13,7 +13,7 @@ pub struct Boards {
 }
 
 impl Boards {
-    /// Create a new `Boards`.
+    /// Creates a new `Boards`.
     pub fn new() -> Self {
         Self {
             boards: Vec::new(),
@@ -21,7 +21,7 @@ impl Boards {
         }
     }
 
-    // Create a new board. Returns the ID of the new board, which can be used
+    // Creates a new board. Returns the ID of the new board, which can be used
     // to retrieve it.
     pub fn new_board(&mut self) -> BoardId {
         let id = self.get_next_board_id();
@@ -35,7 +35,7 @@ impl Boards {
         next_board_id
     }
 
-    /// Delete the board with the specified ID.
+    /// Deletes the board with the specified ID.
     pub fn delete_board(&mut self, id: BoardId) -> Result<(), BoardsError> {
         if let Some(index) = self.get_index_of_board(id) {
             self.boards.remove(index);
