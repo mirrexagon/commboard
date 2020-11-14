@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 use rocket::{get, response::content, routes};
 
-use state::{board::Tag, AppState};
+use state::{board::Tag, boards::Boards};
 
 mod api;
 mod state;
@@ -22,11 +22,10 @@ fn index_bundle() -> content::JavaScript<&'static str> {
 }
 
 fn main() {
-    let state = Mutex::new(AppState::new());
+    let boards = Mutex::new(Boards::new());
     {
-        let mut state = state.lock().unwrap();
-        let boards = state.boards_mut();
-        let board = boards.add_board();
+        let mut boards = boards.lock().unwrap();
+        let board = boards.new_board();
 
         {
             let card1 = board.add_card();
