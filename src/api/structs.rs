@@ -27,55 +27,14 @@ impl<'a> ApiBoards<'a> {
 #[derive(Debug, Serialize)]
 pub struct ApiBoardViewDefault<'a> {
     board: ApiBoard<'a>,
-    card_order: Vec<CardId>,
 }
 
 impl<'a> ApiBoardViewDefault<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>) -> Self {
         Self {
             board: ApiBoard::new(board),
-            card_order: board.get_view_default(filter).card_order,
         }
     }
-}
-
-#[derive(Debug, Serialize)]
-pub struct ApiBoardViewByCategory<'a> {
-    board: ApiBoard<'a>,
-    columns: Vec<ApiViewByCategoryColumn>,
-}
-
-impl<'a> ApiBoardViewByCategory<'a> {
-    pub fn new(board: &'a Board, by_category: &str, filter: Option<&str>) -> Self {
-        let view = board.get_view_by_category(filter);
-
-        // If there is no category with the desired name, return no columns.
-        let mut columns = Vec::new();
-
-        for category in view.categories {
-            if category.name == by_category {
-                columns = category
-                    .columns
-                    .iter()
-                    .map(|column| ApiViewByCategoryColumn {
-                        name: column.name.clone(),
-                        cards: column.cards.clone(),
-                    })
-                    .collect()
-            }
-        }
-
-        Self {
-            board: ApiBoard::new(board),
-            columns,
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-pub struct ApiViewByCategoryColumn {
-    name: String,
-    cards: Vec<CardId>,
 }
 
 #[derive(Debug, Serialize)]
@@ -89,7 +48,7 @@ impl<'a> ApiBoard<'a> {
     pub fn new(board: &'a Board) -> Self {
         Self {
             id: board.id(),
-            name: board.name(),
+            name: &board.name,
             cards: board
                 .cards()
                 .iter()
@@ -109,7 +68,7 @@ impl<'a> ApiBoardInfo<'a> {
     pub fn new(board: &'a Board) -> Self {
         Self {
             id: board.id(),
-            name: board.name(),
+            name: &board.name,
         }
     }
 }
@@ -126,7 +85,7 @@ impl<'a> ApiCard<'a> {
         Self {
             id: card.id(),
             text: &card.text,
-            tags: card.tags.iter().map(|tag| ApiTag::new(tag)).collect(),
+            tags: card.get_tags().iter().map(|tag| ApiTag::new(tag)).collect(),
         }
     }
 }

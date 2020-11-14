@@ -29,7 +29,7 @@ fn main() {
         let board = boards.get_board_mut(board_id).unwrap();
 
         {
-            let card1 = board.add_card();
+            let card1 = board.new_card();
             board.set_card_text(card1, "Task 1");
 
             board.add_card_tag(card1, &Tag::new("status:todo").unwrap());
@@ -38,7 +38,7 @@ fn main() {
         }
 
         {
-            let card1 = board.add_card();
+            let card1 = board.new_card();
             board.set_card_text(card1, "Task 2");
 
             board.add_card_tag(card1, &Tag::new("status:in-progress").unwrap());
@@ -47,7 +47,7 @@ fn main() {
         }
 
         {
-            let card1 = board.add_card();
+            let card1 = board.new_card();
             board.set_card_text(card1, "Task 3");
 
             board.add_card_tag(card1, &Tag::new("status:in-progress").unwrap());

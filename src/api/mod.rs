@@ -5,6 +5,7 @@ use serde::Serialize;
 use rocket::{
     delete, get,
     http::RawStr,
+    http::Status,
     post, put,
     request::{FromParam, Request},
     response::{self, content::Json, status, Responder},
@@ -13,7 +14,7 @@ use rocket::{
 
 use crate::state::{
     board::{BoardId, CardId, Tag},
-    AppState,
+    Boards,
 };
 
 mod structs;
@@ -27,59 +28,55 @@ struct BoardInfo<'a> {
 }
 
 #[get("/boards")]
-pub fn get_boards(state: State<Mutex<AppState>>) -> Json<String> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+pub fn get_boards(boards: State<Mutex<Boards>>) -> Json<String> {
+    let boards = boards.lock().unwrap();
 
-    Json(serde_json::to_string(&ApiBoards::new(boards)).unwrap())
+    Json(serde_json::to_string(&ApiBoards::new(&*boards)).unwrap())
 }
 
 #[post("/boards")]
-pub fn add_board(state: State<Mutex<AppState>>) -> BoardId {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+pub fn add_board(boards: State<Mutex<Boards>>) -> BoardId {
+    let mut boards = boards.lock().unwrap();
 
-    boards.add_board().id()
+    boards.new_board()
 }
 
 #[delete("/boards/<board_id>")]
-pub fn delete_board(state: State<Mutex<AppState>>, board_id: BoardId) -> Option<status::NoContent> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+pub fn delete_board(
+    boards: State<Mutex<Boards>>,
+    board_id: BoardId,
+) -> Result<(), status::NotFound<String>> {
+    let mut boards = boards.lock().unwrap();
 
-    if boards.delete_board(board_id) {
-        Some(status::NoContent)
-    } else {
-        None
-    }
+    boards
+        .delete_board(board_id)
+        .map_err(|err| status::NotFound(err.to_string()))
 }
 
 #[put("/boards/<board_id>/name", data = "<new_name>")]
 pub fn set_board_name(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: BoardId,
     new_name: String,
 ) -> Result<(), status::NotFound<&str>> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+    let mut boards = boards.lock().unwrap();
 
     let board = boards
         .get_board_mut(board_id)
-        .ok_or(status::NotFound("No such board"))?;
+        .ok_or(status::NotFound("no such board"))?;
 
-    board.set_name(new_name);
+    board.name = new_name;
 
     Ok(())
 }
 
 #[get("/boards/<board_id>?<filter>")]
 pub fn get_board_view_default(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: u64,
     filter: Option<String>,
 ) -> Option<Json<String>> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+    let mut boards = boards.lock().unwrap();
 
     let board = boards.get_board_mut(BoardId::new(board_id))?;
 
@@ -88,93 +85,75 @@ pub fn get_board_view_default(
     ))
 }
 
-#[get("/boards/<board_id>/viewbycategory/<category>?<filter>")]
+#[get("/boards/<board_id>/bycategory/<category>?<filter>")]
 pub fn get_board_view_by_category(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: BoardId,
     filter: Option<String>,
     category: String,
-) -> Option<Json<String>> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
-
-    let board = boards.get_board_mut(board_id)?;
-
-    Some(Json(
-        serde_json::to_string(&ApiBoardViewByCategory::new(
-            board,
-            &category,
-            filter.as_deref(),
-        ))
-        .unwrap(),
-    ))
+) -> status::Custom<()> {
+    status::Custom(Status::NotImplemented, ())
 }
 
 #[post("/boards/<board_id>/cards")]
 pub fn add_card(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: BoardId,
 ) -> Result<CardId, status::NotFound<&str>> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+    let mut boards = boards.lock().unwrap();
 
     let board = boards
         .get_board_mut(board_id)
         .ok_or(status::NotFound("No such board"))?;
 
-    Ok(board.add_card())
+    Ok(board.new_card())
 }
 
 #[delete("/boards/<board_id>/cards/<card_id>")]
 pub fn delete_card(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: BoardId,
     card_id: CardId,
-) -> Result<status::NoContent, status::NotFound<&str>> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+) -> Result<status::NoContent, status::NotFound<String>> {
+    let mut boards = boards.lock().unwrap();
 
     let board = boards
         .get_board_mut(board_id)
-        .ok_or(status::NotFound("No such board"))?;
+        .ok_or(status::NotFound("No such board".to_owned()))?;
 
-    if board.delete_card(card_id) {
-        Ok(status::NoContent)
-    } else {
-        Err(status::NotFound("No such card in the specified board"))
-    }
+    board
+        .delete_card(card_id)
+        .map(|_| status::NoContent)
+        .map_err(|err| status::NotFound(err.to_string()))
 }
 
 #[put("/boards/<board_id>/cards/<card_id>/text", data = "<new_text>")]
 pub fn set_card_text(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: BoardId,
     card_id: CardId,
     new_text: String,
-) -> Result<(), status::NotFound<&str>> {
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+) -> Result<(), status::NotFound<String>> {
+    let mut boards = boards.lock().unwrap();
 
     let board = boards
         .get_board_mut(board_id)
-        .ok_or(status::NotFound("No such board"))?;
+        .ok_or(status::NotFound("no such board".to_owned()))?;
 
-    if board.set_card_text(card_id, new_text) {
-        Ok(())
-    } else {
-        Err(status::NotFound("No such card in the specified board"))
-    }
+    board
+        .set_card_text(card_id, new_text)
+        .map_err(|err| (status::NotFound(err.to_string())))
 }
 
 #[derive(Debug, Responder)]
 pub enum CardTagError {
-    NotFound(status::NotFound<&'static str>),
-    BadRequest(status::BadRequest<&'static str>),
+    NotFound(status::NotFound<String>),
+    BadRequest(status::BadRequest<String>),
 }
 
 #[post("/boards/<board_id>/cards/<card_id>/tags", data = "<new_tag>")]
 pub fn add_card_tag(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: BoardId,
     card_id: CardId,
     new_tag: String,
@@ -183,31 +162,27 @@ pub fn add_card_tag(
         Ok(tag) => tag,
         Err(_) => {
             return Err(CardTagError::BadRequest(status::BadRequest(Some(
-                "Supplied tag is invalid",
+                "Supplied tag is invalid".to_owned(),
             ))))
         }
     };
 
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+    let mut boards = boards.lock().unwrap();
 
     let board = boards
         .get_board_mut(board_id)
-        .ok_or(CardTagError::NotFound(status::NotFound("No such board")))?;
+        .ok_or(CardTagError::NotFound(status::NotFound(
+            "no such board".to_owned(),
+        )))?;
 
-    if board.add_card_tag(card_id, &new_tag) {
-        Ok(())
-    } else {
-        // TODO: Distinguish between different error cases.
-        Err(CardTagError::BadRequest(status::BadRequest(Some(
-            "Card not found or already has the specified tag",
-        ))))
-    }
+    board
+        .add_card_tag(card_id, &new_tag)
+        .map_err(|err| CardTagError::BadRequest(status::BadRequest(Some(err.to_string()))))
 }
 
 #[delete("/boards/<board_id>/cards/<card_id>/tags", data = "<tag_to_delete>")]
 pub fn delete_card_tag(
-    state: State<Mutex<AppState>>,
+    boards: State<Mutex<Boards>>,
     board_id: BoardId,
     card_id: CardId,
     tag_to_delete: String,
@@ -216,26 +191,22 @@ pub fn delete_card_tag(
         Ok(tag) => tag,
         Err(_) => {
             return Err(CardTagError::BadRequest(status::BadRequest(Some(
-                "Supplied tag is invalid",
+                "Supplied tag is invalid".to_owned(),
             ))))
         }
     };
 
-    let mut state = state.lock().unwrap();
-    let boards = state.boards_mut();
+    let mut boards = boards.lock().unwrap();
 
     let board = boards
         .get_board_mut(board_id)
-        .ok_or(CardTagError::NotFound(status::NotFound("No such board")))?;
+        .ok_or(CardTagError::NotFound(status::NotFound(
+            "no such board".to_owned(),
+        )))?;
 
-    if board.delete_card_tag(card_id, &new_tag) {
-        Ok(())
-    } else {
-        // TODO: Distinguish between different error cases.
-        Err(CardTagError::BadRequest(status::BadRequest(Some(
-            "Card not found or does not have the specified tag",
-        ))))
-    }
+    board
+        .delete_card_tag(card_id, &new_tag)
+        .map_err(|err| CardTagError::BadRequest(status::BadRequest(Some(err.to_string()))))
 }
 
 impl<'r> FromParam<'r> for BoardId {

@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -33,7 +33,7 @@ pub struct Board {
     id: BoardId,
     pub name: String,
 
-    cards: Vec<Card>,
+    cards: HashMap<CardId, Card>,
     next_card_id: CardId,
 }
 
@@ -43,7 +43,7 @@ impl Board {
             id,
             name: format!("Board {}", id.as_integer()),
 
-            cards: Vec::new(),
+            cards: HashMap::new(),
             next_card_id: CardId::new(0),
         }
     }
@@ -58,22 +58,21 @@ impl Board {
         self.id
     }
 
-    pub fn cards(&self) -> &Vec<Card> {
+    pub fn cards(&self) -> &HashMap<CardId, Card> {
         &self.cards
     }
 
     /// Creates a new card with no tags and no text, and returns its ID.
     pub fn new_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
-        self.cards.push(Card::new(id));
+        self.cards.insert(id, Card::new(id));
 
         id
     }
 
     /// Deletes a card from the board.
     pub fn delete_card(&mut self, id: CardId) -> Result<(), BoardError> {
-        if let Some(index) = self.get_index_of_card(id) {
-            self.cards.remove(index);
+        if let Some(_) = self.cards.remove(&id) {
             Ok(())
         } else {
             Err(BoardError::NoSuchCard(id))
@@ -83,21 +82,13 @@ impl Board {
     /// Returns a reference to the card with the specified ID, or `None` if
     /// the specified card does not exist.
     pub fn get_card(&self, id: CardId) -> Option<&Card> {
-        if let Some(index) = self.get_index_of_card(id) {
-            Some(&self.cards[index])
-        } else {
-            None
-        }
+        self.cards.get(&id)
     }
 
     /// Returns a mutable reference to the card with the specified ID, or
     /// `None` if the specified card does not exist.
     pub fn get_card_mut(&mut self, id: CardId) -> Option<&mut Card> {
-        if let Some(index) = self.get_index_of_card(id) {
-            Some(&mut self.cards[index])
-        } else {
-            None
-        }
+        self.cards.get_mut(&id)
     }
 
     /// Returns `false` if no card with the given ID exists in the board.
@@ -126,18 +117,6 @@ impl Board {
         let card = self.get_card_mut(id).ok_or(BoardError::NoSuchCard(id))?;
         card.delete_tag(tag)?;
         Ok(())
-    }
-
-    /// Given a `CardId`, return the index of the corresponding card in the
-    /// `cards` vector, or `None` if there is no such card.
-    fn get_index_of_card(&self, id: CardId) -> Option<usize> {
-        for (i, card) in self.cards.iter().enumerate() {
-            if card.id() == id {
-                return Some(i);
-            }
-        }
-
-        None
     }
 }
 

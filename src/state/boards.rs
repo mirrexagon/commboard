@@ -45,6 +45,10 @@ impl Boards {
         }
     }
 
+    pub fn get_boards(&self) -> &[Board] {
+        &self.boards[..]
+    }
+
     /// Returns a reference to the board with the specified ID, or `None` if
     /// the specified board does not exist.
     pub fn get_board(&self, id: BoardId) -> Option<&Board> {

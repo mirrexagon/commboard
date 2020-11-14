@@ -26,8 +26,8 @@ TODO: Tags have colors that are based on category. Initial color is generated fr
 ## Filtering
 By default, all cards are visible. Which cards are visible can be filtered using a query based on tags.
 
-- `status`: Show only cards with at least one tag with the `status` category.
-- `!status`: Show only cards that do not have any tags with the `status` category.
+- `status:`: Show only cards with at least one tag with the `status` category.
+- `!status:`: Show only cards that do not have any tags with the `status` category.
 - `status:done`: Show only cards that have the exact tag `status:done`.
 - `!status:done`: Show only cards that do not have the exact tag `status:done`.
 
