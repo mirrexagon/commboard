@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -6,9 +7,12 @@ use thiserror::Error;
 mod card;
 mod tag;
 
+mod bycategory;
+
 pub use card::{Card, CardId};
 pub use tag::Tag;
 
+use bycategory::{ByCategory, ByCategoryError};
 use card::CardError;
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -28,6 +32,12 @@ impl BoardId {
     }
 }
 
+impl fmt::Display for BoardId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_integer())
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
     id: BoardId,
@@ -35,9 +45,15 @@ pub struct Board {
 
     cards: HashMap<CardId, Card>,
     next_card_id: CardId,
+
+    /// Default ordering of cards if no category view is active.
+    default_order: Vec<CardId>,
+
+    cards_by_category: ByCategory,
 }
 
 impl Board {
+    /// Creates a new empty board.
     pub fn new(id: BoardId) -> Self {
         Self {
             id,
@@ -45,6 +61,9 @@ impl Board {
 
             cards: HashMap::new(),
             next_card_id: CardId::new(0),
+
+            default_order: Vec::new(),
+            cards_by_category: ByCategory::new(),
         }
     }
 
@@ -62,17 +81,27 @@ impl Board {
         &self.cards
     }
 
+    pub fn default_order(&self) -> &[CardId] {
+        &self.default_order
+    }
+
+    pub fn cards_by_category(&self) -> &ByCategory {
+        &self.cards_by_category
+    }
+
+    // -- Cards --
     /// Creates a new card with no tags and no text, and returns its ID.
     pub fn new_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
         self.cards.insert(id, Card::new(id));
-
         id
     }
 
     /// Deletes a card from the board.
     pub fn delete_card(&mut self, id: CardId) -> Result<(), BoardError> {
         if let Some(_) = self.cards.remove(&id) {
+            let index = self.default_order.iter().position(|&i| i == id).unwrap();
+            self.default_order.remove(index);
             Ok(())
         } else {
             Err(BoardError::NoSuchCard(id))
@@ -91,7 +120,6 @@ impl Board {
         self.cards.get_mut(&id)
     }
 
-    /// Returns `false` if no card with the given ID exists in the board.
     pub fn set_card_text<S: Into<String>>(
         &mut self,
         id: CardId,
@@ -105,10 +133,29 @@ impl Board {
         }
     }
 
+    pub fn move_card_within_default_order(
+        &mut self,
+        id: CardId,
+        new_index: usize,
+    ) -> Result<(), BoardError> {
+        if new_index >= self.default_order.len() {
+            return Err(BoardError::IndexOutOfBounds(new_index));
+        }
+
+        if let Some(old_index) = self.default_order.iter().position(|&i| i == id) {
+            self.default_order.remove(old_index);
+            self.default_order.insert(new_index, id);
+            Ok(())
+        } else {
+            Err(BoardError::NoSuchCard(id))
+        }
+    }
+
     /// Adds a tag to a card in the board.
     pub fn add_card_tag(&mut self, id: CardId, tag: &Tag) -> Result<(), BoardError> {
         let card = self.get_card_mut(id).ok_or(BoardError::NoSuchCard(id))?;
         card.add_tag(tag.clone())?;
+        self.cards_by_category.add_card_tag(id, tag)?;
         Ok(())
     }
 
@@ -116,15 +163,24 @@ impl Board {
     pub fn delete_card_tag(&mut self, id: CardId, tag: &Tag) -> Result<(), BoardError> {
         let card = self.get_card_mut(id).ok_or(BoardError::NoSuchCard(id))?;
         card.delete_tag(tag)?;
+        self.cards_by_category.delete_card_tag(id, tag)?;
         Ok(())
     }
+
+    // -- Category rearrangement --
 }
 
 #[derive(Debug, Error)]
 pub enum BoardError {
-    #[error("no such card in board")]
+    #[error("no such card with ID '{0}' in board")]
     NoSuchCard(CardId),
+
+    #[error("supplied index '{0}' was out of bounds")]
+    IndexOutOfBounds(usize),
 
     #[error("card error: {0}")]
     CardError(#[from] CardError),
+
+    #[error("bycategory error: {0}")]
+    ByCategoryError(#[from] ByCategoryError),
 }
