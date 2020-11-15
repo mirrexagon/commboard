@@ -94,6 +94,7 @@ impl Board {
     pub fn new_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
         self.cards.insert(id, Card::new(id));
+        self.default_order.push(id);
         id
     }
 

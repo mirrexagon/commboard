@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import styles from './BoardViewDefault.css';
 
-import Card from './Card.js';
+import CardColumn from './CardColumn.js';
 
 class BoardViewDefault extends React.Component {
     constructor(props) {
@@ -24,8 +24,10 @@ class BoardViewDefault extends React.Component {
 
     render() {
         if (this.state.boardViewDefault) {
-            const card = this.state.boardViewDefault.board.cards[0];
-            return <Card text={card.text} tags={card.tags} />;
+            const cards = this.state.boardViewDefault.default_order
+                .map((cardId) => this.state.boardViewDefault.board.cards[cardId]);
+
+            return <CardColumn cards={cards} />
         } else {
             return null;
         }

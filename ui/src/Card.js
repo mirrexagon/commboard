@@ -1,11 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import styles from './Card.css';
+import './Card.css';
 
 class Card extends React.Component {
     render() {
-        return (<div>
-            <p>{this.props.text}</p>
+        let tags = this.props.tags.map((tag) => <li>{tag}</li>);
+
+        return (<div className="card-container">
+            <p className="card-text">{this.props.text}</p>
+            <ul className="tag-list">{tags}</ul>
         </div>);
     }
 }
