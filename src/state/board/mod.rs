@@ -48,7 +48,7 @@ pub struct Board {
 
     /// Map of tags to lists of cards that have them.
     /// The lists are the order of the associated column.
-    card_tags: HashMap<Tag, Vec<CardId>>,
+    card_tags: Vec<(Tag, Vec<CardId>)>,
 }
 
 impl Board {
@@ -62,7 +62,7 @@ impl Board {
             next_card_id: CardId::new(0),
 
             default_card_order: Vec::new(),
-            card_tags: HashMap::new(),
+            card_tags: Vec::new(),
         }
     }
 
@@ -84,7 +84,7 @@ impl Board {
         &self.default_card_order
     }
 
-    pub fn card_tags(&self) -> &HashMap<Tag, Vec<CardId>> {
+    pub fn card_tags(&self) -> &Vec<(Tag, Vec<CardId>)> {
         &self.card_tags
     }
 
@@ -116,8 +116,15 @@ impl Board {
 
         // Remove from tags lists.
         for tag in self.cards[&id].get_tags() {
-            let pos = self.card_tags[tag].iter().position(|i| *i == id).unwrap();
-            self.card_tags.get_mut(tag).unwrap().remove(pos);
+            let tag_list_index = self.get_tag_list_index(tag).unwrap();
+            {
+                let pos = self.card_tags[tag_list_index]
+                    .1
+                    .iter()
+                    .position(|i| *i == id)
+                    .unwrap();
+                self.card_tags[tag_list_index].1.remove(pos);
+            }
         }
 
         // Remove from main hashmap.
@@ -176,11 +183,14 @@ impl Board {
         card.add_tag(tag.clone())?;
 
         // Add card to tag list, creating the list for this tag if it doesn't exist.
-        if !self.card_tags.contains_key(tag) {
-            self.card_tags.insert(tag.clone(), Vec::new());
+        let mut tag_list_index = self.get_tag_list_index(tag);
+
+        if let None = tag_list_index {
+            tag_list_index = Some(self.card_tags.len());
+            self.card_tags.push((tag.clone(), Vec::new()));
         }
 
-        self.card_tags.get_mut(tag).unwrap().push(id);
+        self.card_tags[tag_list_index.unwrap()].1.push(id);
 
         Ok(())
     }
@@ -192,17 +202,25 @@ impl Board {
         card.delete_tag(tag)?;
 
         // Delete card from tag list, removing the tag list if it is now empty.
+        let tag_list_index = self.get_tag_list_index(tag).unwrap();
         {
-            let pos = self.card_tags[tag].iter().position(|i| *i == id).unwrap();
-
-            self.card_tags.get_mut(tag).unwrap().remove(pos);
+            let pos = self.card_tags[tag_list_index]
+                .1
+                .iter()
+                .position(|i| *i == id)
+                .unwrap();
+            self.card_tags[tag_list_index].1.remove(pos);
         }
 
-        if self.card_tags[tag].is_empty() {
-            self.card_tags.remove(tag);
+        if self.card_tags[tag_list_index].1.is_empty() {
+            self.card_tags.remove(tag_list_index);
         }
 
         Ok(())
+    }
+
+    fn get_tag_list_index(&self, tag: &Tag) -> Option<usize> {
+        self.card_tags.iter().position(|pair| pair.0 == *tag)
     }
 }
 
