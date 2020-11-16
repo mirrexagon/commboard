@@ -27,14 +27,14 @@ impl<'a> ApiBoards<'a> {
 #[derive(Debug, Serialize)]
 pub struct ApiBoardViewDefault<'a> {
     board: ApiBoard<'a>,
-    default_order: &'a [CardId],
+    default_card_order: &'a [CardId],
 }
 
 impl<'a> ApiBoardViewDefault<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>) -> Self {
         Self {
             board: ApiBoard::new(board),
-            default_order: board.default_order(),
+            default_card_order: board.default_card_order(),
         }
     }
 }

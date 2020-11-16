@@ -7,12 +7,9 @@ use thiserror::Error;
 mod card;
 mod tag;
 
-mod bycategory;
-
 pub use card::{Card, CardId};
 pub use tag::Tag;
 
-use bycategory::{ByCategory, ByCategoryError};
 use card::CardError;
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -47,9 +44,11 @@ pub struct Board {
     next_card_id: CardId,
 
     /// Default ordering of cards if no category view is active.
-    default_order: Vec<CardId>,
+    default_card_order: Vec<CardId>,
 
-    cards_by_category: ByCategory,
+    /// Map of tags to lists of cards that have them.
+    /// The lists are the order of the associated column.
+    card_tags: HashMap<Tag, Vec<CardId>>,
 }
 
 impl Board {
@@ -62,8 +61,8 @@ impl Board {
             cards: HashMap::new(),
             next_card_id: CardId::new(0),
 
-            default_order: Vec::new(),
-            cards_by_category: ByCategory::new(),
+            default_card_order: Vec::new(),
+            card_tags: HashMap::new(),
         }
     }
 
@@ -81,12 +80,12 @@ impl Board {
         &self.cards
     }
 
-    pub fn default_order(&self) -> &[CardId] {
-        &self.default_order
+    pub fn default_card_order(&self) -> &[CardId] {
+        &self.default_card_order
     }
 
-    pub fn cards_by_category(&self) -> &ByCategory {
-        &self.cards_by_category
+    pub fn card_tags(&self) -> &HashMap<Tag, Vec<CardId>> {
+        &self.card_tags
     }
 
     // -- Cards --
@@ -94,19 +93,37 @@ impl Board {
     pub fn new_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
         self.cards.insert(id, Card::new(id));
-        self.default_order.push(id);
+        self.default_card_order.push(id);
         id
     }
 
     /// Deletes a card from the board.
     pub fn delete_card(&mut self, id: CardId) -> Result<(), BoardError> {
-        if let Some(_) = self.cards.remove(&id) {
-            let index = self.default_order.iter().position(|&i| i == id).unwrap();
-            self.default_order.remove(index);
-            Ok(())
-        } else {
-            Err(BoardError::NoSuchCard(id))
+        if !self.cards.contains_key(&id) {
+            return Err(BoardError::NoSuchCard(id));
         }
+
+        // Remove from default order.
+        {
+            let pos = self
+                .default_card_order
+                .iter()
+                .position(|i| *i == id)
+                .unwrap();
+
+            self.default_card_order.remove(pos);
+        }
+
+        // Remove from tags lists.
+        for tag in self.cards[&id].get_tags() {
+            let pos = self.card_tags[tag].iter().position(|i| *i == id).unwrap();
+            self.card_tags.get_mut(tag).unwrap().remove(pos);
+        }
+
+        // Remove from main hashmap.
+        self.cards.remove(&id);
+
+        Ok(())
     }
 
     /// Returns a reference to the card with the specified ID, or `None` if
@@ -134,18 +151,18 @@ impl Board {
         }
     }
 
-    pub fn move_card_within_default_order(
+    pub fn move_card_within_default_card_order(
         &mut self,
         id: CardId,
         new_index: usize,
     ) -> Result<(), BoardError> {
-        if new_index >= self.default_order.len() {
+        if new_index >= self.default_card_order.len() {
             return Err(BoardError::IndexOutOfBounds(new_index));
         }
 
-        if let Some(old_index) = self.default_order.iter().position(|&i| i == id) {
-            self.default_order.remove(old_index);
-            self.default_order.insert(new_index, id);
+        if let Some(old_index) = self.default_card_order.iter().position(|&i| i == id) {
+            self.default_card_order.remove(old_index);
+            self.default_card_order.insert(new_index, id);
             Ok(())
         } else {
             Err(BoardError::NoSuchCard(id))
@@ -154,21 +171,39 @@ impl Board {
 
     /// Adds a tag to a card in the board.
     pub fn add_card_tag(&mut self, id: CardId, tag: &Tag) -> Result<(), BoardError> {
+        // Delete tag from card object.
         let card = self.get_card_mut(id).ok_or(BoardError::NoSuchCard(id))?;
         card.add_tag(tag.clone())?;
-        self.cards_by_category.add_card_tag(id, tag)?;
+
+        // Add card to tag list, creating the list for this tag if it doesn't exist.
+        if !self.card_tags.contains_key(tag) {
+            self.card_tags.insert(tag.clone(), Vec::new());
+        }
+
+        self.card_tags.get_mut(tag).unwrap().push(id);
+
         Ok(())
     }
 
     /// Deletes a tag from a card in the board.
     pub fn delete_card_tag(&mut self, id: CardId, tag: &Tag) -> Result<(), BoardError> {
+        // Delete tag from card object.
         let card = self.get_card_mut(id).ok_or(BoardError::NoSuchCard(id))?;
         card.delete_tag(tag)?;
-        self.cards_by_category.delete_card_tag(id, tag)?;
+
+        // Delete card from tag list, removing the tag list if it is now empty.
+        {
+            let pos = self.card_tags[tag].iter().position(|i| *i == id).unwrap();
+
+            self.card_tags.get_mut(tag).unwrap().remove(pos);
+        }
+
+        if self.card_tags[tag].is_empty() {
+            self.card_tags.remove(tag);
+        }
+
         Ok(())
     }
-
-    // -- Category rearrangement --
 }
 
 #[derive(Debug, Error)]
@@ -181,7 +216,4 @@ pub enum BoardError {
 
     #[error("card error: {0}")]
     CardError(#[from] CardError),
-
-    #[error("bycategory error: {0}")]
-    ByCategoryError(#[from] ByCategoryError),
 }
