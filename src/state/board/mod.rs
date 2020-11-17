@@ -46,9 +46,33 @@ pub struct Board {
     /// Default ordering of cards if no category view is active.
     default_card_order: Vec<CardId>,
 
-    /// Map of tags to lists of cards that have them.
-    /// The lists are the order of the associated column.
-    card_tags: Vec<(Tag, Vec<CardId>)>,
+    categories: Vec<Category>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Category {
+    /// The category part of the tag.
+    name: String,
+    columns: Vec<Column>,
+}
+
+impl Category {
+    fn get_column_for_tag_mut(&mut self, tag: &Tag) -> Option<&mut Column> {
+        self.columns
+            .iter_mut()
+            .find(|column| column.name == tag.category())
+    }
+
+    fn add_card_tag(&mut self, card_id: CardId, tag: &Tag) -> Result<(), BoardError> {
+        todo!()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Column {
+    /// The value part of the tag.
+    name: String,
+    cards: Vec<CardId>,
 }
 
 impl Board {
@@ -219,7 +243,7 @@ impl Board {
         Ok(())
     }
 
-    fn get_tag_list_index(&self, tag: &Tag) -> Option<usize> {
+    fn get_category_for_tag(&self, tag: &Tag) -> Option<usize> {
         self.card_tags.iter().position(|pair| pair.0 == *tag)
     }
 }
