@@ -86,7 +86,7 @@ impl Board {
             next_card_id: CardId::new(0),
 
             default_card_order: Vec::new(),
-            card_tags: Vec::new(),
+            categories: Vec::new(),
         }
     }
 
@@ -108,8 +108,8 @@ impl Board {
         &self.default_card_order
     }
 
-    pub fn card_tags(&self) -> &Vec<(Tag, Vec<CardId>)> {
-        &self.card_tags
+    pub fn categories(&self) -> &[Category] {
+        &self.categories
     }
 
     // -- Cards --
