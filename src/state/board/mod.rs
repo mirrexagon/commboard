@@ -71,7 +71,7 @@ impl Category {
             Some(column) => column,
             None => {
                 self.columns.push(Column {
-                    name: tag.category().to_owned(),
+                    name: tag.value().to_owned(),
                     cards: Vec::new(),
                 });
 
