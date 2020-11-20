@@ -30,28 +30,44 @@ fn main() {
 
         {
             let card1 = board.new_card();
-            board.set_card_text(card1, "Task 1");
+            board.set_card_text(card1, "Task 1").unwrap();
 
-            board.add_card_tag(card1, &Tag::new("status:todo").unwrap());
-            board.add_card_tag(card1, &Tag::new("artist:tester").unwrap());
-            board.add_card_tag(card1, &Tag::new("rating:bad").unwrap());
+            board
+                .add_card_tag(card1, &Tag::new("status:todo").unwrap())
+                .unwrap();
+            board
+                .add_card_tag(card1, &Tag::new("artist:tester").unwrap())
+                .unwrap();
+            board
+                .add_card_tag(card1, &Tag::new("rating:bad").unwrap())
+                .unwrap();
         }
 
         {
             let card1 = board.new_card();
-            board.set_card_text(card1, "Task 2");
+            board.set_card_text(card1, "Task 2").unwrap();
 
-            board.add_card_tag(card1, &Tag::new("status:in-progress").unwrap());
-            board.add_card_tag(card1, &Tag::new("artist:tester").unwrap());
-            board.add_card_tag(card1, &Tag::new("rating:bad").unwrap());
+            board
+                .add_card_tag(card1, &Tag::new("status:in-progress").unwrap())
+                .unwrap();
+            board
+                .add_card_tag(card1, &Tag::new("artist:tester").unwrap())
+                .unwrap();
+            board
+                .add_card_tag(card1, &Tag::new("rating:bad").unwrap())
+                .unwrap();
         }
 
         {
             let card1 = board.new_card();
-            board.set_card_text(card1, "Task 3");
+            board.set_card_text(card1, "Task 3").unwrap();
 
-            board.add_card_tag(card1, &Tag::new("status:in-progress").unwrap());
-            board.add_card_tag(card1, &Tag::new("rating:good").unwrap());
+            board
+                .add_card_tag(card1, &Tag::new("status:in-progress").unwrap())
+                .unwrap();
+            board
+                .add_card_tag(card1, &Tag::new("rating:good").unwrap())
+                .unwrap();
         }
     }
 

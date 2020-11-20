@@ -65,7 +65,7 @@ impl Category {
         &self.columns
     }
 
-    fn add_card_tag(&mut self, card_id: CardId, tag: &Tag) -> Result<(), BoardError> {
+    fn add_card_tag(&mut self, card_id: CardId, tag: &Tag) {
         // If the column doesn't exist, create it.
         let column = match self.get_column_mut(tag) {
             Some(column) => column,
@@ -80,33 +80,33 @@ impl Category {
         };
 
         column.add_card(card_id);
-
-        Ok(())
     }
 
-    fn delete_card_tag(&mut self, card_id: CardId, tag: &Tag) -> Result<(), BoardError> {
+    fn delete_card_tag(&mut self, card_id: CardId, tag: &Tag) {
         if let Some(column_pos) = self.get_column_position(tag) {
-            self.columns[column_pos].delete_card(card_id)?;
+            self.columns[column_pos].delete_card(card_id);
 
             // If the column has no cards now, remove it.
             if self.columns[column_pos].cards.is_empty() {
                 self.columns.remove(column_pos);
             }
-
-            Ok(())
         } else {
-            Err(BoardError::NoSuchCard(card_id))
+            panic!(
+                "tried to delete card '{}' from column '{}' but that column does not exist",
+                card_id,
+                tag.value()
+            );
         }
     }
 
-    /// Index one past the end of the array (ie. the length) means put it at the end, instead of inserting between columns.
+    /// Position one past the end of the array (ie. the length) means put it at the end, instead of inserting between columns.
     fn move_column(&mut self, tag: &Tag, to_pos: usize) -> Result<(), BoardError> {
         let from_pos = self
             .get_column_position(tag)
             .ok_or(BoardError::NoSuchColumn)?;
 
         if to_pos > self.columns.len() {
-            return Err(BoardError::IndexOutOfBounds(to_pos));
+            return Err(BoardError::PositionOutOfBounds(to_pos));
         }
 
         let column = self.columns.remove(from_pos);
@@ -120,6 +120,17 @@ impl Category {
         Ok(())
     }
 
+    fn move_card_in_column(
+        &mut self,
+        card_id: CardId,
+        tag: &Tag,
+        to_pos: usize,
+    ) -> Result<(), BoardError> {
+        let column = self.get_column_mut(tag).ok_or(BoardError::NoSuchColumn)?;
+
+        column.move_card(card_id, to_pos)
+    }
+
     fn get_column_mut(&mut self, tag: &Tag) -> Option<&mut Column> {
         match self.get_column_position(tag) {
             Some(pos) => Some(&mut self.columns[pos]),
@@ -127,7 +138,15 @@ impl Category {
         }
     }
 
+    fn has_column(&mut self, tag: &Tag) -> bool {
+        assert!(tag.category() == self.name);
+
+        self.get_column_position(tag).is_some()
+    }
+
     fn get_column_position(&self, tag: &Tag) -> Option<usize> {
+        assert!(tag.category() == self.name);
+
         self.columns
             .iter()
             .position(|column| column.name == tag.value())
@@ -151,26 +170,32 @@ impl Column {
     }
 
     fn add_card(&mut self, card_id: CardId) {
+        if self.has_card(card_id) {
+            panic!(
+                "tried to add card '{}' to column '{}' but the card was already there",
+                card_id, self.name
+            );
+        }
+
         self.cards.push(card_id);
     }
 
-    fn delete_card(&mut self, card_id: CardId) -> Result<(), BoardError> {
+    fn delete_card(&mut self, card_id: CardId) {
         if let Some(pos) = self.get_card_position(card_id) {
             self.cards.remove(pos);
-            Ok(())
         } else {
-            Err(BoardError::NoSuchCard(card_id))
+            panic!("tried to delete card '{}' from column '{}' but the card was not there");
         }
     }
 
-    /// Index one past the end of the array (ie. the length) means put it at the end, instead of inserting between cards.
+    /// Position one past the end of the array (ie. the length) means put it at the end, instead of inserting between cards.
     fn move_card(&mut self, card_id: CardId, to_pos: usize) -> Result<(), BoardError> {
         let from_pos = self
             .get_card_position(card_id)
             .ok_or(BoardError::NoSuchCard(card_id))?;
 
         if to_pos > self.cards.len() {
-            return Err(BoardError::IndexOutOfBounds(to_pos));
+            return Err(BoardError::PositionOutOfBounds(to_pos));
         }
 
         self.cards.remove(from_pos);
@@ -182,6 +207,10 @@ impl Column {
         }
 
         Ok(())
+    }
+
+    fn has_card(&self, card_id: CardId) -> bool {
+        self.get_card_position(card_id).is_some()
     }
 
     fn get_card_position(&self, card_id: CardId) -> Option<usize> {
@@ -226,6 +255,13 @@ impl Board {
         &self.categories
     }
 
+    pub fn get_category(&self, category_name: &str) -> Option<&Category> {
+        match self.get_category_position(category_name) {
+            Some(pos) => Some(&self.categories[pos]),
+            None => None,
+        }
+    }
+
     // -- Cards --
     /// Creates a new card with no tags and no text, and returns its ID.
     pub fn new_card(&mut self) -> CardId {
@@ -260,12 +296,13 @@ impl Board {
         }
 
         for tag in card_tags.iter() {
-            let category = self.get_category_mut(tag).expect(&format!(
+            let category = self.get_category_by_tag_mut(tag).expect(&format!(
                 "tried to delete card '{}' from board, but it had tag '{}' and its category did not exist",
                 card_id,
                 tag.tag()
             ));
-            category.delete_card_tag(card_id, tag).expect(&format!("tried to delete card '{}' from board, but it had tag '{}' and its column in the category did not exist or did not contain the card", card_id, tag.tag()));
+
+            category.delete_card_tag(card_id, tag);
         }
 
         // Remove from main hashmap.
@@ -305,7 +342,7 @@ impl Board {
         new_index: usize,
     ) -> Result<(), BoardError> {
         if new_index >= self.default_card_order.len() {
-            return Err(BoardError::IndexOutOfBounds(new_index));
+            return Err(BoardError::PositionOutOfBounds(new_index));
         }
 
         if let Some(old_index) = self.default_card_order.iter().position(|&i| i == id) {
@@ -317,6 +354,57 @@ impl Board {
         }
     }
 
+    pub fn move_category(&mut self, category_name: &str, to_pos: usize) -> Result<(), BoardError> {
+        let from_pos = self
+            .get_category_position(category_name)
+            .ok_or(BoardError::NoSuchCategory)?;
+
+        if to_pos > self.categories.len() {
+            return Err(BoardError::PositionOutOfBounds(to_pos));
+        }
+
+        let category = self.categories.remove(from_pos);
+
+        if to_pos == self.categories.len() {
+            self.categories.push(category);
+        } else {
+            self.categories.insert(to_pos, category);
+        }
+
+        Ok(())
+    }
+
+    pub fn move_column_in_category(&mut self, tag: &Tag, to_pos: usize) -> Result<(), BoardError> {
+        let category = self
+            .get_category_by_tag_mut(tag)
+            .ok_or(BoardError::NoSuchCategory)?;
+
+        category.move_column(tag, to_pos)
+    }
+
+    pub fn move_card_in_column(
+        &mut self,
+        card_id: CardId,
+        tag: &Tag,
+        to_pos: usize,
+    ) -> Result<(), BoardError> {
+        {
+            let card = self
+                .get_card(card_id)
+                .ok_or(BoardError::NoSuchCard(card_id))?;
+
+            if !card.has_tag(tag) {
+                return Err(BoardError::CardDoesntHaveTag);
+            }
+        }
+
+        let category = self
+            .get_category_by_tag_mut(tag)
+            .ok_or(BoardError::NoSuchCategory)?;
+
+        category.move_card_in_column(card_id, tag, to_pos)
+    }
+
     /// Adds a tag to a card in the board.
     pub fn add_card_tag(&mut self, card_id: CardId, tag: &Tag) -> Result<(), BoardError> {
         // Add tag to card object.
@@ -326,7 +414,7 @@ impl Board {
         card.add_tag(tag.clone())?;
 
         // Add card to its category, creating the category for this tag if it doesn't exist.
-        let category = match self.get_category_mut(tag) {
+        let category = match self.get_category_by_tag_mut(tag) {
             Some(category) => category,
             None => {
                 self.categories.push(Category {
@@ -352,19 +440,13 @@ impl Board {
         card.delete_tag(tag)?;
 
         // Delete the card from its category/column.
-        let category_pos = self.get_category_position(tag).expect(&format!(
+        let category_pos = self.get_category_position_by_tag(tag).expect(&format!(
             "tried to delete card '{}' tag '{}' from board, but the tag's category did not exist",
             card_id,
             tag.tag()
         ));
 
-        self.categories[category_pos]
-            .delete_card_tag(card_id, tag)
-            .expect(&format!(
-                "tried to delete card '{}' tag '{}' from board, but the tag's column did not exist",
-                card_id,
-                tag.tag()
-            ));
+        self.categories[category_pos].delete_card_tag(card_id, tag);
 
         // If the category has no columns now, remove it.
         if self.categories[category_pos].columns.is_empty() {
@@ -374,14 +456,31 @@ impl Board {
         Ok(())
     }
 
-    fn get_category_mut(&mut self, tag: &Tag) -> Option<&mut Category> {
-        match self.get_category_position(tag) {
+    fn get_category_mut(&mut self, category_name: &str) -> Option<&mut Category> {
+        match self.get_category_position(category_name) {
             Some(pos) => Some(&mut self.categories[pos]),
             None => None,
         }
     }
 
-    fn get_category_position(&self, tag: &Tag) -> Option<usize> {
+    fn has_category(&self, category_name: &str) -> bool {
+        self.get_category_position(category_name).is_some()
+    }
+
+    fn get_category_position(&self, category_name: &str) -> Option<usize> {
+        self.categories
+            .iter()
+            .position(|category| category.name() == category_name)
+    }
+
+    fn get_category_by_tag_mut(&mut self, tag: &Tag) -> Option<&mut Category> {
+        match self.get_category_position_by_tag(tag) {
+            Some(pos) => Some(&mut self.categories[pos]),
+            None => None,
+        }
+    }
+
+    fn get_category_position_by_tag(&self, tag: &Tag) -> Option<usize> {
         self.categories
             .iter()
             .position(|category| category.name == tag.category())
@@ -393,11 +492,17 @@ pub enum BoardError {
     #[error("no such card with ID '{0}'")]
     NoSuchCard(CardId),
 
-    #[error("supplied index '{0}' was out of bounds")]
-    IndexOutOfBounds(usize),
+    #[error("no such category")]
+    NoSuchCategory,
 
-    #[error("column does not exist in category")]
+    #[error("no such column")]
     NoSuchColumn,
+
+    #[error("supplied position '{0}' was out of bounds")]
+    PositionOutOfBounds(usize),
+
+    #[error("card doesn't have the specified tag")]
+    CardDoesntHaveTag,
 
     #[error("card error: {0}")]
     CardError(#[from] CardError),

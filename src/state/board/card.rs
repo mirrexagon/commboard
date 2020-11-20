@@ -77,6 +77,10 @@ impl Card {
         tags_vec
     }
 
+    pub fn has_tag(&self, tag: &Tag) -> bool {
+        self.tags.contains(tag)
+    }
+
     /// Returns `true` if the card has at least one tag with the given category.
     pub fn has_category(&self, category: &str) -> bool {
         for tag in &self.tags {

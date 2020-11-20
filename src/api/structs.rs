@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 
 use crate::state::{
-    board::{Board, BoardId, Card, CardId, Tag},
+    board::{Board, BoardId, Card, CardId, Category, Column, Tag},
     boards::Boards,
 };
 
@@ -35,6 +35,25 @@ impl<'a> ApiBoardViewDefault<'a> {
         Self {
             board: ApiBoard::new(board),
             default_card_order: board.default_card_order(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ApiBoardViewByCategory<'a> {
+    board: ApiBoard<'a>,
+    category: &'a Category,
+}
+
+impl<'a> ApiBoardViewByCategory<'a> {
+    pub fn new(board: &'a Board, category_name: &str, filter: Option<&str>) -> Option<Self> {
+        if let Some(category) = board.get_category(category_name) {
+            Some(Self {
+                board: ApiBoard::new(board),
+                category: category,
+            })
+        } else {
+            None
         }
     }
 }

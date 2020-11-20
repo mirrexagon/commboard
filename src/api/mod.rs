@@ -73,12 +73,12 @@ pub fn set_board_name(
 #[get("/boards/<board_id>?<filter>")]
 pub fn get_board_view_default(
     boards: State<Mutex<Boards>>,
-    board_id: u64,
+    board_id: BoardId,
     filter: Option<String>,
 ) -> Option<Json<String>> {
     let mut boards = boards.lock().unwrap();
 
-    let board = boards.get_board_mut(BoardId::new(board_id))?;
+    let board = boards.get_board_mut(board_id)?;
 
     Some(Json(
         serde_json::to_string(&ApiBoardViewDefault::new(board, filter.as_deref())).unwrap(),
@@ -91,8 +91,20 @@ pub fn get_board_view_by_category(
     board_id: BoardId,
     filter: Option<String>,
     category: String,
-) -> status::Custom<()> {
-    status::Custom(Status::NotImplemented, ())
+) -> Option<Json<String>> {
+    let mut boards = boards.lock().unwrap();
+
+    let board = boards.get_board_mut(board_id)?;
+
+    if let Some(api_board_view_by_category) =
+        ApiBoardViewByCategory::new(board, &category, filter.as_deref())
+    {
+        Some(Json(
+            serde_json::to_string(&api_board_view_by_category).unwrap(),
+        ))
+    } else {
+        None
+    }
 }
 
 #[post("/boards/<board_id>/cards")]
