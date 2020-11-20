@@ -66,6 +66,10 @@ impl Category {
     fn add_card_tag(&mut self, card_id: CardId, tag: &Tag) -> Result<(), BoardError> {
         todo!()
     }
+
+    fn delete_card_tag(&mut self, id: CardId, tag: &Tag) -> Result<(), BoardError> {
+        todo!()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
