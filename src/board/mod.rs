@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -12,32 +11,8 @@ pub use tag::Tag;
 
 use card::CardError;
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct BoardId(u64);
-
-impl BoardId {
-    pub fn new(id: u64) -> BoardId {
-        BoardId(id)
-    }
-
-    pub fn next(self) -> BoardId {
-        BoardId(self.0 + 1)
-    }
-
-    pub fn as_integer(&self) -> u64 {
-        self.0
-    }
-}
-
-impl fmt::Display for BoardId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_integer())
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
-    id: BoardId,
     pub name: String,
 
     cards: HashMap<CardId, Card>,
@@ -220,10 +195,9 @@ impl Column {
 
 impl Board {
     /// Creates a new empty board.
-    pub fn new(id: BoardId) -> Self {
+    pub fn new() -> Self {
         Self {
-            id,
-            name: format!("Board {}", id.as_integer()),
+            name: format!("New Board"),
 
             cards: HashMap::new(),
             next_card_id: CardId::new(0),
@@ -237,10 +211,6 @@ impl Board {
         let next_card_id = self.next_card_id;
         self.next_card_id = self.next_card_id.next();
         next_card_id
-    }
-
-    pub fn id(&self) -> BoardId {
-        self.id
     }
 
     pub fn cards(&self) -> &HashMap<CardId, Card> {

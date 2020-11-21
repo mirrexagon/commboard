@@ -4,10 +4,10 @@ use std::sync::Mutex;
 
 use rocket::{get, response::content, routes};
 
-use state::{board::Tag, boards::Boards};
+use board::{Board, Tag};
 
 mod api;
-mod state;
+mod board;
 
 #[get("/")]
 fn index() -> content::Html<&'static str> {
@@ -22,11 +22,9 @@ fn index_bundle() -> content::JavaScript<&'static str> {
 }
 
 fn main() {
-    let boards = Mutex::new(Boards::new());
+    let board = Mutex::new(Board::new());
     {
-        let mut boards = boards.lock().unwrap();
-        let board_id = boards.new_board();
-        let board = boards.get_board_mut(board_id).unwrap();
+        let mut board = board.lock().unwrap();
 
         {
             let card1 = board.new_card();
@@ -77,10 +75,6 @@ fn main() {
             routes![
                 index,
                 index_bundle,
-                api::get_boards,
-                api::add_board,
-                api::delete_board,
-                api::set_board_name,
                 api::get_board_view_default,
                 api::get_board_view_by_category,
                 api::add_card,
@@ -90,6 +84,6 @@ fn main() {
                 api::delete_card_tag,
             ],
         )
-        .manage(boards)
+        .manage(board)
         .launch();
 }
