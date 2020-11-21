@@ -29,7 +29,7 @@ class BoardPanel extends React.Component {
         }
 
         return (<div className="board-panel">
-            <h2>{this.props.boardName}</h2>
+            <h1>{this.props.boardName}</h1>
             <ul>
                 <li key={0}>
                     <button onClick={() => this.props.onSetDefaultView()}>
