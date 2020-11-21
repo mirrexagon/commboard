@@ -4,7 +4,7 @@ import './Card.css';
 
 class Card extends React.Component {
     render() {
-        let tags = this.props.tags.map((tag) => <li>{tag}</li>);
+        let tags = this.props.tags.map((tag) => <li key={tag}>{tag}</li>);
 
         return (<div className="card-container">
             <p className="card-text">{this.props.text}</p>

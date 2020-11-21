@@ -24,7 +24,7 @@ class BoardViewDefault extends React.Component {
 
     render() {
         if (this.state.boardViewDefault) {
-            const cards = this.state.boardViewDefault.default_order
+            const cards = this.state.boardViewDefault.default_card_order
                 .map((cardId) => this.state.boardViewDefault.board.cards[cardId]);
 
             return <CardColumn cards={cards} />

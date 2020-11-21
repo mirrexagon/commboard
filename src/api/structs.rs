@@ -63,6 +63,7 @@ struct ApiBoard<'a> {
     id: BoardId,
     name: &'a str,
     cards: HashMap<CardId, ApiCard<'a>>,
+    categories: Vec<&'a str>,
 }
 
 impl<'a> ApiBoard<'a> {
@@ -74,6 +75,11 @@ impl<'a> ApiBoard<'a> {
                 .cards()
                 .iter()
                 .map(|(card_id, card)| (*card_id, ApiCard::new(card)))
+                .collect(),
+            categories: board
+                .categories()
+                .iter()
+                .map(|category| category.name())
                 .collect(),
         }
     }

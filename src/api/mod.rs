@@ -1,7 +1,5 @@
 use std::sync::Mutex;
 
-use serde::Serialize;
-
 use rocket::{
     delete, get,
     http::RawStr,
@@ -18,14 +16,7 @@ use crate::state::{
 };
 
 mod structs;
-
 use structs::*;
-
-#[derive(Debug, Serialize)]
-struct BoardInfo<'a> {
-    pub id: BoardId,
-    pub name: &'a str,
-}
 
 #[get("/boards")]
 pub fn get_boards(boards: State<Mutex<Boards>>) -> Json<String> {
