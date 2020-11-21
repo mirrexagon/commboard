@@ -11,6 +11,8 @@
 }
 
 .board-panel ul {
+    list-style-type: none;
+    padding: 0px;
 }
 
 .board-view-container {

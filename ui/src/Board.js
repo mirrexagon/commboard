@@ -10,12 +10,18 @@ class BoardPanel extends React.Component {
         const categories = this.props.categoryNames
             .map((categoryName) => {
                 // Emphasise current.
+                let categoryNameElement = categoryName;
+
                 if (categoryName == this.props.currentCategoryName) {
-                    categoryName = <strong>categoryName</strong>;
+                    categoryNameElement = <strong>{categoryName}</strong>;
                 }
 
-                return <li key={categoryName}>{categoryName}</li>;
-            })
+                return (<li key={categoryName}>
+                    <button onClick={() => this.props.onSetCategoryView(categoryName)}>
+                        {categoryNameElement}
+                    </button>
+                </li>);
+            });
 
         let noCategoryText = "No Category";
         if (this.props.currentCategoryName === null) {
@@ -25,7 +31,12 @@ class BoardPanel extends React.Component {
         return (<div className="board-panel">
             <h2>{this.props.boardName}</h2>
             <ul>
-                <li key={0}>{noCategoryText}</li>
+                <li key={0}>
+                    <button onClick={() => this.props.onSetDefaultView()}>
+                        {noCategoryText}
+                    </button>
+                </li>
+
                 {categories}
             </ul>
         </div>);
@@ -36,6 +47,9 @@ BoardPanel.propTypes = {
     boardName: PropTypes.string.isRequired,
     categoryNames: PropTypes.array.isRequired,
     currentCategoryName: PropTypes.string,
+
+    onSetDefaultView: PropTypes.func.isRequired,
+    onSetCategoryView: PropTypes.func.isRequired,
 };
 
 class Board extends React.Component {
@@ -69,6 +83,9 @@ class Board extends React.Component {
                 boardName={this.props.boardViewData.board.name}
                 categoryNames={this.props.boardViewData.board.categories}
                 currentCategoryName={this.getCurrentCategory()}
+
+                onSetDefaultView={() => this.props.onSetDefaultView()}
+                onSetCategoryView={(categoryName) => this.props.onSetCategoryView(categoryName)}
                 />
 
             <div className="board-view-container">
@@ -80,6 +97,7 @@ class Board extends React.Component {
 
 Board.propTypes = {
     boardViewData: PropTypes.object,
+
     onSetDefaultView: PropTypes.func.isRequired,
     onSetCategoryView: PropTypes.func.isRequired,
 };

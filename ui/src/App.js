@@ -10,6 +10,7 @@ class App extends React.Component {
 
         this.state = {
             currentBoardViewData: null,
+            isFetching: false,
         };
     }
 
@@ -18,19 +19,23 @@ class App extends React.Component {
     }
 
     onSetDefaultView() {
+        this.setState({ isFetching: true });
+
         fetch('http://localhost:8000/board')
         .then(res => res.json())
         .then((data) => {
-            this.setState({ currentBoardViewData: data })
+            this.setState({ currentBoardViewData: data, isFetching: false })
         })
         .catch(console.log);
     }
 
     onSetCategoryView(categoryName) {
+        this.setState({ isFetching: true });
+
         fetch('http://localhost:8000/board/category/' + categoryName)
         .then(res => res.json())
         .then((data) => {
-            this.setState({ currentBoardViewData: data })
+            this.setState({ currentBoardViewData: data, isFetching: false })
         })
         .catch(console.log);
     }
@@ -39,8 +44,9 @@ class App extends React.Component {
         return (<div>
             <Board
                 boardViewData={this.state.currentBoardViewData}
+                isFetching={this.state.isFetching}
                 onSetDefaultView={() => this.onSetDefaultView()}
-                onSetCategoryView={() => this.onSetCategoryView()}
+                onSetCategoryView={(categoryName) => this.onSetCategoryView(categoryName)}
                 />
         </div>);
     }
