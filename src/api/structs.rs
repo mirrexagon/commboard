@@ -22,6 +22,7 @@ impl<'a> ApiBoardViewDefault<'a> {
 #[derive(Debug, Serialize)]
 pub struct ApiBoardViewCategory<'a> {
     board: ApiBoard<'a>,
+    category_name: String,
     category_view: &'a Category,
 }
 
@@ -30,6 +31,7 @@ impl<'a> ApiBoardViewCategory<'a> {
         if let Some(category) = board.get_category(category_name) {
             Some(Self {
                 board: ApiBoard::new(board),
+                category_name: category_name.to_owned(),
                 category_view: category,
             })
         } else {
