@@ -9,8 +9,10 @@ class App extends React.Component {
         super(props);
 
         this.state = {
-            currentBoardViewData: null,
+            currentCategoryName: null,
+            currentFilter: null,
             isFetching: false,
+            currentBoardViewData: null,
         };
     }
 
@@ -19,25 +21,38 @@ class App extends React.Component {
     }
 
     onSetDefaultView() {
-        this.setState({ isFetching: true });
-
-        fetch('http://localhost:8000/board')
-        .then(res => res.json())
-        .then((data) => {
-            this.setState({ currentBoardViewData: data, isFetching: false })
-        })
-        .catch(console.log);
+        this.setState({ currentCategoryName: null }, () => this.fetchCurrentView());
     }
 
     onSetCategoryView(categoryName) {
+        this.setState({ currentCategoryName: categoryName }, () => this.fetchCurrentView());
+    }
+
+    onSetFilter(filter) {
+        this.setState({ currentFilter: filter }, () => this.fetchCurrentView());
+    }
+
+    fetchCurrentView() {
         this.setState({ isFetching: true });
 
-        fetch('http://localhost:8000/board/category/' + categoryName)
-        .then(res => res.json())
-        .then((data) => {
-            this.setState({ currentBoardViewData: data, isFetching: false })
-        })
-        .catch(console.log);
+        let url;
+        if (this.state.currentCategoryName) {
+            url = "/board/category/" + this.state.currentCategoryName;
+        } else {
+            url = "/board";
+        }
+
+
+        if (this.state.currentFilter !== null && this.state.currentFilter !== "") {
+            url += "?filter=" + this.state.currentFilter;
+        }
+
+        fetch(url)
+            .then(res => res.json())
+            .then((data) => {
+                this.setState({ currentBoardViewData: data, isFetching: false })
+            })
+            .catch(console.log);
     }
 
     render() {
@@ -47,6 +62,7 @@ class App extends React.Component {
                 isFetching={this.state.isFetching}
                 onSetDefaultView={() => this.onSetDefaultView()}
                 onSetCategoryView={(categoryName) => this.onSetCategoryView(categoryName)}
+                onSetFilter={(filter) => this.onSetFilter(filter)}
                 />
         </div>);
     }

@@ -6,6 +6,21 @@ import BoardViewDefault from './BoardViewDefault.js';
 import BoardViewCategory from './BoardViewCategory.js';
 
 class BoardPanel extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            filter: "",
+        };
+    }
+
+    handleFilterChange(event) {
+        let newFilter = event.target.value;
+
+        this.setState({ filter: newFilter },
+            () => this.props.onSetFilter(newFilter));
+    }
+
     render() {
         const categories = this.props.categoryNames
             .map((categoryName) => {
@@ -30,6 +45,7 @@ class BoardPanel extends React.Component {
 
         return (<div className="board-panel">
             <h1>{this.props.boardName}</h1>
+            <input type="text" value={this.state.filter} onChange={(event) => this.handleFilterChange(event)} />
             <ul>
                 <li key={0}>
                     <button onClick={() => this.props.onSetDefaultView()}>
@@ -50,6 +66,7 @@ BoardPanel.propTypes = {
 
     onSetDefaultView: PropTypes.func.isRequired,
     onSetCategoryView: PropTypes.func.isRequired,
+    onSetFilter: PropTypes.func.isRequired,
 };
 
 class Board extends React.Component {
@@ -86,6 +103,7 @@ class Board extends React.Component {
 
                 onSetDefaultView={() => this.props.onSetDefaultView()}
                 onSetCategoryView={(categoryName) => this.props.onSetCategoryView(categoryName)}
+                onSetFilter={(filter) => this.props.onSetFilter(filter)}
                 />
 
             <div className="board-view-container">
@@ -100,6 +118,7 @@ Board.propTypes = {
 
     onSetDefaultView: PropTypes.func.isRequired,
     onSetCategoryView: PropTypes.func.isRequired,
+    onSetFilter: PropTypes.func.isRequired,
 };
 
 export default Board;
