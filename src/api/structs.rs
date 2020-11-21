@@ -7,30 +7,30 @@ use crate::board::{Board, Card, CardId, Category, Tag};
 #[derive(Debug, Serialize)]
 pub struct ApiBoardViewDefault<'a> {
     board: ApiBoard<'a>,
-    default_card_order: &'a [CardId],
+    default_view: &'a [CardId],
 }
 
 impl<'a> ApiBoardViewDefault<'a> {
     pub fn new(board: &'a Board, filter: Option<&str>) -> Self {
         Self {
             board: ApiBoard::new(board),
-            default_card_order: board.default_card_order(),
+            default_view: board.default_card_order(),
         }
     }
 }
 
 #[derive(Debug, Serialize)]
-pub struct ApiBoardViewByCategory<'a> {
+pub struct ApiBoardViewCategory<'a> {
     board: ApiBoard<'a>,
-    category: &'a Category,
+    category_view: &'a Category,
 }
 
-impl<'a> ApiBoardViewByCategory<'a> {
+impl<'a> ApiBoardViewCategory<'a> {
     pub fn new(board: &'a Board, category_name: &str, filter: Option<&str>) -> Option<Self> {
         if let Some(category) = board.get_category(category_name) {
             Some(Self {
                 board: ApiBoard::new(board),
-                category: category,
+                category_view: category,
             })
         } else {
             None

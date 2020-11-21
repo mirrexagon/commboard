@@ -1,31 +1,47 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import styles from './App.css';
+import './App.css';
 
-import MainPanel from './MainPanel.js';
-import BoardViewDefault from './BoardViewDefault.js';
+import Board from './Board.js';
 
 class App extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            currentBoardView: null
+            currentBoardViewData: null,
         };
     }
 
     componentDidMount() {
-        fetch('http://localhost:8000/boards')
+        this.onSetDefaultView();
+    }
+
+    onSetDefaultView() {
+        fetch('http://localhost:8000/board')
         .then(res => res.json())
         .then((data) => {
-              this.setState({ boards: data })
+            this.setState({ currentBoardViewData: data })
+        })
+        .catch(console.log);
+    }
+
+    onSetCategoryView(categoryName) {
+        fetch('http://localhost:8000/board/category/' + categoryName)
+        .then(res => res.json())
+        .then((data) => {
+            this.setState({ currentBoardViewData: data })
         })
         .catch(console.log);
     }
 
     render() {
         return (<div>
-            <MainPanel boardView={this.state.currentBoardView} />
+            <Board
+                boardViewData={this.state.currentBoardViewData}
+                onSetDefaultView={() => this.onSetDefaultView()}
+                onSetCategoryView={() => this.onSetCategoryView()}
+                />
         </div>);
     }
 }

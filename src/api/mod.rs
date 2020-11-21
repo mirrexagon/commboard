@@ -39,7 +39,7 @@ pub fn get_board_view_default(
     ))
 }
 
-#[get("/board/bycategory/<category>?<filter>")]
+#[get("/board/category/<category>?<filter>")]
 pub fn get_board_view_by_category(
     board: State<Mutex<Board>>,
     filter: Option<String>,
@@ -48,7 +48,7 @@ pub fn get_board_view_by_category(
     let mut board = board.lock().unwrap();
 
     if let Some(api_board_view_by_category) =
-        ApiBoardViewByCategory::new(&*board, &category, filter.as_deref())
+        ApiBoardViewCategory::new(&*board, &category, filter.as_deref())
     {
         Some(Json(
             serde_json::to_string(&api_board_view_by_category).unwrap(),
