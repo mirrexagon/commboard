@@ -2,11 +2,25 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import './Card.css';
 
+class Tag extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        return this.props.tagString;
+    }
+}
+
+Tag.propTypes = {
+    tagString: PropTypes.string.isRequired,
+};
+
 class Card extends React.Component {
     render() {
         let tags = this.props.tags.map(
             (tagString) => (<li className="card-tag" key={tagString}>
-                {tagString}
+                <Tag tagString={tagString} />
             </li>));
 
         return (<div className="card-container">
@@ -19,11 +33,7 @@ class Card extends React.Component {
 Card.propTypes = {
     text: PropTypes.string.isRequired,
     tags: PropTypes.array.isRequired,
-
-    onSetCardText: PropTypes.func.isRequired,
-    onAddCardTag: PropTypes.func.isRequired,
-    onDeleteCardTag: PropTypes.func.isRequired,
-    onUpdateCardTag: PropTypes.func.isRequired,
+    actions: PropTypes.object.isRequired,
 };
 
 export default Card

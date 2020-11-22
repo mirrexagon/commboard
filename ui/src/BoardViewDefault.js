@@ -9,12 +9,16 @@ class BoardViewDefault extends React.Component {
         const cards = this.props.viewData.default_view
             .map((cardId) => this.props.viewData.board.cards[cardId]);
 
-        return <CardColumn cards={cards} />;
+        return <CardColumn
+            cards={cards}
+            actions={this.props.actions}
+            />;
     }
 }
 
 BoardViewDefault.propTypes = {
     viewData: PropTypes.object.isRequired,
+    actions: PropTypes.object.isRequired,
 };
 
 export default BoardViewDefault;

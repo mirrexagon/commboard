@@ -18,7 +18,7 @@ class BoardPanel extends React.Component {
         let newFilter = event.target.value;
 
         this.setState({ filter: newFilter },
-            () => this.props.onSetFilter(newFilter));
+            () => this.props.actions.onSetFilter(newFilter));
     }
 
     render() {
@@ -32,7 +32,7 @@ class BoardPanel extends React.Component {
                 }
 
                 return (<li key={categoryName}>
-                    <button onClick={() => this.props.onSetCategoryView(categoryName)}>
+                    <button onClick={() => this.props.actions.onSetCategoryView(categoryName)}>
                         {categoryNameElement}
                     </button>
                 </li>);
@@ -48,7 +48,7 @@ class BoardPanel extends React.Component {
             <input type="text" value={this.state.filter} onChange={(event) => this.handleFilterChange(event)} />
             <ul>
                 <li key={0}>
-                    <button onClick={() => this.props.onSetDefaultView()}>
+                    <button onClick={() => this.props.actions.onSetDefaultView()}>
                         {noCategoryText}
                     </button>
                 </li>
@@ -63,10 +63,7 @@ BoardPanel.propTypes = {
     boardName: PropTypes.string.isRequired,
     categoryNames: PropTypes.array.isRequired,
     currentCategoryName: PropTypes.string,
-
-    onSetDefaultView: PropTypes.func.isRequired,
-    onSetCategoryView: PropTypes.func.isRequired,
-    onSetFilter: PropTypes.func.isRequired,
+    actions: PropTypes.object.isRequired,
 };
 
 class Board extends React.Component {
@@ -90,9 +87,15 @@ class Board extends React.Component {
         let boardView = null;
 
         if (currentCategory === null) {
-            boardView = <BoardViewDefault viewData={this.props.boardViewData} />;
+            boardView = <BoardViewDefault
+                viewData={this.props.boardViewData}
+                actions={this.props.actions}
+                />;
         } else if (currentCategory) {
-            boardView = <BoardViewCategory viewData={this.props.boardViewData} />;
+            boardView = <BoardViewCategory
+                viewData={this.props.boardViewData}
+                actions={this.props.actions}
+                />;
         }
 
         return (<div>
@@ -100,10 +103,7 @@ class Board extends React.Component {
                 boardName={this.props.boardViewData.board.name}
                 categoryNames={this.props.boardViewData.board.categories}
                 currentCategoryName={this.getCurrentCategory()}
-
-                onSetDefaultView={() => this.props.onSetDefaultView()}
-                onSetCategoryView={(categoryName) => this.props.onSetCategoryView(categoryName)}
-                onSetFilter={(filter) => this.props.onSetFilter(filter)}
+                actions={this.props.actions}
                 />
 
             <div className="board-view-container">
@@ -115,10 +115,7 @@ class Board extends React.Component {
 
 Board.propTypes = {
     boardViewData: PropTypes.object,
-
-    onSetDefaultView: PropTypes.func.isRequired,
-    onSetCategoryView: PropTypes.func.isRequired,
-    onSetFilter: PropTypes.func.isRequired,
+    actions: PropTypes.object.isRequired,
 };
 
 export default Board;

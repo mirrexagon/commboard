@@ -14,23 +14,25 @@ class App extends React.Component {
             isFetching: false,
             currentBoardViewData: null,
         };
+
+        this.onSetDefaultView = this.onSetDefaultView.bind(this);
+        this.onSetCategoryView = this.onSetCategoryView.bind(this);
+        this.onSetFilter = this.onSetFilter.bind(this);
+
+        this.onSetBoardName = this.onSetBoardName.bind(this);
+        this.onAddCard = this.onAddCard.bind(this);
+        this.onDeleteCard = this.onDeleteCard.bind(this);
+        this.onSetCardText = this.onSetCardText.bind(this);
+        this.onAddCardTag = this.onAddCardTag.bind(this);
+        this.onDeleteCardTag = this.onDeleteCardTag.bind(this);
+        this.onUpdateCardTag = this.onUpdateCardTag.bind(this);
     }
 
     componentDidMount() {
         this.onSetDefaultView();
     }
 
-    onSetDefaultView() {
-        this.setState({ currentCategoryName: null }, () => this.fetchCurrentView());
-    }
-
-    onSetCategoryView(categoryName) {
-        this.setState({ currentCategoryName: categoryName }, () => this.fetchCurrentView());
-    }
-
-    onSetFilter(filter) {
-        this.setState({ currentFilter: filter }, () => this.fetchCurrentView());
-    }
+    // ---
 
     fetchCurrentView() {
         this.setState({ isFetching: true });
@@ -47,22 +49,111 @@ class App extends React.Component {
             url += "?filter=" + this.state.currentFilter;
         }
 
-        fetch(url)
+        return fetch(url)
             .then(res => res.json())
             .then((data) => {
-                this.setState({ currentBoardViewData: data, isFetching: false })
+                this.setState({ currentBoardViewData: data, isFetching: false });
             })
             .catch(console.log);
     }
+
+    // ---
+
+    onSetDefaultView() {
+        this.setState({ currentCategoryName: null }, () => this.fetchCurrentView());
+    }
+
+    onSetCategoryView(categoryName) {
+        this.setState({ currentCategoryName: categoryName }, () => this.fetchCurrentView());
+    }
+
+    onSetFilter(filter) {
+        this.setState({ currentFilter: filter }, () => this.fetchCurrentView());
+    }
+
+    // ---
+
+    onSetBoardName(name) {
+        return fetch("/board/name", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "text/plain",
+            },
+            body: name,
+        })
+        .then(this.fetchCurrentView)
+        .catch(console.log);
+    }
+
+    onAddCard() {
+        return fetch("/board/cards", {
+            method: "POST",
+        })
+        .then(this.fetchCurrentView)
+        .catch(console.log);
+    }
+
+    onDeleteCard(cardId) {
+        return fetch("/board/cards/" + cardId, {
+            method: "DELETE",
+        })
+        .then(this.fetchCurrentView)
+        .catch(console.log);
+    }
+
+    onSetCardText(cardId, text) {
+        return fetch("/board/cards/" + cardId + "/text", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "text/plain",
+            },
+            body: text,
+        })
+        .then(this.fetchCurrentView)
+        .catch(console.log);
+    }
+
+    onAddCardTag(cardId, tag) {
+        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
+            method: "PUT",
+        })
+        .then(this.fetchCurrentView)
+        .catch(console.log);
+    }
+
+    onDeleteCardTag(cardId, tag) {
+        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
+            method: "DELETE",
+        })
+        .then(this.fetchCurrentView)
+        .catch(console.log);
+    }
+
+    onUpdateCardTag(cardId, oldTag, newTag) {
+        this.onDeleteCardTag(cardId, oldTag)
+        .then(() => this.onAddCardTag(cardId, newTag))
+        .then(this.fetchCurrentView);
+    }
+
+    // ---
 
     render() {
         return (<div>
             <Board
                 boardViewData={this.state.currentBoardViewData}
                 isFetching={this.state.isFetching}
-                onSetDefaultView={() => this.onSetDefaultView()}
-                onSetCategoryView={(categoryName) => this.onSetCategoryView(categoryName)}
-                onSetFilter={(filter) => this.onSetFilter(filter)}
+
+                actions={{
+                    onSetDefaultView: this.onSetDefaultView,
+                    onSetCategoryView: this.onSetCategoryView,
+                    onSetFilter: this.onSetFilter,
+
+                    onSetCardText: this.props.onSetCardText,
+                    onAddCardTag: this.props.onAddCardTag,
+                    onDeleteCardTag: this.props.onDeleteCardTag,
+                    onUpdateCardTag: this.props.onUpdateCardTag,
+                }}
+
                 />
         </div>);
     }

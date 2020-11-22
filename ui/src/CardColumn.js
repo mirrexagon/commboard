@@ -6,14 +6,21 @@ import Card from './Card.js';
 
 class CardColumn extends React.Component {
     render() {
-        const cards = this.props.cards.map((card) => <li className="card-column-item" key={card.id}><Card text={card.text} tags={card.tags} /></li>);
+        const cards = this.props.cards.map((card) => (<li className="card-column-item" key={card.id}>
+            <Card
+                text={card.text}
+                tags={card.tags}
+                actions={this.props.actions}
+                />
+        </li>));
 
         return <ul className="card-column">{cards}</ul>;
     }
 }
 
-Card.propTypes = {
-    cards: PropTypes.array,
+CardColumn.propTypes = {
+    cards: PropTypes.array.isRequired,
+    actions: PropTypes.object.isRequired,
 };
 
 export default CardColumn

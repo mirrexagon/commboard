@@ -97,7 +97,7 @@ pub enum CardTagError {
     BadRequest(status::BadRequest<String>),
 }
 
-#[post("/board/cards/<card_id>/tags", data = "<new_tag>")]
+#[put("/board/cards/<card_id>/tags/<new_tag>")]
 pub fn add_card_tag(
     board: State<Mutex<Board>>,
     card_id: CardId,
@@ -119,7 +119,7 @@ pub fn add_card_tag(
         .map_err(|err| CardTagError::BadRequest(status::BadRequest(Some(err.to_string()))))
 }
 
-#[delete("/board/cards/<card_id>/tags", data = "<tag_to_delete>")]
+#[delete("/board/cards/<card_id>/tags/<tag_to_delete>")]
 pub fn delete_card_tag(
     board: State<Mutex<Board>>,
     card_id: CardId,

@@ -8,7 +8,10 @@ class CategoryColumn extends React.Component {
     render() {
         return (<div>
             <h2>{this.props.name}</h2>
-            <CardColumn cards={this.props.cards} />
+            <CardColumn
+                cards={this.props.cards}
+                actions={this.props.actions}
+                />
         </div>);
     }
 }
@@ -16,6 +19,7 @@ class CategoryColumn extends React.Component {
 CategoryColumn.propTypes = {
     name: PropTypes.string.isRequired,
     cards: PropTypes.array.isRequired,
+    actions: PropTypes.object.isRequired,
 };
 
 class BoardViewCategory extends React.Component {
@@ -28,7 +32,11 @@ class BoardViewCategory extends React.Component {
                     (cardId) => this.props.viewData.board.cards[cardId]);
 
                 return (<div className="category-view-column" key={categoryName + ":" + column.name}>
-                    <CategoryColumn name={column.name} cards={cards} />
+                    <CategoryColumn
+                        name={column.name}
+                        cards={cards}
+                        actions={this.props.actions}
+                        />
                 </div>);
             });
 
@@ -42,6 +50,7 @@ class BoardViewCategory extends React.Component {
 
 BoardViewCategory.propTypes = {
     viewData: PropTypes.object.isRequired,
+    actions: PropTypes.object.isRequired,
 };
 
 export default BoardViewCategory;
