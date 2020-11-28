@@ -3,7 +3,6 @@ use std::sync::Mutex;
 use rocket::{
     delete, get,
     http::RawStr,
-    http::Status,
     post, put,
     request::{FromParam, Request},
     response::{self, content::Json, status, Responder},
@@ -45,7 +44,7 @@ pub fn get_board_view_by_category(
     filter: Option<String>,
     category: String,
 ) -> Option<Json<String>> {
-    let mut board = board.lock().unwrap();
+    let board = board.lock().unwrap();
 
     if let Some(api_board_view_by_category) =
         ApiBoardViewCategory::new(&*board, &category, filter.as_deref())
