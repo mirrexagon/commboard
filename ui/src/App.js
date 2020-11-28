@@ -58,6 +58,50 @@ class App extends React.Component {
             });
     }
 
+    setBoardName(name) {
+        return fetch("/board/name", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "text/plain",
+            },
+            body: name,
+        });
+    }
+
+    addCard() {
+        return fetch("/board/cards", {
+            method: "POST",
+        });
+    }
+
+    deleteCard(cardId) {
+        return fetch("/board/cards/" + cardId, {
+            method: "DELETE",
+        });
+    }
+
+    setCardText(cardId, text) {
+        return fetch("/board/cards/" + cardId + "/text", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "text/plain",
+            },
+            body: text,
+        });
+    }
+
+    addCardTag(cardId, tag) {
+        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
+            method: "PUT",
+        });
+    }
+
+    deleteCardTag(cardId, tag) {
+        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
+            method: "DELETE",
+        });
+    }
+
     // ---
 
     onSetDefaultView() {
@@ -77,71 +121,51 @@ class App extends React.Component {
     onSetBoardName(name) {
         console.log("Setting board name to '" + name + "'");
 
-        return fetch("/board/name", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "text/plain",
-            },
-            body: name,
-        })
+        this.setBoardName(name)
         .then(this.fetchCurrentView);
     }
 
     onAddCard() {
         console.log("Adding card");
 
-        return fetch("/board/cards", {
-            method: "POST",
-        })
+        this.addCard()
         .then(this.fetchCurrentView);
     }
 
     onDeleteCard(cardId) {
         console.log("Deleting card " + cardId);
 
-        return fetch("/board/cards/" + cardId, {
-            method: "DELETE",
-        })
+        this.deleteCard(cardId)
         .then(this.fetchCurrentView);
     }
 
     onSetCardText(cardId, text) {
         console.log("Setting card " + cardId + "'s text to '" + text + "'");
 
-        return fetch("/board/cards/" + cardId + "/text", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "text/plain",
-            },
-            body: text,
-        })
+        this.setCardText(cardId, text)
         .then(this.fetchCurrentView);
     }
 
     onAddCardTag(cardId, tag) {
         console.log("Adding tag '" + tag + "' to card " + cardId);
 
-        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
-            method: "PUT",
-        })
+        this.addCardTag(cardId, tag)
         .then(this.fetchCurrentView);
     }
 
     onDeleteCardTag(cardId, tag) {
         console.log("Deleting tag '" + tag + "' from card " + cardId);
 
-        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
-            method: "DELETE",
-        })
+        this.deleteCardTag(cardId, tag)
         .then(this.fetchCurrentView);
     }
 
     onUpdateCardTag(cardId, oldTag, newTag) {
         console.log("Updating tag '" + oldTag + "' to '" + newTag + "' on card " + cardId);
 
-        return this.onDeleteCardTag(cardId, oldTag)
-        .then(() => this.onAddCardTag(cardId, newTag))
-        .then(this.fetchCurrentView);
+        return this.deleteCardTag(cardId, oldTag)
+        .then(() => this.addCardTag(cardId, newTag))
+        .then(() => this.fetchCurrentView());
     }
 
     // ---
