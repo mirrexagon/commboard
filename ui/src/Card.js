@@ -30,7 +30,8 @@ class Tag extends React.Component {
         return <InlineInput
             onInput={this.onInput}
             onBlur={this.onBlur}
-            placeholder={this.props.tagString}
+            placeholder={""}
+            value={this.props.tagString}
             />;
     }
 }
