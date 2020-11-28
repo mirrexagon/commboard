@@ -8,6 +8,7 @@ class CardColumn extends React.Component {
     render() {
         const cards = this.props.cards.map((card) => (<li className="card-column-item" key={card.id}>
             <Card
+                id={card.id}
                 text={card.text}
                 tags={card.tags}
                 actions={this.props.actions}

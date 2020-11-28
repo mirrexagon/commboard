@@ -15,6 +15,8 @@ class App extends React.Component {
             currentBoardViewData: null,
         };
 
+        this.fetchCurrentView = this.fetchCurrentView.bind(this);
+
         this.onSetDefaultView = this.onSetDefaultView.bind(this);
         this.onSetCategoryView = this.onSetCategoryView.bind(this);
         this.onSetFilter = this.onSetFilter.bind(this);
@@ -53,8 +55,7 @@ class App extends React.Component {
             .then(res => res.json())
             .then((data) => {
                 this.setState({ currentBoardViewData: data, isFetching: false });
-            })
-            .catch(console.log);
+            });
     }
 
     // ---
@@ -74,6 +75,8 @@ class App extends React.Component {
     // ---
 
     onSetBoardName(name) {
+        console.log("Setting board name to '" + name + "'");
+
         return fetch("/board/name", {
             method: "PUT",
             headers: {
@@ -81,27 +84,30 @@ class App extends React.Component {
             },
             body: name,
         })
-        .then(this.fetchCurrentView)
-        .catch(console.log);
+        .then(this.fetchCurrentView);
     }
 
     onAddCard() {
+        console.log("Adding card");
+
         return fetch("/board/cards", {
             method: "POST",
         })
-        .then(this.fetchCurrentView)
-        .catch(console.log);
+        .then(this.fetchCurrentView);
     }
 
     onDeleteCard(cardId) {
+        console.log("Deleting card " + cardId);
+
         return fetch("/board/cards/" + cardId, {
             method: "DELETE",
         })
-        .then(this.fetchCurrentView)
-        .catch(console.log);
+        .then(this.fetchCurrentView);
     }
 
     onSetCardText(cardId, text) {
+        console.log("Setting card " + cardId + "'s text to '" + text + "'");
+
         return fetch("/board/cards/" + cardId + "/text", {
             method: "PUT",
             headers: {
@@ -109,28 +115,31 @@ class App extends React.Component {
             },
             body: text,
         })
-        .then(this.fetchCurrentView)
-        .catch(console.log);
+        .then(this.fetchCurrentView);
     }
 
     onAddCardTag(cardId, tag) {
+        console.log("Adding tag '" + tag + "' to card " + cardId);
+
         return fetch("/board/cards/" + cardId + "/tags/" + tag, {
             method: "PUT",
         })
-        .then(this.fetchCurrentView)
-        .catch(console.log);
+        .then(this.fetchCurrentView);
     }
 
     onDeleteCardTag(cardId, tag) {
+        console.log("Deleting tag '" + tag + "' from card " + cardId);
+
         return fetch("/board/cards/" + cardId + "/tags/" + tag, {
             method: "DELETE",
         })
-        .then(this.fetchCurrentView)
-        .catch(console.log);
+        .then(this.fetchCurrentView);
     }
 
     onUpdateCardTag(cardId, oldTag, newTag) {
-        this.onDeleteCardTag(cardId, oldTag)
+        console.log("Updating tag '" + oldTag + "' to '" + newTag + "' on card " + cardId);
+
+        return this.onDeleteCardTag(cardId, oldTag)
         .then(() => this.onAddCardTag(cardId, newTag))
         .then(this.fetchCurrentView);
     }
@@ -148,12 +157,11 @@ class App extends React.Component {
                     onSetCategoryView: this.onSetCategoryView,
                     onSetFilter: this.onSetFilter,
 
-                    onSetCardText: this.props.onSetCardText,
-                    onAddCardTag: this.props.onAddCardTag,
-                    onDeleteCardTag: this.props.onDeleteCardTag,
-                    onUpdateCardTag: this.props.onUpdateCardTag,
+                    onSetCardText: this.onSetCardText,
+                    onAddCardTag: this.onAddCardTag,
+                    onDeleteCardTag: this.onDeleteCardTag,
+                    onUpdateCardTag: this.onUpdateCardTag,
                 }}
-
                 />
         </div>);
     }

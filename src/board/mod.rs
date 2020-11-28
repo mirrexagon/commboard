@@ -159,7 +159,7 @@ impl Column {
         if let Some(pos) = self.get_card_position(card_id) {
             self.cards.remove(pos);
         } else {
-            panic!("tried to delete card '{}' from column '{}' but the card was not there");
+            panic!("tried to delete card '{}' from column '{}' but the card was not there", card_id, self.name);
         }
     }
 

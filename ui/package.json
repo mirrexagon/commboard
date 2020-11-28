@@ -3,11 +3,12 @@
         "build": "webpack --mode production && cp -v public/* build/",
         "build-dev": "webpack --mode development && cp -v public/* build/"
     },
-    "browserslist": "> 0.25%, not dead",
+    "browserslist": "last 2 versions",
     "dependencies": {
         "prop-types": "^15.7.2",
         "react": "^16.13.1",
-        "react-dom": "^16.13.1"
+        "react-dom": "^16.13.1",
+        "react-inline-input": "^1.0.2"
     },
     "devDependencies": {
         "@babel/core": "^7.10.4",
