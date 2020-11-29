@@ -2,6 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import './Board.css';
 
+import InlineInput from 'react-inline-input';
+
 import BoardViewDefault from './BoardViewDefault.js';
 import BoardViewCategory from './BoardViewCategory.js';
 
@@ -11,7 +13,11 @@ class BoardPanel extends React.Component {
 
         this.state = {
             filter: "",
+            boardName: props.name,
         };
+
+        this.onBoardNameInput = this.onBoardNameInput.bind(this);
+        this.onBoardNameBlur = this.onBoardNameBlur.bind(this);
     }
 
     handleFilterChange(event) {
@@ -19,6 +25,16 @@ class BoardPanel extends React.Component {
 
         this.setState({ filter: newFilter },
             () => this.props.actions.onSetFilter(newFilter));
+    }
+
+    onBoardNameInput(s) {
+        this.setState({ boardName: s });
+    }
+
+    onBoardNameBlur() {
+        if (this.state.boardName !== this.props.boardName) {
+            this.props.actions.onSetBoardName(this.state.boardName);
+        }
     }
 
     render() {
@@ -44,8 +60,17 @@ class BoardPanel extends React.Component {
         }
 
         return (<div className="board-panel">
-            <h1>{this.props.boardName}</h1>
+            <h1><InlineInput
+                value={this.props.boardName}
+                placeholder=""
+
+                onInput={this.onBoardNameInput}
+                onBlur={this.onBoardNameBlur}
+                />
+            </h1>
+
             <input type="text" value={this.state.filter} onChange={(event) => this.handleFilterChange(event)} />
+
             <ul>
                 <li key={0}>
                     <button onClick={() => this.props.actions.onSetDefaultView()}>

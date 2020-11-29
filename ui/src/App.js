@@ -181,6 +181,11 @@ class App extends React.Component {
                     onSetCategoryView: this.onSetCategoryView,
                     onSetFilter: this.onSetFilter,
 
+                    onSetBoardName: this.onSetBoardName,
+
+                    onAddCard: this.onAddCard,
+                    onDeleteCard: this.onDeleteCard,
+
                     onSetCardText: this.onSetCardText,
                     onAddCardTag: this.onAddCardTag,
                     onDeleteCardTag: this.onDeleteCardTag,
