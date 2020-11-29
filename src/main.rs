@@ -77,6 +77,7 @@ fn main() {
             routes![
                 index,
                 index_bundle,
+                api::set_board_name,
                 api::get_board_view_default,
                 api::get_board_view_by_category,
                 api::add_card,
