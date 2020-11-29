@@ -5,6 +5,9 @@ authors = ["Andrew Abbott <mirrexagon@mirrexagon.com>"]
 edition = "2018"
 
 [dependencies]
+log = "0.4"
+env_logger = "0.8"
+
 thiserror = "1.0.21"
 
 serde = { version = "1.0.117", features = ["derive"] }

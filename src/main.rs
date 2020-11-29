@@ -22,6 +22,8 @@ fn index_bundle() -> content::JavaScript<&'static str> {
 }
 
 fn main() {
+    env_logger::init();
+
     let board = Mutex::new(Board::new());
     {
         let mut board = board.lock().unwrap();

@@ -10,4 +10,6 @@ pkgs.mkShell {
     cargo-edit
     nodejs
   ];
+
+  RUST_LOG = "debug";
 }
