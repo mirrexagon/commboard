@@ -9,7 +9,7 @@ class Tag extends React.Component {
         super(props);
 
         this.state = {
-            newInput: "",
+            tagString: props.tagString,
         };
 
         this.onInput = this.onInput.bind(this);
@@ -17,21 +17,23 @@ class Tag extends React.Component {
     }
 
     onInput(s) {
-        this.setState({ newInput: s });
+        this.setState({ tagString: s });
     }
 
     onBlur() {
-        if (this.state.newInput !== this.props.tagString) {
-            this.props.onUpdateTag(this.props.tagString, this.state.newInput);
+        if (this.state.tagString !== this.props.tagString) {
+            this.props.onUpdateTag(this.props.tagString, this.state.tagString);
         }
+
     }
 
     render() {
         return <InlineInput
+            placeholder=""
+            value={this.state.tagString}
+
             onInput={this.onInput}
             onBlur={this.onBlur}
-            placeholder={""}
-            value={this.props.tagString}
             />;
     }
 }
@@ -45,11 +47,28 @@ class Card extends React.Component {
     constructor(props) {
         super(props);
 
+        this.state = {
+            text: props.text,
+        };
+
         this.onUpdateTag = this.onUpdateTag.bind(this);
+
+        this.onInput = this.onInput.bind(this);
+        this.onBlur = this.onBlur.bind(this);
     }
 
     onUpdateTag(oldTag, newTag) {
-        this.props.actions.onUpdateCardTag(this.props.id, oldTag, newTag);
+        return this.props.actions.onUpdateCardTag(this.props.id, oldTag, newTag);
+    }
+
+    onInput(s) {
+        this.setState({ text: s });
+    }
+
+    onBlur() {
+        if (this.state.text !== this.props.text) {
+            this.props.actions.onSetCardText(this.props.id, this.state.text);
+        }
     }
 
     render() {
@@ -59,7 +78,16 @@ class Card extends React.Component {
             </li>));
 
         return (<div className="card-container">
-            <p className="card-text">{this.props.text}</p>
+            <InlineInput
+                type="textarea"
+                placeholder=""
+                value={this.state.text}
+                labelClasses="card-text"
+
+                onInput={this.onInput}
+                onBlur={this.onBlur}
+                />
+
             <ul className="card-tag-list">{tags}</ul>
         </div>);
     }
