@@ -61,7 +61,11 @@ class Card extends React.Component {
     }
 
     onUpdateTag(oldTag, newTag) {
-        return this.props.actions.onUpdateCardTag(this.props.id, oldTag, newTag);
+        if (newTag === "") {
+            this.props.actions.onDeleteCardTag(this.props.id, oldTag);
+        } else {
+            this.props.actions.onUpdateCardTag(this.props.id, oldTag, newTag);
+        }
     }
 
     onTextInput(s) {
