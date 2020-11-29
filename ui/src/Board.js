@@ -59,6 +59,8 @@ class BoardPanel extends React.Component {
             noCategoryText = <strong>{noCategoryText}</strong>;
         }
 
+        // TODO: Add new card by having a "new card" in the panel, that you
+        // can edit and then finally add by pressing a button.
         return (<div className="board-panel">
             <h1><InlineInput
                 value={this.props.boardName}
