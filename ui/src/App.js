@@ -105,15 +105,15 @@ class App extends React.Component {
     // ---
 
     onSetDefaultView() {
-        this.setState({ currentCategoryName: null }, () => this.fetchCurrentView());
+        this.setState({ currentCategoryName: null }, this.fetchCurrentView);
     }
 
     onSetCategoryView(categoryName) {
-        this.setState({ currentCategoryName: categoryName }, () => this.fetchCurrentView());
+        this.setState({ currentCategoryName: categoryName }, this.fetchCurrentView);
     }
 
     onSetFilter(filter) {
-        this.setState({ currentFilter: filter }, () => this.fetchCurrentView());
+        this.setState({ currentFilter: filter }, this.fetchCurrentView);
     }
 
     // ---
@@ -122,50 +122,75 @@ class App extends React.Component {
         console.log("Setting board name to '" + name + "'");
 
         this.setBoardName(name)
-        .then(this.fetchCurrentView);
+        .finally(this.fetchCurrentView);
     }
 
-    onAddCard() {
+    onAddCard(text, tags) {
         console.log("Adding card");
 
-        this.addCard()
-        .then(this.fetchCurrentView);
+        let cardIdPromise = this.addCard()
+        .then((response) => response.text());
+
+        let textPromise = cardIdPromise
+        .then((cardId) => {
+            if (text) {
+                return this.setCardText(cardId, text);
+            }
+        });
+
+        let tagsPromise = cardIdPromise
+        .then((cardId) => {
+            if (tags) {
+                return Promise.allSettled(
+                    tags.map((tag) => this.addCardTag(cardId, tag))
+                );
+            }
+        })
+
+        Promise.allSettled([textPromise, tagsPromise])
+        .finally(this.fetchCurrentView);
     }
 
     onDeleteCard(cardId) {
         console.log("Deleting card " + cardId);
 
         this.deleteCard(cardId)
-        .then(this.fetchCurrentView);
+        .finally(this.fetchCurrentView);
     }
 
     onSetCardText(cardId, text) {
         console.log("Setting card " + cardId + "'s text to '" + text + "'");
 
         this.setCardText(cardId, text)
-        .then(this.fetchCurrentView);
+        .finally(this.fetchCurrentView);
     }
 
     onAddCardTag(cardId, tag) {
         console.log("Adding tag '" + tag + "' to card " + cardId);
 
         this.addCardTag(cardId, tag)
-        .then(this.fetchCurrentView);
+        .finally(this.fetchCurrentView);
     }
 
     onDeleteCardTag(cardId, tag) {
         console.log("Deleting tag '" + tag + "' from card " + cardId);
 
         this.deleteCardTag(cardId, tag)
-        .then(this.fetchCurrentView);
+        .finally(this.fetchCurrentView);
     }
 
     onUpdateCardTag(cardId, oldTag, newTag) {
         console.log("Updating tag '" + oldTag + "' to '" + newTag + "' on card " + cardId);
 
-        return this.deleteCardTag(cardId, oldTag)
-        .then(() => this.addCardTag(cardId, newTag))
-        .then(() => this.fetchCurrentView());
+        return this.addCardTag(cardId, newTag)
+        .then((response) => {
+            if (response.ok) {
+                return this.deleteCardTag(cardId, oldTag);
+            } else {
+                return Promise.reject("Adding card tag while updating failed");
+            }
+        })
+        .finally(this.fetchCurrentView);
     }
 
     // ---

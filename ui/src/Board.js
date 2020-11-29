@@ -8,6 +8,17 @@ import BoardViewDefault from './BoardViewDefault.js';
 import BoardViewCategory from './BoardViewCategory.js';
 import Card from './Card.js';
 
+function isTagValid(tag) {
+    return fetch("/tags/validate/" + tag)
+    .then((response) => {
+        if (response.ok) {
+            return Promise.resolve(response.json());
+        } else {
+            return Promise.reject("Failed to check tag validity");
+        }
+    });
+}
+
 class BoardPanel extends React.Component {
     constructor(props) {
         super(props);
@@ -22,6 +33,12 @@ class BoardPanel extends React.Component {
 
         this.onBoardNameInput = this.onBoardNameInput.bind(this);
         this.onBoardNameBlur = this.onBoardNameBlur.bind(this);
+
+        this.onNewCardAddCardTag = this.onNewCardAddCardTag.bind(this);
+        this.onNewCardDeleteCardTag = this.onNewCardDeleteCardTag.bind(this);
+        this.onNewCardSetCardText = this.onNewCardSetCardText.bind(this);
+        this.onNewCardDeleteCard = this.onNewCardDeleteCard.bind(this);
+        this.onNewCardCreate = this.onNewCardCreate.bind(this);
     }
 
     // ---
@@ -48,22 +65,49 @@ class BoardPanel extends React.Component {
     // ---
 
     onNewCardAddCardTag(cardId, tag) {
+        isTagValid(tag)
+        .then((isValid) => {
+            if (isValid) {
+                if (this.state.newCardTags.indexOf(tag) == -1) {
+                    this.setState((state, props) => {
+                        let newCardTags = state.newCardTags.slice();
+
+                        newCardTags.push(tag);
+                        newCardTags.sort();
+
+                        return { newCardTags: newCardTags };
+                    });
+                }
+            } else {
+                Promise.reject("Tag " + tag + " was not valid");
+            }
+        })
+        .catch(console.log);
+    }
+
+    onNewCardDeleteCardTag(cardId, tag) {
         this.setState((state, props) => {
             let newCardTags = state.newCardTags.slice();
 
-            newCardTags.push(tag);
-            newCardTags.sort();
+            const tagIndex = newCardTags.indexOf(tag);
+            newCardTags.splice(tagIndex, 1);
 
             return { newCardTags: newCardTags };
         });
     }
 
-    onNewCardDeleteCardTag(cardId, tag) {
-        // TODO!
-        this.setState(());
-    }
-
     onNewCardUpdateCardTag(cardId, oldTag, newTag) {
+        this.setState((state, props) => {
+            let newCardTags = state.newCardTags.slice();
+
+            const newTagIndex = newCardTags.indexOf(oldTag);
+            newCardTags.splice(newTagIndex, 1);
+
+            newCardTags.push(newTag);
+            newCardTags.sort();
+
+            return { newCardTags: newCardTags };
+        });
     }
 
     onNewCardSetCardText(cardId, text) {
@@ -75,6 +119,7 @@ class BoardPanel extends React.Component {
     }
 
     onNewCardCreate() {
+        this.props.actions.onAddCard(this.state.newCardText, this.state.newCardTags);
     }
 
     // ---
@@ -101,8 +146,6 @@ class BoardPanel extends React.Component {
             noCategoryText = <strong>{noCategoryText}</strong>;
         }
 
-        // TODO: Add new card by having a "new card" in the panel, that you
-        // can edit and then finally add by pressing a button.
         return (<div className="board-panel">
             <h1><InlineInput
                 value={this.props.boardName}
@@ -113,12 +156,14 @@ class BoardPanel extends React.Component {
                 />
             </h1>
 
-            <input type="text" value={this.state.filter} onChange={(event) => this.handleFilterChange(event)} />
+            <input className="board-filter-input" type="text" value={this.state.filter} onChange={(event) => this.handleFilterChange(event)} />
 
             <Card
                 id={-1}
                 text={this.state.newCardText}
                 tags={this.state.newCardTags}
+
+                textPlaceholder="New card text"
 
                 onAddCardTag={this.onNewCardAddCardTag}
                 onDeleteCardTag={this.onNewCardDeleteCardTag}

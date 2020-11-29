@@ -14,6 +14,14 @@ use crate::board::{Board, CardId, Tag};
 mod structs;
 use structs::*;
 
+#[get("/tags/validate/<tag>")]
+pub fn validate_tag(tag: String) -> &'static str {
+    match Tag::new(tag) {
+        Ok(_) => "true",
+        Err(_) => "false",
+    }
+}
+
 #[put("/board/name", data = "<new_name>")]
 pub fn set_board_name(
     board: State<Mutex<Board>>,

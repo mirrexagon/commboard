@@ -99,10 +99,16 @@ class Card extends React.Component {
                 <Tag tagString={tagString} onUpdateTag={this.onUpdateTag} />
             </li>));
 
+        let placeholder = "";
+
+        if (this.props.textPlaceholder) {
+            placeholder = this.props.textPlaceholder;
+        }
+
         return (<div className="card-container">
             <InlineInput
                 type="textarea"
-                placeholder=""
+                placeholder={placeholder}
                 value={this.state.text}
                 labelClasses="card-text"
 
@@ -129,6 +135,8 @@ Card.propTypes = {
     id: PropTypes.number.isRequired,
     text: PropTypes.string.isRequired,
     tags: PropTypes.array.isRequired,
+
+    textPlaceholder: PropTypes.string,
 
     onAddCardTag: PropTypes.func.isRequired,
     onDeleteCardTag: PropTypes.func.isRequired,
