@@ -6,6 +6,7 @@ import InlineInput from 'react-inline-input';
 
 import BoardViewDefault from './BoardViewDefault.js';
 import BoardViewCategory from './BoardViewCategory.js';
+import Card from './Card.js';
 
 class BoardPanel extends React.Component {
     constructor(props) {
@@ -14,11 +15,16 @@ class BoardPanel extends React.Component {
         this.state = {
             filter: "",
             boardName: props.name,
+
+            newCardText: "",
+            newCardTags: [],
         };
 
         this.onBoardNameInput = this.onBoardNameInput.bind(this);
         this.onBoardNameBlur = this.onBoardNameBlur.bind(this);
     }
+
+    // ---
 
     handleFilterChange(event) {
         let newFilter = event.target.value;
@@ -26,6 +32,8 @@ class BoardPanel extends React.Component {
         this.setState({ filter: newFilter },
             () => this.props.actions.onSetFilter(newFilter));
     }
+
+    // ---
 
     onBoardNameInput(s) {
         this.setState({ boardName: s });
@@ -36,6 +44,28 @@ class BoardPanel extends React.Component {
             this.props.actions.onSetBoardName(this.state.boardName);
         }
     }
+
+    // ---
+
+    onNewCardAddCardTag(cardId, tag) {
+    }
+
+    onNewCardDeleteCardTag(cardId, tag) {
+    }
+
+    onNewCardUpdateCardTag(cardId, oldTag, newTag) {
+    }
+
+    onNewCardSetCardText(cardId, text) {
+    }
+
+    onNewCardDeleteCard(cardId) {
+    }
+
+    onNewCardCreate() {
+    }
+
+    // ---
 
     render() {
         const categories = this.props.categoryNames
@@ -72,6 +102,20 @@ class BoardPanel extends React.Component {
             </h1>
 
             <input type="text" value={this.state.filter} onChange={(event) => this.handleFilterChange(event)} />
+
+            <Card
+                id={-1}
+                text={this.state.newCardText}
+                tags={this.state.newCardTags}
+
+                onAddCardTag={this.onNewCardAddCardTag}
+                onDeleteCardTag={this.onNewCardDeleteCardTag}
+                onUpdateCardTag={this.onNewCardUpdateCardTag}
+                onSetCardText={this.onNewCardSetCardText}
+                onDeleteCard={this.onNewCardDeleteCard}
+                />
+
+            <button onClick={this.onNewCardCreate}>Add new card</button>
 
             <ul>
                 <li key={0}>
