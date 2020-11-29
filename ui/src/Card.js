@@ -62,10 +62,14 @@ class Card extends React.Component {
 
     onUpdateTag(oldTag, newTag) {
         if (newTag === "") {
-            this.props.actions.onDeleteCardTag(this.props.id, oldTag);
+            this.props.onDeleteCardTag(this.props.id, oldTag);
         } else {
-            this.props.actions.onUpdateCardTag(this.props.id, oldTag, newTag);
+            this.props.onUpdateCardTag(this.props.id, oldTag, newTag);
         }
+    }
+
+    onDeleteCard() {
+        this.props.onDeleteCard(this.props.id);
     }
 
     onTextInput(s) {
@@ -74,7 +78,7 @@ class Card extends React.Component {
 
     onTextBlur() {
         if (this.state.text !== this.props.text) {
-            this.props.actions.onSetCardText(this.props.id, this.state.text);
+            this.props.onSetCardText(this.props.id, this.state.text);
         }
     }
 
@@ -84,7 +88,7 @@ class Card extends React.Component {
 
     onNewTagBlur() {
         if (this.state.newTag !== "") {
-            this.props.actions.onAddCardTag(this.props.id, this.state.newTag);
+            this.props.onAddCardTag(this.props.id, this.state.newTag);
             this.setState({ newTag: "" });
         }
     }
@@ -125,7 +129,12 @@ Card.propTypes = {
     id: PropTypes.number.isRequired,
     text: PropTypes.string.isRequired,
     tags: PropTypes.array.isRequired,
-    actions: PropTypes.object.isRequired,
+
+    onAddCardTag: PropTypes.func.isRequired,
+    onDeleteCardTag: PropTypes.func.isRequired,
+    onUpdateCardTag: PropTypes.func.isRequired,
+    onSetCardText: PropTypes.func.isRequired,
+    onDeleteCard: PropTypes.func.isRequired,
 };
 
 export default Card;

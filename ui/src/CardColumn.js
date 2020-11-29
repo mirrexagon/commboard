@@ -11,7 +11,12 @@ class CardColumn extends React.Component {
                 id={card.id}
                 text={card.text}
                 tags={card.tags}
-                actions={this.props.actions}
+
+                onAddCardTag={this.props.actions.onAddCardTag}
+                onDeleteCardTag={this.props.actions.onDeleteCardTag}
+                onUpdateCardTag={this.props.actions.onUpdateCardTag}
+                onSetCardText={this.props.actions.onSetCardText}
+                onDeleteCard={this.props.actions.onDeleteCard}
                 />
         </li>));
 
