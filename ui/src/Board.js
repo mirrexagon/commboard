@@ -48,18 +48,30 @@ class BoardPanel extends React.Component {
     // ---
 
     onNewCardAddCardTag(cardId, tag) {
+        this.setState((state, props) => {
+            let newCardTags = state.newCardTags.slice();
+
+            newCardTags.push(tag);
+            newCardTags.sort();
+
+            return { newCardTags: newCardTags };
+        });
     }
 
     onNewCardDeleteCardTag(cardId, tag) {
+        // TODO!
+        this.setState(());
     }
 
     onNewCardUpdateCardTag(cardId, oldTag, newTag) {
     }
 
     onNewCardSetCardText(cardId, text) {
+        this.setState({ newCardText: text });
     }
 
     onNewCardDeleteCard(cardId) {
+        // Do nothing, as this isn't a real card.
     }
 
     onNewCardCreate() {
