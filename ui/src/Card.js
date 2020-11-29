@@ -49,25 +49,39 @@ class Card extends React.Component {
 
         this.state = {
             text: props.text,
+            newTag: "",
         };
 
         this.onUpdateTag = this.onUpdateTag.bind(this);
 
-        this.onInput = this.onInput.bind(this);
-        this.onBlur = this.onBlur.bind(this);
+        this.onTextInput = this.onTextInput.bind(this);
+        this.onTextBlur = this.onTextBlur.bind(this);
+        this.onNewTagInput = this.onNewTagInput.bind(this);
+        this.onNewTagBlur = this.onNewTagBlur.bind(this);
     }
 
     onUpdateTag(oldTag, newTag) {
         return this.props.actions.onUpdateCardTag(this.props.id, oldTag, newTag);
     }
 
-    onInput(s) {
+    onTextInput(s) {
         this.setState({ text: s });
     }
 
-    onBlur() {
+    onTextBlur() {
         if (this.state.text !== this.props.text) {
             this.props.actions.onSetCardText(this.props.id, this.state.text);
+        }
+    }
+
+    onNewTagInput(s) {
+        this.setState({ newTag: s });
+    }
+
+    onNewTagBlur() {
+        if (this.state.newTag !== "") {
+            this.props.actions.onAddCardTag(this.props.id, this.state.newTag);
+            this.setState({ newTag: "" });
         }
     }
 
@@ -84,11 +98,21 @@ class Card extends React.Component {
                 value={this.state.text}
                 labelClasses="card-text"
 
-                onInput={this.onInput}
-                onBlur={this.onBlur}
+                onInput={this.onTextInput}
+                onBlur={this.onTextBlur}
                 />
 
             <ul className="card-tag-list">{tags}</ul>
+
+            <InlineInput
+                placeholder="New tag..."
+                value={this.state.newTag}
+
+                labelClasses="card-new-tag-label"
+
+                onInput={this.onNewTagInput}
+                onBlur={this.onNewTagBlur}
+                />
         </div>);
     }
 }
