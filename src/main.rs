@@ -70,11 +70,10 @@ fn main() {
     }
 
     rocket::ignite()
+        .mount("/", routes![index, index_bundle])
         .mount(
-            "/",
+            "/api",
             routes![
-                index,
-                index_bundle,
                 api::validate_tag,
                 api::set_board_name,
                 api::get_board_view_default,

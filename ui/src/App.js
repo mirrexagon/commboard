@@ -41,9 +41,9 @@ class App extends React.Component {
 
         let url;
         if (this.state.currentCategoryName) {
-            url = "/board/category/" + this.state.currentCategoryName;
+            url = "/api/board/category/" + this.state.currentCategoryName;
         } else {
-            url = "/board";
+            url = "/api/board";
         }
 
 
@@ -59,7 +59,7 @@ class App extends React.Component {
     }
 
     setBoardName(name) {
-        return fetch("/board/name", {
+        return fetch("/api/board/name", {
             method: "PUT",
             headers: {
                 "Content-Type": "text/plain",
@@ -69,19 +69,19 @@ class App extends React.Component {
     }
 
     addCard() {
-        return fetch("/board/cards", {
+        return fetch("/api/board/cards", {
             method: "POST",
         });
     }
 
     deleteCard(cardId) {
-        return fetch("/board/cards/" + cardId, {
+        return fetch("/api/board/cards/" + cardId, {
             method: "DELETE",
         });
     }
 
     setCardText(cardId, text) {
-        return fetch("/board/cards/" + cardId + "/text", {
+        return fetch("/api/board/cards/" + cardId + "/text", {
             method: "PUT",
             headers: {
                 "Content-Type": "text/plain",
@@ -91,13 +91,13 @@ class App extends React.Component {
     }
 
     addCardTag(cardId, tag) {
-        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
+        return fetch("/api/board/cards/" + cardId + "/tags/" + tag, {
             method: "PUT",
         });
     }
 
     deleteCardTag(cardId, tag) {
-        return fetch("/board/cards/" + cardId + "/tags/" + tag, {
+        return fetch("/api/board/cards/" + cardId + "/tags/" + tag, {
             method: "DELETE",
         });
     }
