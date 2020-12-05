@@ -16,6 +16,10 @@ fn main() {
         }
     }
 
+    println!("cargo:rerun-if-changed=ui/package.json");
+    println!("cargo:rerun-if-changed=ui/webpack.config.js");
+    println!("cargo:rerun-if-changed=ui/.swcrc");
+
     // Install UI dependencies.
     let deps_output = Command::new("npm")
         .current_dir(UI_DIR)
