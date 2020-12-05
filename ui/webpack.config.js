@@ -21,6 +21,9 @@ module.exports = {
         ],
     },
     devtool: "inline-source-map",
+    devServer: {
+        contentBase: "./dist",
+    },
     plugins: [
         new HtmlWebpackPlugin({
             template: path.join(__dirname, 'public/index.html'),
