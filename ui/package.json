@@ -1,7 +1,8 @@
 {
     "scripts": {
-        "build": "webpack --mode production",
-        "build-dev": "webpack --mode development"
+        "build": "webpack --mode=production",
+        "build-dev": "webpack --mode=development",
+        "watch": "webpack --mode=development --watch"
     },
     "dependencies": {
         "prop-types": "^15.7.2",
