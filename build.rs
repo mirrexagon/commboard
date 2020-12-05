@@ -20,21 +20,6 @@ fn main() {
     println!("cargo:rerun-if-changed=ui/webpack.config.js");
     println!("cargo:rerun-if-changed=ui/.swcrc");
 
-    // Install UI dependencies.
-    let deps_output = Command::new("npm")
-        .current_dir(UI_DIR)
-        .arg("install")
-        .output()
-        .expect("Failed to get UI dependencies");
-
-    assert!(
-        deps_output.status.success(),
-        "Failed to get UI dependencies: npm exited with {:?}\n\n{}\n\n{}",
-        deps_output.status.code(),
-        String::from_utf8_lossy(&deps_output.stdout),
-        String::from_utf8_lossy(&deps_output.stderr)
-    );
-
     // Build the UI.
     let profile = std::env::var("PROFILE").unwrap();
     let npm_action = match profile.as_str() {
