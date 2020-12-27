@@ -28,6 +28,9 @@ class App extends React.Component {
         this.onAddCardTag = this.onAddCardTag.bind(this);
         this.onDeleteCardTag = this.onDeleteCardTag.bind(this);
         this.onUpdateCardTag = this.onUpdateCardTag.bind(this);
+
+        this.onMoveCardWithinDefaultCardOrder = this.onMoveCardWithinDefaultCardOrder.bind(this);
+        this.onMoveCardInColumn = this.onMoveCardInColumn.bind(this);
     }
 
     componentDidMount() {
@@ -99,6 +102,18 @@ class App extends React.Component {
     deleteCardTag(cardId, tag) {
         return fetch("/api/board/cards/" + cardId + "/tags/" + tag, {
             method: "DELETE",
+        });
+    }
+
+    moveCardWithinDefaultCardOrder(cardId, toPos) {
+        return fetch("/api/board/cards/" + cardId + "/moveto/" + toPos, {
+            method: "PUT",
+        });
+    }
+
+    moveCardInColumn(cardId, tag, toPos) {
+        return fetch("/api/board/cards/" + cardId + "/tags/" + tag + "/moveto/" + toPos, {
+            method: "PUT",
         });
     }
 
@@ -193,6 +208,20 @@ class App extends React.Component {
         .finally(this.fetchCurrentView);
     }
 
+    onMoveCardWithinDefaultCardOrder(cardId, toPos) {
+        console.log(`Moving card ${cardId} to position ${toPos} within default card order`);
+
+        return this.moveCardWithinDefaultCardOrder(cardId, toPos)
+        .finally(this.fetchCurrentView);
+    }
+
+    onMoveCardInColumn(cardId, tag, toPos) {
+        console.log(`Moving card ${cardId} to position ${toPos} in column for tag ${tag}`);
+
+        return this.moveCardInColumn(cardId, tag, toPos)
+        .finally(this.fetchCurrentView);
+    }
+
     // ---
 
     render() {
@@ -216,6 +245,9 @@ class App extends React.Component {
                     onDeleteCardTag: this.onDeleteCardTag,
                     onUpdateCardTag: this.onUpdateCardTag,
                 }}
+
+                onMoveCardWithinDefaultCardOrder={this.onMoveCardWithinDefaultCardOrder}
+                onMoveCardInColumn={this.onMoveCardInColumn}
                 />
         </div>);
     }

@@ -83,6 +83,8 @@ fn main() {
                 api::set_card_text,
                 api::add_card_tag,
                 api::delete_card_tag,
+                api::move_card_within_default_card_order,
+                api::move_card_in_column,
             ],
         )
         .manage(board)

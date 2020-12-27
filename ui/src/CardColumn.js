@@ -2,6 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import './CardColumn.css';
 
+import ReactDragListView from 'react-drag-listview';
+
 import Card from './Card.js';
 
 class CardColumn extends React.Component {
@@ -20,13 +22,26 @@ class CardColumn extends React.Component {
                 />
         </li>));
 
-        return <ul className="card-column">{cards}</ul>;
+        return (
+            <ReactDragListView
+                onDragEnd={(fromIndex, toIndex) => {
+                    const cardId = this.props.cards[fromIndex].id;
+                    this.props.onMoveCardInColumn(cardId, toIndex);
+                }}
+                nodeSelector=".card-column-item"
+                handleSelector=".card-drag-handle"
+                >
+                <ul className="card-column">{cards}</ul>
+            </ReactDragListView>
+        );
     }
 }
 
 CardColumn.propTypes = {
     cards: PropTypes.array.isRequired,
     actions: PropTypes.object.isRequired,
+
+    onMoveCardInColumn: PropTypes.func.isRequired,
 };
 
 export default CardColumn

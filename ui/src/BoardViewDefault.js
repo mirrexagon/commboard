@@ -12,6 +12,7 @@ class BoardViewDefault extends React.Component {
         return <CardColumn
             cards={cards}
             actions={this.props.actions}
+            onMoveCardInColumn={this.props.onMoveCardWithinDefaultCardOrder}
             />;
     }
 }
@@ -19,6 +20,7 @@ class BoardViewDefault extends React.Component {
 BoardViewDefault.propTypes = {
     viewData: PropTypes.object.isRequired,
     actions: PropTypes.object.isRequired,
+    onMoveCardWithinDefaultCardOrder: PropTypes.func.isRequired,
 };
 
 export default BoardViewDefault;

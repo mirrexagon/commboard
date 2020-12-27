@@ -2,6 +2,10 @@
 Boards of category-tagged cards.
 
 
+## TODO
+- Remove babel-runtime which react-drag-listview needs for some reason
+
+
 ## Building
 1. In `ui/`, run `npm install`.
 2. In the repo root, run `cargo build`.

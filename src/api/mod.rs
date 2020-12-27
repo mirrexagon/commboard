@@ -148,6 +148,42 @@ pub fn delete_card_tag(
         .map_err(|err| CardTagError::BadRequest(status::BadRequest(Some(err.to_string()))))
 }
 
+#[put("/board/cards/<card_id>/moveto/<to_pos>")]
+pub fn move_card_within_default_card_order(
+    board: State<Mutex<Board>>,
+    card_id: CardId,
+    to_pos: usize,
+) -> Result<(), status::BadRequest<String>> {
+    let mut board = board.lock().unwrap();
+
+    board
+        .move_card_within_default_card_order(card_id, to_pos)
+        .map_err(|err| status::BadRequest(Some(err.to_string())))
+}
+
+#[put("/board/cards/<card_id>/tags/<tag>/moveto/<to_pos>")]
+pub fn move_card_in_column(
+    board: State<Mutex<Board>>,
+    card_id: CardId,
+    tag: String,
+    to_pos: usize,
+) -> Result<(), status::BadRequest<String>> {
+    let tag = match Tag::new(tag) {
+        Ok(tag) => tag,
+        Err(_) => {
+            return Err(status::BadRequest(Some(
+                "Supplied tag is invalid".to_owned(),
+            )))
+        }
+    };
+
+    let mut board = board.lock().unwrap();
+
+    board
+        .move_card_in_column(card_id, &tag, to_pos)
+        .map_err(|err| status::BadRequest(Some(err.to_string())))
+}
+
 impl<'r> FromParam<'r> for CardId {
     type Error = <u64 as FromParam<'r>>::Error;
 

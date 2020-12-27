@@ -218,11 +218,13 @@ class Board extends React.Component {
             boardView = <BoardViewDefault
                 viewData={this.props.boardViewData}
                 actions={this.props.actions}
+                onMoveCardWithinDefaultCardOrder={this.props.onMoveCardWithinDefaultCardOrder}
                 />;
         } else if (currentCategory) {
             boardView = <BoardViewCategory
                 viewData={this.props.boardViewData}
                 actions={this.props.actions}
+                onMoveCardInColumn={this.props.onMoveCardInColumn}
                 />;
         }
 
@@ -244,6 +246,9 @@ class Board extends React.Component {
 Board.propTypes = {
     boardViewData: PropTypes.object,
     actions: PropTypes.object.isRequired,
+
+    onMoveCardWithinDefaultCardOrder: PropTypes.func.isRequired,
+    onMoveCardInColumn: PropTypes.func.isRequired,
 };
 
 export default Board;

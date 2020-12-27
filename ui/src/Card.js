@@ -1,4 +1,4 @@
- import React from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import './Card.css';
 
@@ -106,6 +106,11 @@ class Card extends React.Component {
         }
 
         return (<div className="card-container">
+            <a href="#" className="card-drag-handle">Drag</a>
+
+            <br />
+            <br />
+
             <InlineInput
                 type="textarea"
                 placeholder={placeholder}
