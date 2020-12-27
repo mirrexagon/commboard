@@ -9,7 +9,7 @@ import BoardViewCategory from './BoardViewCategory.js';
 import Card from './Card.js';
 
 function isTagValid(tag) {
-    return fetch("/tags/validate/" + tag)
+    return fetch("/api/tags/validate/" + tag)
     .then((response) => {
         if (response.ok) {
             return Promise.resolve(response.json());
@@ -35,6 +35,7 @@ class BoardPanel extends React.Component {
         this.onBoardNameBlur = this.onBoardNameBlur.bind(this);
 
         this.onNewCardAddCardTag = this.onNewCardAddCardTag.bind(this);
+        this.onNewCardUpdateCardTag = this.onNewCardUpdateCardTag.bind(this);
         this.onNewCardDeleteCardTag = this.onNewCardDeleteCardTag.bind(this);
         this.onNewCardSetCardText = this.onNewCardSetCardText.bind(this);
         this.onNewCardDeleteCard = this.onNewCardDeleteCard.bind(this);

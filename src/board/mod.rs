@@ -229,7 +229,10 @@ impl Board {
                     columns: Vec::new(),
                 });
 
-                self.categories.last_mut().unwrap()
+                // Keep categories sorted in alphabetical order.
+                self.categories.sort_by(|a, b| a.name.cmp(&b.name));
+
+                self.get_category_by_tag_mut(tag).unwrap()
             }
         };
 
@@ -390,7 +393,7 @@ impl Category {
     }
 
     fn get_column_position(&self, tag: &Tag) -> Option<usize> {
-        assert!(tag.category() == self.name);
+        assert!(tag.category() == self.name, "tried to get column position for tag {} but this is category {}", tag.tag(), self.name);
 
         self.columns
             .iter()
