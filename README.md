@@ -39,12 +39,6 @@ TODO: Also add text filtering
 ## Grouping
 By default, all cards are displayed without any grouping.
 
-Cards can be arranged grouped by a single category. This is like treating the category as a Kanban board and the values as columns.
-
-While grouping is active:
-- Any cards without the selected category are hidden.
-- Cards can be dragged between columns.
+Cards can be arranged grouped by a single category. This is like treating the category as a Kanban board and the values as columns. While grouping is active, any cards without the selected category are hidden.
 
 Cards can have multiple tags with the same category and different values. This will make a card show in two different columns when cards are grouped by that category. They are the same card, so updates to one will be reflected in the other.
-
-However, dragging an instance of a multiply-columned card to a differen column will only modify the tag corresponding to the column it was dragged from. A multiply-columned card instance cannot be dragged into a column that another instance is occupying.
