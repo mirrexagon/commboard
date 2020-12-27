@@ -24,20 +24,13 @@ A card is a block of text (TODO: Markdown rendering, including embedding images)
 
 Tags are of the form `category:value`, eg. `status:in-progress`. Any character up to the first `:` is treated as the category name, and the rest is the value. Both parts of the tag (category and value) are required.
 
+Tags are always ordered alphabetically where displayed, ie. on cards and in the category grouping list.
+
 TODO: Tags have colors that are based on category. Initial color is generated from category name, but can be changed?
 
 
 ## Filtering
-By default, all cards are visible. Which cards are visible can be filtered using a query based on tags.
-
-- `status:`: Show only cards with at least one tag with the `status` category.
-- `!status:`: Show only cards that do not have any tags with the `status` category.
-- `status:done`: Show only cards that have the exact tag `status:done`.
-- `!status:done`: Show only cards that do not have the exact tag `status:done`.
-
-These can be combined with `&&` and `||`, and grouped with parentheses.
-
-TODO: Also add text filtering
+You can filter cards by substring match on body text and tags. TODO: Implement
 
 
 ## Grouping
