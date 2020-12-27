@@ -225,6 +225,7 @@ class Board extends React.Component {
                 viewData={this.props.boardViewData}
                 actions={this.props.actions}
                 onMoveCardInColumn={this.props.onMoveCardInColumn}
+                onMoveColumnInCategory={this.props.onMoveColumnInCategory}
                 />;
         }
 
@@ -249,6 +250,8 @@ Board.propTypes = {
 
     onMoveCardWithinDefaultCardOrder: PropTypes.func.isRequired,
     onMoveCardInColumn: PropTypes.func.isRequired,
+
+    onMoveColumnInCategory: PropTypes.func.isRequired,
 };
 
 export default Board;

@@ -24,7 +24,7 @@ pub struct Board {
     categories: Vec<Category>,
 
     // TODO: Store files (eg. images), that the UI can request from a certain
-    // subdirectory in the URL path, so it can display images based on Markdown
+   // subdirectory in the URL path, so it can display images based on Markdown
     // image tags. UI shows other kinds of files as just the link to download.
     // Store files as base64 strings.
 }
@@ -329,6 +329,7 @@ impl Board {
         }
     }
 
+    // TODO: Force categories to be alphabetically-ordered.
     pub fn move_category(&mut self, category_name: &str, to_pos: usize) -> Result<(), BoardError> {
         let from_pos = self
             .get_category_position(category_name)

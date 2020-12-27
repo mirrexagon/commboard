@@ -184,6 +184,28 @@ pub fn move_card_in_column(
         .map_err(|err| status::BadRequest(Some(err.to_string())))
 }
 
+#[put("/board/tags/<tag>/moveto/<to_pos>")]
+pub fn move_column_in_category(
+    board: State<Mutex<Board>>,
+    tag: String,
+    to_pos: usize,
+) -> Result<(), status::BadRequest<String>> {
+    let tag = match Tag::new(tag) {
+        Ok(tag) => tag,
+        Err(_) => {
+            return Err(status::BadRequest(Some(
+                "Supplied tag is invalid".to_owned(),
+            )))
+        }
+    };
+
+    let mut board = board.lock().unwrap();
+
+    board
+        .move_column_in_category(&tag, to_pos)
+        .map_err(|err| status::BadRequest(Some(err.to_string())))
+}
+
 impl<'r> FromParam<'r> for CardId {
     type Error = <u64 as FromParam<'r>>::Error;
 

@@ -31,6 +31,8 @@ class App extends React.Component {
 
         this.onMoveCardWithinDefaultCardOrder = this.onMoveCardWithinDefaultCardOrder.bind(this);
         this.onMoveCardInColumn = this.onMoveCardInColumn.bind(this);
+
+        this.onMoveColumnInCategory = this.onMoveColumnInCategory.bind(this);
     }
 
     componentDidMount() {
@@ -113,6 +115,12 @@ class App extends React.Component {
 
     moveCardInColumn(cardId, tag, toPos) {
         return fetch("/api/board/cards/" + cardId + "/tags/" + tag + "/moveto/" + toPos, {
+            method: "PUT",
+        });
+    }
+
+    moveColumnInCategory(tag, toPos) {
+        return fetch("/api/board/tags/" + tag + "/moveto/" + toPos, {
             method: "PUT",
         });
     }
@@ -222,6 +230,13 @@ class App extends React.Component {
         .finally(this.fetchCurrentView);
     }
 
+    onMoveColumnInCategory(tag, toPos) {
+        console.log(`Moving column for ${tag} to position ${toPos} in its category`);
+
+        return this.moveColumnInCategory(tag, toPos)
+        .finally(this.fetchCurrentView);
+    }
+
     // ---
 
     render() {
@@ -248,6 +263,8 @@ class App extends React.Component {
 
                 onMoveCardWithinDefaultCardOrder={this.onMoveCardWithinDefaultCardOrder}
                 onMoveCardInColumn={this.onMoveCardInColumn}
+
+                onMoveColumnInCategory={this.onMoveColumnInCategory}
                 />
         </div>);
     }

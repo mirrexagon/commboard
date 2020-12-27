@@ -85,6 +85,7 @@ fn main() {
                 api::delete_card_tag,
                 api::move_card_within_default_card_order,
                 api::move_card_in_column,
+                api::move_column_in_category,
             ],
         )
         .manage(board)
