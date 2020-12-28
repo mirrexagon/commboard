@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::io::{self, Read, Write};
+use std::fs::File;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -27,11 +30,16 @@ pub struct Board {
    // subdirectory in the URL path, so it can display images based on Markdown
     // image tags. UI shows other kinds of files as just the link to download.
     // Store files as base64 strings.
+
+    /// Path to JSON file this board saves to.
+    #[serde(skip_serializing)]
+    #[serde(skip_deserializing)]
+    file_path: PathBuf
 }
 
 impl Board {
     /// Creates a new empty board.
-    pub fn new() -> Self {
+    pub fn new<P: AsRef<Path>>(file_path: P) -> Self {
         Self {
             name: format!("New Board"),
 
@@ -40,6 +48,8 @@ impl Board {
 
             default_card_order: Vec::new(),
             categories: Vec::new(),
+
+            file_path: file_path.as_ref().to_owned(),
         }
     }
 
@@ -68,12 +78,31 @@ impl Board {
         }
     }
 
+    pub fn save(&self) -> Result<(), BoardError> {
+        self.save_to_file(&self.file_path)
+    }
+
+    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), BoardError> {
+        let mut f = File::create(path)?;
+        serde_json::to_writer_pretty(f, self)?;
+        Ok(())
+    }
+
+    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, BoardError> {
+        let mut f = File::open(path)?;
+        let board = serde_json::from_reader(f)?;
+        Ok(board)
+    }
+
     // -- Cards --
     /// Creates a new card with no tags and no text, and returns its ID.
     pub fn new_card(&mut self) -> CardId {
         let id = self.get_next_card_id();
         self.cards.insert(id, Card::new(id));
         self.default_card_order.push(id);
+
+        self.save().expect("Failed to save board after adding card");
+
         id
     }
 
@@ -114,6 +143,8 @@ impl Board {
         // Remove from main hashmap.
         self.cards.remove(&card_id);
 
+        self.save().expect("Failed to save board after deleting card");
+
         Ok(())
     }
 
@@ -136,6 +167,7 @@ impl Board {
     ) -> Result<(), BoardError> {
         if let Some(card) = self.get_card_mut(id) {
             card.text = text.into();
+            self.save().expect("Failed to save board after setting card text");
             Ok(())
         } else {
             Err(BoardError::NoSuchCard(id))
@@ -154,31 +186,11 @@ impl Board {
         if let Some(old_index) = self.default_card_order.iter().position(|&i| i == id) {
             self.default_card_order.remove(old_index);
             self.default_card_order.insert(new_index, id);
+            self.save().expect("Failed to save board after moving card within default card order");
             Ok(())
         } else {
             Err(BoardError::NoSuchCard(id))
         }
-    }
-
-    // TODO: Force categories to be alphabetically-ordered.
-    pub fn move_category(&mut self, category_name: &str, to_pos: usize) -> Result<(), BoardError> {
-        let from_pos = self
-            .get_category_position(category_name)
-            .ok_or(BoardError::NoSuchCategory)?;
-
-        if to_pos > self.categories.len() {
-            return Err(BoardError::PositionOutOfBounds(to_pos));
-        }
-
-        let category = self.categories.remove(from_pos);
-
-        if to_pos == self.categories.len() {
-            self.categories.push(category);
-        } else {
-            self.categories.insert(to_pos, category);
-        }
-
-        Ok(())
     }
 
     pub fn move_column_in_category(&mut self, tag: &Tag, to_pos: usize) -> Result<(), BoardError> {
@@ -186,7 +198,11 @@ impl Board {
             .get_category_by_tag_mut(tag)
             .ok_or(BoardError::NoSuchCategory)?;
 
-        category.move_column(tag, to_pos)
+        let result = category.move_column(tag, to_pos);
+
+        self.save().expect("Failed to save board after moving a column within a category");
+
+        result
     }
 
     pub fn move_card_in_column(
@@ -209,7 +225,11 @@ impl Board {
             .get_category_by_tag_mut(tag)
             .ok_or(BoardError::NoSuchCategory)?;
 
-        category.move_card_in_column(card_id, tag, to_pos)
+        let result = category.move_card_in_column(card_id, tag, to_pos);
+
+        self.save().expect("Failed to save board after moving a card within a column");
+
+        result
     }
 
     /// Adds a tag to a card in the board.
@@ -238,6 +258,8 @@ impl Board {
 
         category.add_card_tag(card_id, tag);
 
+        self.save().expect("Failed to save board after adding tag to card");
+
         Ok(())
     }
 
@@ -262,6 +284,8 @@ impl Board {
         if self.categories[category_pos].columns.is_empty() {
             self.categories.remove(category_pos);
         }
+
+        self.save().expect("Failed to save board after deleting tag from card");
 
         Ok(())
     }
@@ -468,6 +492,12 @@ impl Column {
 
 #[derive(Debug, Error)]
 pub enum BoardError {
+    #[error("serde error")]
+    SerdeError(#[from] serde_json::Error),
+
+    #[error("I/O error")]
+    IoError(#[from] io::Error),
+
     #[error("no such card with ID '{0}'")]
     NoSuchCard(CardId),
 

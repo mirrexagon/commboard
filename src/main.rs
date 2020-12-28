@@ -1,8 +1,10 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
 use std::sync::Mutex;
+use std::path::{Path, PathBuf};
 
 use rocket::{get, response::content, routes};
+use clap::{App, Arg};
 
 use board::{Board, Tag};
 
@@ -22,52 +24,24 @@ fn index_bundle() -> content::JavaScript<&'static str> {
 fn main() {
     env_logger::init();
 
-    let board = Mutex::new(Board::new());
-    {
-        let mut board = board.lock().unwrap();
+    let arg_matches = App::new("Commboard")
+        .arg(
+            Arg::with_name("FILE")
+            .help("The board .json file to use. It will be created if it doesn't exist.")
+            .required(true))
+        .get_matches();
 
-        {
-            let card1 = board.new_card();
-            board.set_card_text(card1, "Task 1").unwrap();
+    let board_file_path = Path::new(arg_matches.value_of("FILE").unwrap()).to_owned();
 
-            board
-                .add_card_tag(card1, &Tag::new("status:todo").unwrap())
-                .unwrap();
-            board
-                .add_card_tag(card1, &Tag::new("artist:tester").unwrap())
-                .unwrap();
-            board
-                .add_card_tag(card1, &Tag::new("rating:bad").unwrap())
-                .unwrap();
-        }
-
-        {
-            let card1 = board.new_card();
-            board.set_card_text(card1, "Task 2").unwrap();
-
-            board
-                .add_card_tag(card1, &Tag::new("status:in-progress").unwrap())
-                .unwrap();
-            board
-                .add_card_tag(card1, &Tag::new("artist:tester").unwrap())
-                .unwrap();
-            board
-                .add_card_tag(card1, &Tag::new("rating:bad").unwrap())
-                .unwrap();
-        }
-
-        {
-            let card1 = board.new_card();
-            board.set_card_text(card1, "Task 3").unwrap();
-
-            board
-                .add_card_tag(card1, &Tag::new("status:in-progress").unwrap())
-                .unwrap();
-            board
-                .add_card_tag(card1, &Tag::new("rating:good").unwrap())
-                .unwrap();
-        }
+    let board;
+    if board_file_path.is_file() {
+        board = Board::load_from_file(&board_file_path).expect("Couldn't load board file");
+    } else {
+        board = Board::new(&board_file_path);
+        board.save_to_file(&board_file_path).expect("Couldn't save new board file");
     }
+
+    let board = Mutex::new(board);
 
     rocket::ignite()
         .mount("/", routes![index, index_bundle])

@@ -14,6 +14,7 @@ serde = { version = "1.0.117", features = ["derive"] }
 serde_json = "1.0.59"
 
 rocket = "0.4.5"
+clap = "2.33.3"
 
 [dependencies.rocket_contrib]
 version = "0.4.5"
