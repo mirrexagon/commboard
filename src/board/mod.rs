@@ -89,8 +89,9 @@ impl Board {
     }
 
     pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, BoardError> {
-        let mut f = File::open(path)?;
-        let board = serde_json::from_reader(f)?;
+        let f = File::open(path.as_ref())?;
+        let mut board: Board = serde_json::from_reader(f)?;
+        board.file_path = path.as_ref().to_owned();
         Ok(board)
     }
 
