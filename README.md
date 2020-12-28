@@ -26,7 +26,7 @@ Tags are of the form `category:value`, eg. `status:in-progress`. Any character u
 
 Tags are always ordered alphabetically where displayed, ie. on cards and in the category grouping list.
 
-TODO: Tags have colors that are based on category. Initial color is generated from category name, but can be changed?
+TODO: Tags have colors that are based on category. Initial color is generated from category name, but can be changed. Color is shown on tags on cards, and next to categories in the sidebar.
 
 
 ## Filtering
