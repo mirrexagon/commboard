@@ -41,6 +41,9 @@ class App extends React.Component {
 
     // ---
 
+    // TODO: Try https://github.com/contiamo/restful-react for API calls
+    // TODO: Also try the hook-based component model: https://reactjs.org/docs/hooks-intro.html
+
     fetchCurrentView() {
         this.setState({ isFetching: true });
 
