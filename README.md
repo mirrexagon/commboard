@@ -4,6 +4,7 @@ Boards of category-tagged cards.
 
 ## TODO
 - Remove babel-runtime which react-drag-listview needs for some reason
+- Instead of card drag-drop within a column, have a box that says the current index in the column, and you can type +n to move down n, -n to move up n, or n to move the card to index n
 
 
 ## Building
