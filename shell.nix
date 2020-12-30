@@ -8,6 +8,8 @@ in
 pkgs.mkShell {
   buildInputs = with pkgs; [
     rustChannel.rust
+    rustfmt
+    rls
     cargo-edit
     nodejs
   ];
