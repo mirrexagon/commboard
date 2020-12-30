@@ -1,16 +1,15 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import './Board.css';
+import React from "react";
+import PropTypes from "prop-types";
+import "./Board.css";
 
-import InlineInput from 'react-inline-input';
+import InlineInput from "react-inline-input";
 
-import BoardViewDefault from './BoardViewDefault.js';
-import BoardViewCategory from './BoardViewCategory.js';
-import Card from './Card.js';
+import BoardViewDefault from "./BoardViewDefault.js";
+import BoardViewCategory from "./BoardViewCategory.js";
+import Card from "./Card.js";
 
 function isTagValid(tag) {
-    return fetch("/api/tags/validate/" + tag)
-    .then((response) => {
+    return fetch("/api/tags/validate/" + tag).then((response) => {
         if (response.ok) {
             return Promise.resolve(response.json());
         } else {
@@ -47,8 +46,9 @@ class BoardPanel extends React.Component {
     handleFilterChange(event) {
         let newFilter = event.target.value;
 
-        this.setState({ filter: newFilter },
-            () => this.props.actions.onSetFilter(newFilter));
+        this.setState({ filter: newFilter }, () =>
+            this.props.actions.onSetFilter(newFilter)
+        );
     }
 
     // ---
@@ -67,23 +67,23 @@ class BoardPanel extends React.Component {
 
     onNewCardAddCardTag(cardId, tag) {
         isTagValid(tag)
-        .then((isValid) => {
-            if (isValid) {
-                if (this.state.newCardTags.indexOf(tag) == -1) {
-                    this.setState((state, props) => {
-                        let newCardTags = state.newCardTags.slice();
+            .then((isValid) => {
+                if (isValid) {
+                    if (this.state.newCardTags.indexOf(tag) == -1) {
+                        this.setState((state, props) => {
+                            let newCardTags = state.newCardTags.slice();
 
-                        newCardTags.push(tag);
-                        newCardTags.sort();
+                            newCardTags.push(tag);
+                            newCardTags.sort();
 
-                        return { newCardTags: newCardTags };
-                    });
+                            return { newCardTags: newCardTags };
+                        });
+                    }
+                } else {
+                    Promise.reject("Tag " + tag + " was not valid");
                 }
-            } else {
-                Promise.reject("Tag " + tag + " was not valid");
-            }
-        })
-        .catch(console.log);
+            })
+            .catch(console.log);
     }
 
     onNewCardDeleteCardTag(cardId, tag) {
@@ -120,71 +120,88 @@ class BoardPanel extends React.Component {
     }
 
     onNewCardCreate() {
-        this.props.actions.onAddCard(this.state.newCardText, this.state.newCardTags);
+        this.props.actions.onAddCard(
+            this.state.newCardText,
+            this.state.newCardTags
+        );
     }
 
     // ---
 
     render() {
-        const categories = this.props.categoryNames
-            .map((categoryName) => {
-                // Emphasise current.
-                let categoryNameElement = categoryName;
+        const categories = this.props.categoryNames.map((categoryName) => {
+            // Emphasise current.
+            let categoryNameElement = categoryName;
 
-                if (categoryName == this.props.currentCategoryName) {
-                    categoryNameElement = <strong>{categoryName}</strong>;
-                }
+            if (categoryName == this.props.currentCategoryName) {
+                categoryNameElement = <strong>{categoryName}</strong>;
+            }
 
-                return (<li key={categoryName}>
-                    <button onClick={() => this.props.actions.onSetCategoryView(categoryName)}>
+            return (
+                <li key={categoryName}>
+                    <button
+                        onClick={() =>
+                            this.props.actions.onSetCategoryView(categoryName)
+                        }
+                    >
                         {categoryNameElement}
                     </button>
-                </li>);
-            });
+                </li>
+            );
+        });
 
         let noCategoryText = "No Category";
         if (this.props.currentCategoryName === null) {
             noCategoryText = <strong>{noCategoryText}</strong>;
         }
 
-        return (<div className="board-panel">
-            <h1><InlineInput
-                value={this.props.boardName}
-                placeholder=""
+        return (
+            <div className="board-panel">
+                <h1>
+                    <InlineInput
+                        value={this.props.boardName}
+                        placeholder=""
+                        onInput={this.onBoardNameInput}
+                        onBlur={this.onBoardNameBlur}
+                    />
+                </h1>
 
-                onInput={this.onBoardNameInput}
-                onBlur={this.onBoardNameBlur}
-                />
-            </h1>
-
-            <input className="board-filter-input" type="text" value={this.state.filter} onChange={(event) => this.handleFilterChange(event)} />
-
-            <Card
-                id={-1}
-                text={this.state.newCardText}
-                tags={this.state.newCardTags}
-
-                textPlaceholder="New card text"
-
-                onAddCardTag={this.onNewCardAddCardTag}
-                onDeleteCardTag={this.onNewCardDeleteCardTag}
-                onUpdateCardTag={this.onNewCardUpdateCardTag}
-                onSetCardText={this.onNewCardSetCardText}
-                onDeleteCard={this.onNewCardDeleteCard}
+                <input
+                    className="board-filter-input"
+                    type="text"
+                    value={this.state.filter}
+                    onChange={(event) => this.handleFilterChange(event)}
                 />
 
-            <button onClick={this.onNewCardCreate}>Add new card</button>
+                <Card
+                    id={-1}
+                    text={this.state.newCardText}
+                    tags={this.state.newCardTags}
+                    textPlaceholder="New card text"
+                    onAddCardTag={this.onNewCardAddCardTag}
+                    onDeleteCardTag={this.onNewCardDeleteCardTag}
+                    onUpdateCardTag={this.onNewCardUpdateCardTag}
+                    onSetCardText={this.onNewCardSetCardText}
+                    onDeleteCard={this.onNewCardDeleteCard}
+                />
 
-            <ul>
-                <li key={0}>
-                    <button onClick={() => this.props.actions.onSetDefaultView()}>
-                        {noCategoryText}
-                    </button>
-                </li>
+                <button onClick={this.onNewCardCreate}>Add new card</button>
 
-                {categories}
-            </ul>
-        </div>);
+                <ul>
+                    <li key={0}>
+                        <button
+                            onClick={() =>
+                                this.props.actions.onSetDefaultView()
+                            }
+                        >
+                            {noCategoryText}
+                        </button>
+                    </li>
+
+                    {categories}
+                </ul>
+            </div>
+        );
     }
 }
 
@@ -216,32 +233,38 @@ class Board extends React.Component {
         let boardView = null;
 
         if (currentCategory === null) {
-            boardView = <BoardViewDefault
-                viewData={this.props.boardViewData}
-                actions={this.props.actions}
-                onMoveCardWithinDefaultCardOrder={this.props.onMoveCardWithinDefaultCardOrder}
-                />;
+            boardView = (
+                <BoardViewDefault
+                    viewData={this.props.boardViewData}
+                    actions={this.props.actions}
+                    onMoveCardWithinDefaultCardOrder={
+                        this.props.onMoveCardWithinDefaultCardOrder
+                    }
+                />
+            );
         } else if (currentCategory) {
-            boardView = <BoardViewCategory
-                viewData={this.props.boardViewData}
-                actions={this.props.actions}
-                onMoveCardInColumn={this.props.onMoveCardInColumn}
-                onMoveColumnInCategory={this.props.onMoveColumnInCategory}
-                />;
+            boardView = (
+                <BoardViewCategory
+                    viewData={this.props.boardViewData}
+                    actions={this.props.actions}
+                    onMoveCardInColumn={this.props.onMoveCardInColumn}
+                    onMoveColumnInCategory={this.props.onMoveColumnInCategory}
+                />
+            );
         }
 
-        return (<div>
-            <BoardPanel
-                boardName={this.props.boardViewData.board.name}
-                categoryNames={this.props.boardViewData.board.categories}
-                currentCategoryName={this.getCurrentCategory()}
-                actions={this.props.actions}
+        return (
+            <div>
+                <BoardPanel
+                    boardName={this.props.boardViewData.board.name}
+                    categoryNames={this.props.boardViewData.board.categories}
+                    currentCategoryName={this.getCurrentCategory()}
+                    actions={this.props.actions}
                 />
 
-            <div className="board-view-container">
-                {boardView}
+                <div className="board-view-container">{boardView}</div>
             </div>
-        </div>);
+        );
     }
 }
 

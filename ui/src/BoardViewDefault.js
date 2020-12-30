@@ -1,19 +1,22 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import './BoardViewDefault.css';
+import React from "react";
+import PropTypes from "prop-types";
+import "./BoardViewDefault.css";
 
-import CardColumn from './CardColumn.js';
+import CardColumn from "./CardColumn.js";
 
 class BoardViewDefault extends React.Component {
     render() {
-        const cards = this.props.viewData.default_view
-            .map((cardId) => this.props.viewData.board.cards[cardId]);
+        const cards = this.props.viewData.default_view.map(
+            (cardId) => this.props.viewData.board.cards[cardId]
+        );
 
-        return <CardColumn
-            cards={cards}
-            actions={this.props.actions}
-            onMoveCardInColumn={this.props.onMoveCardWithinDefaultCardOrder}
-            />;
+        return (
+            <CardColumn
+                cards={cards}
+                actions={this.props.actions}
+                onMoveCardInColumn={this.props.onMoveCardWithinDefaultCardOrder}
+            />
+        );
     }
 }
 

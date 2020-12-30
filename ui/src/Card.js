@@ -1,8 +1,8 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import './Card.css';
+import React from "react";
+import PropTypes from "prop-types";
+import "./Card.css";
 
-import InlineInput from 'react-inline-input';
+import InlineInput from "react-inline-input";
 
 class Tag extends React.Component {
     constructor(props) {
@@ -24,17 +24,17 @@ class Tag extends React.Component {
         if (this.state.tagString !== this.props.tagString) {
             this.props.onUpdateTag(this.props.tagString, this.state.tagString);
         }
-
     }
 
     render() {
-        return <InlineInput
-            placeholder=""
-            value={this.state.tagString}
-
-            onInput={this.onInput}
-            onBlur={this.onBlur}
-            />;
+        return (
+            <InlineInput
+                placeholder=""
+                value={this.state.tagString}
+                onInput={this.onInput}
+                onBlur={this.onBlur}
+            />
+        );
     }
 }
 
@@ -94,10 +94,11 @@ class Card extends React.Component {
     }
 
     render() {
-        let tags = this.props.tags.map(
-            (tagString) => (<li className="card-tag" key={tagString}>
+        let tags = this.props.tags.map((tagString) => (
+            <li className="card-tag" key={tagString}>
                 <Tag tagString={tagString} onUpdateTag={this.onUpdateTag} />
-            </li>));
+            </li>
+        ));
 
         let placeholder = "";
 
@@ -105,34 +106,35 @@ class Card extends React.Component {
             placeholder = this.props.textPlaceholder;
         }
 
-        return (<div className="card-container">
-            <a href="#" className="card-drag-handle">Drag</a>
+        return (
+            <div className="card-container">
+                <a href="#" className="card-drag-handle">
+                    Drag
+                </a>
 
-            <br />
-            <br />
+                <br />
+                <br />
 
-            <InlineInput
-                type="textarea"
-                placeholder={placeholder}
-                value={this.state.text}
-                labelClasses="card-text"
-
-                onInput={this.onTextInput}
-                onBlur={this.onTextBlur}
+                <InlineInput
+                    type="textarea"
+                    placeholder={placeholder}
+                    value={this.state.text}
+                    labelClasses="card-text"
+                    onInput={this.onTextInput}
+                    onBlur={this.onTextBlur}
                 />
 
-            <ul className="card-tag-list">{tags}</ul>
+                <ul className="card-tag-list">{tags}</ul>
 
-            <InlineInput
-                placeholder="New tag..."
-                value={this.state.newTag}
-
-                labelClasses="card-new-tag-label"
-
-                onInput={this.onNewTagInput}
-                onBlur={this.onNewTagBlur}
+                <InlineInput
+                    placeholder="New tag..."
+                    value={this.state.newTag}
+                    labelClasses="card-new-tag-label"
+                    onInput={this.onNewTagInput}
+                    onBlur={this.onNewTagBlur}
                 />
-        </div>);
+            </div>
+        );
     }
 }
 

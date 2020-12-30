@@ -1,23 +1,33 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import './BoardViewCategory.css';
+import React from "react";
+import PropTypes from "prop-types";
+import "./BoardViewCategory.css";
 
-import ReactDragListView from 'react-drag-listview';
+import ReactDragListView from "react-drag-listview";
 const { DragColumn } = ReactDragListView;
 
-import CardColumn from './CardColumn.js';
+import CardColumn from "./CardColumn.js";
 
 class CategoryColumn extends React.Component {
     render() {
-        return (<div>
-            <a href="#" className="category-view-column-drag-handle">Drag</a>
-            <h2>{this.props.name}</h2>
-            <CardColumn
-                cards={this.props.cards}
-                actions={this.props.actions}
-                onMoveCardInColumn={(cardId, toPos) => this.props.onMoveCardInColumn(cardId, this.props.tag, toPos)}
+        return (
+            <div>
+                <a href="#" className="category-view-column-drag-handle">
+                    Drag
+                </a>
+                <h2>{this.props.name}</h2>
+                <CardColumn
+                    cards={this.props.cards}
+                    actions={this.props.actions}
+                    onMoveCardInColumn={(cardId, toPos) =>
+                        this.props.onMoveCardInColumn(
+                            cardId,
+                            this.props.tag,
+                            toPos
+                        )
+                    }
                 />
-        </div>);
+            </div>
+        );
     }
 }
 
@@ -36,18 +46,25 @@ class BoardViewCategory extends React.Component {
         const columns = this.props.viewData.category_view.columns.map(
             (column) => {
                 const cards = column.cards.map(
-                    (cardId) => this.props.viewData.board.cards[cardId]);
+                    (cardId) => this.props.viewData.board.cards[cardId]
+                );
 
-                return (<li className="category-view-column" key={categoryName + ":" + column.name}>
-                    <CategoryColumn
-                        name={column.name}
-                        tag={`${categoryName}:${column.name}`}
-                        cards={cards}
-                        actions={this.props.actions}
-                        onMoveCardInColumn={this.props.onMoveCardInColumn}
+                return (
+                    <li
+                        className="category-view-column"
+                        key={categoryName + ":" + column.name}
+                    >
+                        <CategoryColumn
+                            name={column.name}
+                            tag={`${categoryName}:${column.name}`}
+                            cards={cards}
+                            actions={this.props.actions}
+                            onMoveCardInColumn={this.props.onMoveCardInColumn}
                         />
-                </li>);
-            });
+                    </li>
+                );
+            }
+        );
 
         return (
             <DragColumn
@@ -57,18 +74,16 @@ class BoardViewCategory extends React.Component {
                         return;
                     }
 
-                    const columnName = this.props.viewData.category_view.columns[fromIndex].name;
+                    const columnName = this.props.viewData.category_view
+                        .columns[fromIndex].name;
                     const tag = `${categoryName}:${columnName}`;
-
 
                     this.props.onMoveColumnInCategory(tag, toIndex);
                 }}
                 nodeSelector=".category-view-column"
                 handleSelector=".category-view-column-drag-handle"
-                >
-                <ul className="category-view">
-                    {columns}
-                </ul>
+            >
+                <ul className="category-view">{columns}</ul>
             </DragColumn>
         );
     }

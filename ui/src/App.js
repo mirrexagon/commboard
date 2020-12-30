@@ -1,8 +1,8 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import './App.css';
+import React from "react";
+import PropTypes from "prop-types";
+import "./App.css";
 
-import Board from './Board.js';
+import Board from "./Board.js";
 
 class App extends React.Component {
     constructor(props) {
@@ -29,7 +29,9 @@ class App extends React.Component {
         this.onDeleteCardTag = this.onDeleteCardTag.bind(this);
         this.onUpdateCardTag = this.onUpdateCardTag.bind(this);
 
-        this.onMoveCardWithinDefaultCardOrder = this.onMoveCardWithinDefaultCardOrder.bind(this);
+        this.onMoveCardWithinDefaultCardOrder = this.onMoveCardWithinDefaultCardOrder.bind(
+            this
+        );
         this.onMoveCardInColumn = this.onMoveCardInColumn.bind(this);
 
         this.onMoveColumnInCategory = this.onMoveColumnInCategory.bind(this);
@@ -54,15 +56,20 @@ class App extends React.Component {
             url = "/api/board";
         }
 
-
-        if (this.state.currentFilter !== null && this.state.currentFilter !== "") {
+        if (
+            this.state.currentFilter !== null &&
+            this.state.currentFilter !== ""
+        ) {
             url += "?filter=" + this.state.currentFilter;
         }
 
         return fetch(url)
-            .then(res => res.json())
+            .then((res) => res.json())
             .then((data) => {
-                this.setState({ currentBoardViewData: data, isFetching: false });
+                this.setState({
+                    currentBoardViewData: data,
+                    isFetching: false,
+                });
             });
     }
 
@@ -117,9 +124,12 @@ class App extends React.Component {
     }
 
     moveCardInColumn(cardId, tag, toPos) {
-        return fetch("/api/board/cards/" + cardId + "/tags/" + tag + "/moveto/" + toPos, {
-            method: "PUT",
-        });
+        return fetch(
+            "/api/board/cards/" + cardId + "/tags/" + tag + "/moveto/" + toPos,
+            {
+                method: "PUT",
+            }
+        );
     }
 
     moveColumnInCategory(tag, toPos) {
@@ -135,7 +145,10 @@ class App extends React.Component {
     }
 
     onSetCategoryView(categoryName) {
-        this.setState({ currentCategoryName: categoryName }, this.fetchCurrentView);
+        this.setState(
+            { currentCategoryName: categoryName },
+            this.fetchCurrentView
+        );
     }
 
     onSetFilter(filter) {
@@ -147,129 +160,141 @@ class App extends React.Component {
     onSetBoardName(name) {
         console.log("Setting board name to '" + name + "'");
 
-        this.setBoardName(name)
-        .finally(this.fetchCurrentView);
+        this.setBoardName(name).finally(this.fetchCurrentView);
     }
 
     onAddCard(text, tags) {
         console.log("Adding card");
 
-        let cardIdPromise = this.addCard()
-        .then((response) => response.text());
+        let cardIdPromise = this.addCard().then((response) => response.text());
 
-        let textPromise = cardIdPromise
-        .then((cardId) => {
+        let textPromise = cardIdPromise.then((cardId) => {
             if (text) {
                 return this.setCardText(cardId, text);
             }
         });
 
-        let tagsPromise = cardIdPromise
-        .then((cardId) => {
+        let tagsPromise = cardIdPromise.then((cardId) => {
             if (tags) {
                 return Promise.allSettled(
                     tags.map((tag) => this.addCardTag(cardId, tag))
                 );
             }
-        })
+        });
 
-        Promise.allSettled([textPromise, tagsPromise])
-        .finally(this.fetchCurrentView);
+        Promise.allSettled([textPromise, tagsPromise]).finally(
+            this.fetchCurrentView
+        );
     }
 
     onDeleteCard(cardId) {
         console.log("Deleting card " + cardId);
 
-        this.deleteCard(cardId)
-        .finally(this.fetchCurrentView);
+        this.deleteCard(cardId).finally(this.fetchCurrentView);
     }
 
     onSetCardText(cardId, text) {
         console.log("Setting card " + cardId + "'s text to '" + text + "'");
 
-        this.setCardText(cardId, text)
-        .finally(this.fetchCurrentView);
+        this.setCardText(cardId, text).finally(this.fetchCurrentView);
     }
 
     onAddCardTag(cardId, tag) {
         console.log("Adding tag '" + tag + "' to card " + cardId);
 
-        this.addCardTag(cardId, tag)
-        .finally(this.fetchCurrentView);
+        this.addCardTag(cardId, tag).finally(this.fetchCurrentView);
     }
 
     onDeleteCardTag(cardId, tag) {
         console.log("Deleting tag '" + tag + "' from card " + cardId);
 
-        this.deleteCardTag(cardId, tag)
-        .finally(this.fetchCurrentView);
+        this.deleteCardTag(cardId, tag).finally(this.fetchCurrentView);
     }
 
     onUpdateCardTag(cardId, oldTag, newTag) {
-        console.log("Updating tag '" + oldTag + "' to '" + newTag + "' on card " + cardId);
+        console.log(
+            "Updating tag '" +
+                oldTag +
+                "' to '" +
+                newTag +
+                "' on card " +
+                cardId
+        );
 
         return this.addCardTag(cardId, newTag)
-        .then((response) => {
-            if (response.ok) {
-                return this.deleteCardTag(cardId, oldTag);
-            } else {
-                return Promise.reject("Adding card tag while updating failed");
-            }
-        })
-        .finally(this.fetchCurrentView);
+            .then((response) => {
+                if (response.ok) {
+                    return this.deleteCardTag(cardId, oldTag);
+                } else {
+                    return Promise.reject(
+                        "Adding card tag while updating failed"
+                    );
+                }
+            })
+            .finally(this.fetchCurrentView);
     }
 
     onMoveCardWithinDefaultCardOrder(cardId, toPos) {
-        console.log(`Moving card ${cardId} to position ${toPos} within default card order`);
+        console.log(
+            `Moving card ${cardId} to position ${toPos} within default card order`
+        );
 
-        return this.moveCardWithinDefaultCardOrder(cardId, toPos)
-        .finally(this.fetchCurrentView);
+        return this.moveCardWithinDefaultCardOrder(cardId, toPos).finally(
+            this.fetchCurrentView
+        );
     }
 
     onMoveCardInColumn(cardId, tag, toPos) {
-        console.log(`Moving card ${cardId} to position ${toPos} in column for tag ${tag}`);
+        console.log(
+            `Moving card ${cardId} to position ${toPos} in column for tag ${tag}`
+        );
 
-        return this.moveCardInColumn(cardId, tag, toPos)
-        .finally(this.fetchCurrentView);
+        return this.moveCardInColumn(cardId, tag, toPos).finally(
+            this.fetchCurrentView
+        );
     }
 
     onMoveColumnInCategory(tag, toPos) {
-        console.log(`Moving column for ${tag} to position ${toPos} in its category`);
+        console.log(
+            `Moving column for ${tag} to position ${toPos} in its category`
+        );
 
-        return this.moveColumnInCategory(tag, toPos)
-        .finally(this.fetchCurrentView);
+        return this.moveColumnInCategory(tag, toPos).finally(
+            this.fetchCurrentView
+        );
     }
 
     // ---
 
     render() {
-        return (<div>
-            <Board
-                boardViewData={this.state.currentBoardViewData}
-                isFetching={this.state.isFetching}
+        return (
+            <div>
+                <Board
+                    boardViewData={this.state.currentBoardViewData}
+                    isFetching={this.state.isFetching}
+                    actions={{
+                        onSetDefaultView: this.onSetDefaultView,
+                        onSetCategoryView: this.onSetCategoryView,
+                        onSetFilter: this.onSetFilter,
 
-                actions={{
-                    onSetDefaultView: this.onSetDefaultView,
-                    onSetCategoryView: this.onSetCategoryView,
-                    onSetFilter: this.onSetFilter,
+                        onSetBoardName: this.onSetBoardName,
 
-                    onSetBoardName: this.onSetBoardName,
+                        onAddCard: this.onAddCard,
+                        onDeleteCard: this.onDeleteCard,
 
-                    onAddCard: this.onAddCard,
-                    onDeleteCard: this.onDeleteCard,
-
-                    onSetCardText: this.onSetCardText,
-                    onAddCardTag: this.onAddCardTag,
-                    onDeleteCardTag: this.onDeleteCardTag,
-                    onUpdateCardTag: this.onUpdateCardTag,
-                }}
-
-                onMoveCardWithinDefaultCardOrder={this.onMoveCardWithinDefaultCardOrder}
-                onMoveCardInColumn={this.onMoveCardInColumn}
-
-                onMoveColumnInCategory={this.onMoveColumnInCategory}
+                        onSetCardText: this.onSetCardText,
+                        onAddCardTag: this.onAddCardTag,
+                        onDeleteCardTag: this.onDeleteCardTag,
+                        onUpdateCardTag: this.onUpdateCardTag,
+                    }}
+                    onMoveCardWithinDefaultCardOrder={
+                        this.onMoveCardWithinDefaultCardOrder
+                    }
+                    onMoveCardInColumn={this.onMoveCardInColumn}
+                    onMoveColumnInCategory={this.onMoveColumnInCategory}
                 />
-        </div>);
+            </div>
+        );
     }
 }
 
