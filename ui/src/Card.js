@@ -1,47 +1,35 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import "./Card.css";
 
 import InlineInput from "react-inline-input";
 
-class Tag extends React.Component {
-    constructor(props) {
-        super(props);
+function Tag(props) {
+    const [newTagString, setNewTagString] = useState(props.tagString);
 
-        this.state = {
-            tagString: props.tagString,
-        };
-
-        this.onInput = this.onInput.bind(this);
-        this.onBlur = this.onBlur.bind(this);
+    function onInput(s) {
+        setNewTagString(s);
     }
 
-    onInput(s) {
-        this.setState({ tagString: s });
-    }
-
-    onBlur() {
-        if (this.state.tagString !== this.props.tagString) {
-            this.props.onUpdateTag(this.props.tagString, this.state.tagString);
+    function onBlur() {
+        if (props.tagString !== newTagString) {
+            props.onUpdateTag(props.tagString, newTagString);
         }
     }
 
-    render() {
-        return (
-            <InlineInput
-                placeholder=""
-                value={this.state.tagString}
-                onInput={this.onInput}
-                onBlur={this.onBlur}
-            />
-        );
-    }
+    return (
+        <InlineInput
+            placeholder=""
+            value={newTagString}
+            onInput={onInput}
+            onBlur={onBlur}
+        />
+    );
 }
 
-Tag.propTypes = {
-    tagString: PropTypes.string.isRequired,
-    onUpdateTag: PropTypes.func.isRequired,
-};
+function Text(props) {
+    const [newText, setNewText] = useState(props.text);
+}
 
 class Card extends React.Component {
     constructor(props) {
@@ -151,5 +139,25 @@ Card.propTypes = {
     onSetCardText: PropTypes.func.isRequired,
     onDeleteCard: PropTypes.func.isRequired,
 };
+
+function useInlineInput(initialValue, onBlur) {
+    const [value, setValue] = useState(initialValue);
+
+    function handleChange(s) {
+        setValue(s);
+    }
+
+    function onBlur() {
+        if (value !== initialValue) {
+            props.onUpdateTag(props.tagString, newTagString);
+        }
+    }
+
+    return {
+        value,
+        onChange: handleChange,
+    };
+
+}
 
 export default Card;
