@@ -8,6 +8,7 @@ Boards of category-tagged cards.
 - Instead of card drag-drop within a column, have a box that says the current index in the column, and you can type +n to move down n, -n to move up n, or n to move the card to index n
 - Stop `colon_index` from being serialized into the board file.
     - Write out file in "cards have tags, tags have index format", separate from internal representation
+- Guard every mutation call on its preconditions, so it can be rejected before it changes anything
 
 
 ## Building
