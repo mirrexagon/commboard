@@ -15,4 +15,18 @@ pkgs.mkShell {
   ];
 
   RUST_LOG = "info";
+
+  shellHook = ''
+    uisetup() {
+      pushd ui
+      npm install
+      popd
+    }
+
+    uiserver() {
+      pushd ui
+      npm run start
+      popd
+    }
+  '';
 }
