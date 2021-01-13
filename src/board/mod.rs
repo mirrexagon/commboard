@@ -26,10 +26,6 @@ pub struct Board {
 
     categories: Vec<Category>,
 
-    // TODO: Store files (eg. images), that the UI can request from a certain
-    // subdirectory in the URL path, so it can display images based on Markdown
-    // image tags. UI shows other kinds of files as just the link to download.
-    // Store files as base64 strings.
     /// Path to JSON file this board saves to.
     #[serde(skip_serializing)]
     #[serde(skip_deserializing)]

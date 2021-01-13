@@ -8,21 +8,19 @@ Boards of category-tagged cards.
 ## Usage
 Run `commboard <name>.json`, where the JSON file is the boards file. If it doesn't exist, it will be created.
 
-Every modification to the boards will write this file. TODO: Is this okay for performance and disk health?
+Every modification to the boards will write this file, so you can exit the application at any point and everything will be saved.
 
 ## Basics
 A board is a collection of cards. Boards are completely separate from each other. Only one board can be viewed at a time.
 
-A card is a block of text (TODO: Markdown rendering, including embedding images), with any number of tags.
+A card is a block of Markdown text, with any number of tags.
 
 Tags are of the form `category:value`, eg. `status:in-progress`. Any character up to the first `:` is treated as the category name, and the rest is the value. Both parts of the tag (category and value) are required.
 
 Tags are always ordered alphabetically where displayed, ie. on cards and in the category grouping list.
 
-TODO: Tags have colors that are based on category. Initial color is generated from category name, but can be changed. Color is shown on tags on cards, and next to categories in the sidebar.
-
 ## Filtering
-You can filter cards by substring match on body text and tags. TODO: Implement
+You can filter cards by substring match on body text and tags.
 
 ## Grouping
 By default, all cards are displayed without any grouping.
