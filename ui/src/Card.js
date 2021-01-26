@@ -5,30 +5,27 @@ import "./Card.css";
 import InlineInput from "react-inline-input";
 
 function Tag(props) {
-    const [newTagString, setNewTagString] = useState(props.tagString);
+    const { value, onInput, onBlur } = useInlineInput(props.tagString, props.onUpdateTag);
 
-    function onInput(s) {
-        setNewTagString(s);
-    }
-
-    function onBlur() {
-        if (props.tagString !== newTagString) {
-            props.onUpdateTag(props.tagString, newTagString);
-        }
-    }
-
-    return (
-        <InlineInput
-            placeholder=""
-            value={newTagString}
-            onInput={onInput}
-            onBlur={onBlur}
-        />
-    );
+    return <InlineInput
+        placeholder=""
+        value={value}
+        onInput={onInput}
+        onBlur={onBlur}
+    />;
 }
 
 function Text(props) {
-    const [newText, setNewText] = useState(props.text);
+    const { value, onInput, onBlur } = useInlineInput(props.text, props.onUpdateText);
+
+    return <InlineInput
+        type="textarea"
+        placeholder={props.placeholder}
+        value={value}
+        labelClasses="card-text"
+        onInput={onInput}
+        onBlur={onBlur}
+    />;
 }
 
 class Card extends React.Component {
@@ -36,14 +33,12 @@ class Card extends React.Component {
         super(props);
 
         this.state = {
-            text: props.text,
             newTag: "",
         };
 
         this.onUpdateTag = this.onUpdateTag.bind(this);
+        this.onUpdateText = this.onUpdateText.bind(this);
 
-        this.onTextInput = this.onTextInput.bind(this);
-        this.onTextBlur = this.onTextBlur.bind(this);
         this.onNewTagInput = this.onNewTagInput.bind(this);
         this.onNewTagBlur = this.onNewTagBlur.bind(this);
     }
@@ -56,18 +51,12 @@ class Card extends React.Component {
         }
     }
 
+    onUpdateText(oldText, newText) {
+        this.props.onSetCardText(this.props.id, newText);
+    }
+
     onDeleteCard() {
         this.props.onDeleteCard(this.props.id);
-    }
-
-    onTextInput(s) {
-        this.setState({ text: s });
-    }
-
-    onTextBlur() {
-        if (this.state.text !== this.props.text) {
-            this.props.onSetCardText(this.props.id, this.state.text);
-        }
     }
 
     onNewTagInput(s) {
@@ -88,12 +77,6 @@ class Card extends React.Component {
             </li>
         ));
 
-        let placeholder = "";
-
-        if (this.props.textPlaceholder) {
-            placeholder = this.props.textPlaceholder;
-        }
-
         return (
             <div className="card-container">
                 <a href="#" className="card-drag-handle">
@@ -103,14 +86,11 @@ class Card extends React.Component {
                 <br />
                 <br />
 
-                <InlineInput
-                    type="textarea"
-                    placeholder={placeholder}
-                    value={this.state.text}
-                    labelClasses="card-text"
-                    onInput={this.onTextInput}
-                    onBlur={this.onTextBlur}
-                />
+                <Text
+                    text={this.props.text}
+                    onUpdateText={this.onUpdateText}
+                    placeholder={this.props.textPlaceholder}
+                    />
 
                 <ul className="card-tag-list">{tags}</ul>
 
@@ -140,24 +120,24 @@ Card.propTypes = {
     onDeleteCard: PropTypes.func.isRequired,
 };
 
-function useInlineInput(initialValue, onBlur) {
+function useInlineInput(initialValue, onUpdate) {
     const [value, setValue] = useState(initialValue);
 
-    function handleChange(s) {
+    function handleInput(s) {
         setValue(s);
     }
 
-    function onBlur() {
+    function handleBlur() {
         if (value !== initialValue) {
-            props.onUpdateTag(props.tagString, newTagString);
+            onUpdate(initialValue, value);
         }
     }
 
     return {
         value,
-        onChange: handleChange,
+        onInput: handleInput,
+        onBlur: handleBlur,
     };
-
 }
 
 export default Card;
