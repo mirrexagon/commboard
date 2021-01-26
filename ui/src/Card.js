@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import PropTypes from "prop-types";
 import "./Card.css";
 
 import InlineInput from "react-inline-input";
+import MarkdownInlineInput from "./MarkdownInlineInput.js";
 
 function Tag(props) {
     const { value, onInput, onBlur } = useInlineInput(props.tagString, props.onUpdateTag);
@@ -18,14 +18,13 @@ function Tag(props) {
 function Text(props) {
     const { value, onInput, onBlur } = useInlineInput(props.text, props.onUpdateText);
 
-    return <InlineInput
-        type="textarea"
-        placeholder={props.placeholder}
-        value={value}
-        labelClasses="card-text"
-        onInput={onInput}
-        onBlur={onBlur}
-        />;
+
+
+    return (
+        <div className="card-text">
+            <MarkdownInlineInput markdown={value} />
+        </div>
+    );
 }
 
 function NewTag(props) {

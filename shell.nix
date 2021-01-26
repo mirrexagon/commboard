@@ -15,6 +15,7 @@ pkgs.mkShell {
   ];
 
   RUST_LOG = "info";
+  NODE_ENV = "development";
 
   shellHook = ''
     uisetup() {

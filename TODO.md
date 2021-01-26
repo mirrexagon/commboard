@@ -12,5 +12,4 @@
 - Make it so tags have colors that are based on category. Initial color is generated from category name, but can be changed. Color is shown on tags on cards, and next to categories in the sidebar.
 - Card text and tag filtering
 - Try https://github.com/contiamo/restful-react for API calls
-    - Also try the hook-based component model: https://reactjs.org/docs/hooks-intro.html
 - Own inline input based on https://dev.to/joelmturner/build-an-inline-edit-text-input-with-react-hooks-4nah
