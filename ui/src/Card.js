@@ -44,80 +44,56 @@ function NewTag(props) {
         />;
 }
 
-class Card extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.onUpdateTag = this.onUpdateTag.bind(this);
-        this.onUpdateText = this.onUpdateText.bind(this);
-        this.onUpdateNewTag = this.onUpdateNewTag.bind(this);
-    }
-
-    onUpdateTag(oldTag, newTag) {
+function Card(props) {
+    function onUpdateTag(oldTag, newTag) {
         if (newTag === "") {
-            this.props.onDeleteCardTag(this.props.id, oldTag);
+            props.onDeleteCardTag(props.id, oldTag);
         } else {
-            this.props.onUpdateCardTag(this.props.id, oldTag, newTag);
+            props.onUpdateCardTag(props.id, oldTag, newTag);
         }
     }
 
-    onUpdateText(oldText, newText) {
-        this.props.onSetCardText(this.props.id, newText);
+    function onUpdateText(oldText, newText) {
+        props.onSetCardText(props.id, newText);
     }
 
-    onUpdateNewTag(oldTag, newTag) {
-        this.props.onAddCardTag(this.props.id, newTag);
+    function onUpdateNewTag(oldTag, newTag) {
+        props.onAddCardTag(props.id, newTag);
     }
 
-    onDeleteCard() {
-        this.props.onDeleteCard(this.props.id);
+    function onDeleteCard() {
+        props.onDeleteCard(props.id);
     }
 
-    render() {
-        let tags = this.props.tags.map((tagString) => (
-            <li className="card-tag" key={tagString}>
-                <Tag tagString={tagString} onUpdateTag={this.onUpdateTag} />
-            </li>
-        ));
+    const tags = props.tags.map((tagString) => (
+        <li className="card-tag" key={tagString}>
+            <Tag tagString={tagString} onUpdateTag={onUpdateTag} />
+        </li>
+    ));
 
-        return (
-            <div className="card-container">
-                <a href="#" className="card-drag-handle">
-                    Drag
-                </a>
+    return (
+        <div className="card-container">
+            <a href="#" className="card-drag-handle">
+                Drag
+            </a>
 
-                <br />
-                <br />
+            <br />
+            <br />
 
-                <Text
-                    text={this.props.text}
-                    onUpdateText={this.onUpdateText}
-                    placeholder={this.props.textPlaceholder}
-                    />
+            <Text
+                text={props.text}
+                onUpdateText={onUpdateText}
+                placeholder={props.textPlaceholder}
+                />
 
-                <ul className="card-tag-list">{tags}</ul>
+            <ul className="card-tag-list">{tags}</ul>
 
-                <NewTag
-                    onUpdateNewTag={this.onUpdateNewTag}
-                    />
-            </div>
-        );
-    }
+            <NewTag
+                onUpdateNewTag={onUpdateNewTag}
+                />
+        </div>
+    );
 }
-
-Card.propTypes = {
-    id: PropTypes.number.isRequired,
-    text: PropTypes.string.isRequired,
-    tags: PropTypes.array.isRequired,
-
-    textPlaceholder: PropTypes.string,
-
-    onAddCardTag: PropTypes.func.isRequired,
-    onDeleteCardTag: PropTypes.func.isRequired,
-    onUpdateCardTag: PropTypes.func.isRequired,
-    onSetCardText: PropTypes.func.isRequired,
-    onDeleteCard: PropTypes.func.isRequired,
-};
 
 function useInlineInput(initialValue, onUpdate) {
     const [value, setValue] = useState(initialValue);
