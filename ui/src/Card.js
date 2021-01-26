@@ -12,7 +12,7 @@ function Tag(props) {
         value={value}
         onInput={onInput}
         onBlur={onBlur}
-    />;
+        />;
 }
 
 function Text(props) {
@@ -25,22 +25,32 @@ function Text(props) {
         labelClasses="card-text"
         onInput={onInput}
         onBlur={onBlur}
-    />;
+        />;
+}
+
+function NewTag(props) {
+    const { value, setValue, onInput, onBlur } = useInlineInput("",
+        (oldTag, newTag) => {
+            setValue("");
+            props.onUpdateNewTag(oldTag, newTag);
+        });
+
+    return <InlineInput
+        placeholder="New tag..."
+        value={value}
+        labelClasses="card-new-tag-label"
+        onInput={onInput}
+        onBlur={onBlur}
+        />;
 }
 
 class Card extends React.Component {
     constructor(props) {
         super(props);
 
-        this.state = {
-            newTag: "",
-        };
-
         this.onUpdateTag = this.onUpdateTag.bind(this);
         this.onUpdateText = this.onUpdateText.bind(this);
-
-        this.onNewTagInput = this.onNewTagInput.bind(this);
-        this.onNewTagBlur = this.onNewTagBlur.bind(this);
+        this.onUpdateNewTag = this.onUpdateNewTag.bind(this);
     }
 
     onUpdateTag(oldTag, newTag) {
@@ -55,19 +65,12 @@ class Card extends React.Component {
         this.props.onSetCardText(this.props.id, newText);
     }
 
+    onUpdateNewTag(oldTag, newTag) {
+        this.props.onAddCardTag(this.props.id, newTag);
+    }
+
     onDeleteCard() {
         this.props.onDeleteCard(this.props.id);
-    }
-
-    onNewTagInput(s) {
-        this.setState({ newTag: s });
-    }
-
-    onNewTagBlur() {
-        if (this.state.newTag !== "") {
-            this.props.onAddCardTag(this.props.id, this.state.newTag);
-            this.setState({ newTag: "" });
-        }
     }
 
     render() {
@@ -94,13 +97,9 @@ class Card extends React.Component {
 
                 <ul className="card-tag-list">{tags}</ul>
 
-                <InlineInput
-                    placeholder="New tag..."
-                    value={this.state.newTag}
-                    labelClasses="card-new-tag-label"
-                    onInput={this.onNewTagInput}
-                    onBlur={this.onNewTagBlur}
-                />
+                <NewTag
+                    onUpdateNewTag={this.onUpdateNewTag}
+                    />
             </div>
         );
     }
@@ -137,6 +136,7 @@ function useInlineInput(initialValue, onUpdate) {
         value,
         onInput: handleInput,
         onBlur: handleBlur,
+        setValue,
     };
 }
 
