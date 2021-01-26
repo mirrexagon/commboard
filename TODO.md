@@ -6,6 +6,7 @@
     - Write out file in "cards have tags, tags have index format", separate from internal representation
 - Guard every mutation call on its preconditions, so it can be rejected before it changes anything
 - Card text Markdown rendering, including embedding images
+    - Try https://github.com/remarkjs/react-markdown to render Markdown.
     - Store files (eg. images), that the UI can request from a certain subdirectory in the URL path, so it can display images based on Markdown image tags. UI shows other kinds of files as just the link to download.
     - Store files as base64 strings in JSON?
 - Make it so tags have colors that are based on category. Initial color is generated from category name, but can be changed. Color is shown on tags on cards, and next to categories in the sidebar.
