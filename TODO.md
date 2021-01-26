@@ -13,3 +13,4 @@
 - Card text and tag filtering
 - Try https://github.com/contiamo/restful-react for API calls
     - Also try the hook-based component model: https://reactjs.org/docs/hooks-intro.html
+- Own inline input based on https://dev.to/joelmturner/build-an-inline-edit-text-input-with-react-hooks-4nah
