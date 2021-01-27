@@ -18,11 +18,12 @@ function Tag(props) {
 function Text(props) {
     const { value, onInput, onBlur } = useInlineInput(props.text, props.onUpdateText);
 
-
-
     return (
         <div className="card-text">
-            <MarkdownInlineInput markdown={value} />
+            <MarkdownInlineInput
+                markdown={value}
+                onChange={onInput}
+                />
         </div>
     );
 }
