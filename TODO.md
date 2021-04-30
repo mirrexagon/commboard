@@ -1,3 +1,5 @@
+"Client defines the interface" - rewrite the UI, try out ideas, figure out good JSON representation that the UI would like to consume.
+
 # TODO
 - Remove babel-runtime which react-drag-listview needs for some reason
 - Implement board mutation as a single `mutate()` function which takes an enum for the mutation action, and dispatches to the specific actions function. Single place to save JSON file, and possibly save undo history.
