@@ -1,9 +1,11 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+
 use thiserror::Error;
 
 mod card;
@@ -15,20 +17,23 @@ pub use tag::Tag;
 use card::CardError;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Board {
-    pub name: String,
+pub enum Action {
+    SetBoardName { board_name: String },
+    NewCard,
+    DeleteCard { card_id: CardId },
+    SetCardText { card_id: CardId, text: String },
+    AddCardTag { card_id: CardId, tag: Tag },
+    DeleteCardTag { card_id: CardId, tag: Tag },
+}
 
-    cards: HashMap<CardId, Card>,
+#[derive(Debug)]
+pub struct Board {
+    name: String,
+
+    cards: BTreeMap<CardId, Card>,
     next_card_id: CardId,
 
-    /// Default ordering of cards if no category view is active.
-    default_card_order: Vec<CardId>,
-
-    categories: Vec<Category>,
-
     /// Path to JSON file this board saves to.
-    #[serde(skip_serializing)]
-    #[serde(skip_deserializing)]
     file_path: PathBuf,
 }
 
@@ -38,46 +43,30 @@ impl Board {
         Self {
             name: format!("New Board"),
 
-            cards: HashMap::new(),
+            cards: BTreeMap::new(),
             next_card_id: CardId::new(0),
-
-            default_card_order: Vec::new(),
-            categories: Vec::new(),
 
             file_path: file_path.as_ref().to_owned(),
         }
     }
 
-    fn get_next_card_id(&mut self) -> CardId {
-        let next_card_id = self.next_card_id;
-        self.next_card_id = self.next_card_id.next();
-        next_card_id
+    pub fn get_state_as_json(&self) -> String {
+        json!({
+            "name": self.name,
+            "cards": self.cards,
+            ""
+        });
     }
 
-    pub fn cards(&self) -> &HashMap<CardId, Card> {
-        &self.cards
-    }
-
-    pub fn default_card_order(&self) -> &[CardId] {
-        &self.default_card_order
-    }
-
-    pub fn categories(&self) -> &[Category] {
-        &self.categories
-    }
-
-    pub fn get_category(&self, category_name: &str) -> Option<&Category> {
-        match self.get_category_position(category_name) {
-            Some(pos) => Some(&self.categories[pos]),
-            None => None,
-        }
+    pub fn mutate(&mut self, action: &Action) -> Result<(), BoardError> {
+        todo!();
     }
 
     pub fn save(&self) -> Result<(), BoardError> {
         self.save_to_file(&self.file_path)
     }
 
-    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), BoardError> {
+    fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), BoardError> {
         let mut f = File::create(path)?;
         serde_json::to_writer_pretty(f, self)?;
         Ok(())
@@ -88,6 +77,12 @@ impl Board {
         let mut board: Board = serde_json::from_reader(f)?;
         board.file_path = path.as_ref().to_owned();
         Ok(board)
+    }
+
+    fn get_next_card_id(&mut self) -> CardId {
+        let next_card_id = self.next_card_id;
+        self.next_card_id = self.next_card_id.next();
+        next_card_id
     }
 
     // -- Cards --
@@ -321,183 +316,6 @@ impl Board {
         self.categories
             .iter()
             .position(|category| category.name == tag.category())
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Category {
-    /// The category part of the tag.
-    name: String,
-    columns: Vec<Column>,
-}
-
-impl Category {
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn columns(&self) -> &[Column] {
-        &self.columns
-    }
-
-    fn add_card_tag(&mut self, card_id: CardId, tag: &Tag) {
-        // If the column doesn't exist, create it.
-        let column = match self.get_column_mut(tag) {
-            Some(column) => column,
-            None => {
-                self.columns.push(Column {
-                    name: tag.value().to_owned(),
-                    cards: Vec::new(),
-                });
-
-                self.columns.last_mut().unwrap()
-            }
-        };
-
-        column.add_card(card_id);
-    }
-
-    fn delete_card_tag(&mut self, card_id: CardId, tag: &Tag) {
-        if let Some(column_pos) = self.get_column_position(tag) {
-            self.columns[column_pos].delete_card(card_id);
-
-            // If the column has no cards now, remove it.
-            if self.columns[column_pos].cards.is_empty() {
-                self.columns.remove(column_pos);
-            }
-        } else {
-            panic!(
-                "tried to delete card '{}' from column '{}' but that column does not exist",
-                card_id,
-                tag.value()
-            );
-        }
-    }
-
-    /// Position one past the end of the array (ie. the length) means put it at the end, instead of inserting between columns.
-    fn move_column(&mut self, tag: &Tag, to_pos: usize) -> Result<(), BoardError> {
-        let from_pos = self
-            .get_column_position(tag)
-            .ok_or(BoardError::NoSuchColumn)?;
-
-        if to_pos > self.columns.len() {
-            return Err(BoardError::PositionOutOfBounds(to_pos));
-        }
-
-        let column = self.columns.remove(from_pos);
-
-        if to_pos == self.columns.len() {
-            self.columns.push(column);
-        } else {
-            self.columns.insert(to_pos, column);
-        }
-
-        Ok(())
-    }
-
-    fn move_card_in_column(
-        &mut self,
-        card_id: CardId,
-        tag: &Tag,
-        to_pos: usize,
-    ) -> Result<(), BoardError> {
-        let column = self.get_column_mut(tag).ok_or(BoardError::NoSuchColumn)?;
-
-        column.move_card(card_id, to_pos)
-    }
-
-    fn get_column_mut(&mut self, tag: &Tag) -> Option<&mut Column> {
-        match self.get_column_position(tag) {
-            Some(pos) => Some(&mut self.columns[pos]),
-            None => None,
-        }
-    }
-
-    fn has_column(&mut self, tag: &Tag) -> bool {
-        assert!(tag.category() == self.name);
-
-        self.get_column_position(tag).is_some()
-    }
-
-    fn get_column_position(&self, tag: &Tag) -> Option<usize> {
-        assert!(
-            tag.category() == self.name,
-            "tried to get column position for tag {} but this is category {}",
-            tag.tag(),
-            self.name
-        );
-
-        self.columns
-            .iter()
-            .position(|column| column.name == tag.value())
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Column {
-    /// The value part of the tag.
-    name: String,
-    cards: Vec<CardId>,
-}
-
-impl Column {
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn cards(&self) -> &[CardId] {
-        &self.cards
-    }
-
-    fn add_card(&mut self, card_id: CardId) {
-        if self.has_card(card_id) {
-            panic!(
-                "tried to add card '{}' to column '{}' but the card was already there",
-                card_id, self.name
-            );
-        }
-
-        self.cards.push(card_id);
-    }
-
-    fn delete_card(&mut self, card_id: CardId) {
-        if let Some(pos) = self.get_card_position(card_id) {
-            self.cards.remove(pos);
-        } else {
-            panic!(
-                "tried to delete card '{}' from column '{}' but the card was not there",
-                card_id, self.name
-            );
-        }
-    }
-
-    /// Position one past the end of the array (ie. the length) means put it at the end, instead of inserting between cards.
-    fn move_card(&mut self, card_id: CardId, to_pos: usize) -> Result<(), BoardError> {
-        let from_pos = self
-            .get_card_position(card_id)
-            .ok_or(BoardError::NoSuchCard(card_id))?;
-
-        if to_pos > self.cards.len() {
-            return Err(BoardError::PositionOutOfBounds(to_pos));
-        }
-
-        self.cards.remove(from_pos);
-
-        if to_pos == self.cards.len() {
-            self.cards.push(card_id);
-        } else {
-            self.cards.insert(to_pos, card_id);
-        }
-
-        Ok(())
-    }
-
-    fn has_card(&self, card_id: CardId) -> bool {
-        self.get_card_position(card_id).is_some()
-    }
-
-    fn get_card_position(&self, card_id: CardId) -> Option<usize> {
-        self.cards.iter().position(|&id| id == card_id)
     }
 }
 

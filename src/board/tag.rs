@@ -1,9 +1,10 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
 pub struct Tag {
     tag: String,
     colon_index: usize,
+
+    /// Position of the owning card within the column this tag represents.
+    pub column_index: usize,
 }
 
 impl Tag {
