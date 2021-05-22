@@ -8,7 +8,7 @@ const BoardPanel = (props) => {
     return (
         <div className="board-panel">
             <h1>
-                props.boardName
+                {props.boardName}
             </h1>
         </div>
     );
@@ -25,7 +25,7 @@ const Board = (props) => {
     return (
         <div>
             <BoardPanel
-                boardName={props.appState.boardName}
+                boardName={props.appState.board_name}
             />
 
             <div className="board-view-container">{boardView}</div>

@@ -8,13 +8,17 @@ const App = () => {
         path: "/api/state"
     });
 
-    return (
-        <div>
-            <Board
-                appState={appState}
-            />
-        </div>
-    );
+    if (appState) {
+        return (
+            <div>
+                <Board
+                    appState={appState}
+                />
+            </div>
+        );
+    } else {
+        return "Loading...";
+    }
 };
 
 export default App;

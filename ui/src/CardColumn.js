@@ -3,8 +3,8 @@ import "./CardColumn.css";
 
 import Card from "./Card.js";
 
-const CardColumn = () => {
-    const cards = this.props.cards.map((card) => (
+const CardColumn = (props) => {
+    const cards = props.cards.map((card) => (
         <li className="card-column-item" key={card.id}>
             <Card
                 id={card.id}
