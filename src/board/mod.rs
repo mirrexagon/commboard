@@ -41,12 +41,10 @@ pub struct Board {
     card_position_in_column: HashMap<(CardId, Tag), usize>,
 
     /// Path to JSON file this board saves to.
-    #[serde(skip_serializing)]
-    #[serde(skip_deserializing)]
+    #[serde(skip)]
     file_path: PathBuf,
 
-    #[serde(skip_serializing)]
-    #[serde(skip_deserializing)]
+    #[serde(skip)]
     interaction_state: InteractionState,
 }
 
@@ -80,12 +78,12 @@ impl Board {
         Ok(board)
     }
 
-    pub fn get_state_as_json(&self) -> Result<serde_json::Value, BoardError> {
-        Ok(json!({
+    pub fn get_state_as_json(&self) -> serde_json::Value {
+        json!({
             "name": self.name,
             "cards": self.cards,
             "interaction_state": self.interaction_state,
-        }))
+        })
     }
 
     pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {

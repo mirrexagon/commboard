@@ -1,6 +1,10 @@
 use std::sync::Mutex;
 
-use rocket::{get, post, response::status, State};
+use rocket::{
+    get, post,
+    response::{content, status},
+    State,
+};
 
 use rocket_contrib::json::Json;
 
@@ -12,6 +16,13 @@ pub fn validate_tag(tag: String) -> &'static str {
         Ok(_) => "true",
         Err(_) => "false",
     }
+}
+
+#[get("/state")]
+pub fn get_current_state(board: State<Mutex<board::Board>>) -> content::Json<String> {
+    let board = board.lock().unwrap();
+
+    content::Json(board.get_state_as_json().to_string())
 }
 
 #[post("/perform_action", data = "<action>")]
