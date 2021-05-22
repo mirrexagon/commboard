@@ -162,6 +162,7 @@ impl Board {
 }
 
 /// The state of a session interacting with the board.
+/// TOOD: Track whether the selected card is being viewed, so the UI can keep rendering everything declaratively
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum InteractionState {
