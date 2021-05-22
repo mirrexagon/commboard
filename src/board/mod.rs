@@ -80,8 +80,11 @@ impl Board {
 
     pub fn get_state_as_json(&self) -> serde_json::Value {
         json!({
-            "name": self.name,
+            "board_name": self.name,
             "cards": self.cards,
+
+            "default_card_order": self.cards.keys().collect::<Vec<_>>(),
+
             "interaction_state": self.interaction_state,
         })
     }
