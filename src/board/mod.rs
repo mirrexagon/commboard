@@ -17,6 +17,7 @@ pub use tag::Tag;
 use card::CardError;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum Action {
     SetBoardName { name: String },
     NewCard,
@@ -89,7 +90,7 @@ impl Board {
         })
     }
 
-    pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
+    pub fn mutate(&mut self, action: &Action) -> Result<(), BoardError> {
         // Remember to validate everything before performing the action, so it is atomic!
 
         match action {
@@ -162,6 +163,7 @@ impl Board {
 
 /// The state of a session interacting with the board.
 #[derive(Debug, Serialize)]
+#[serde(tag = "type")]
 pub enum InteractionState {
     /// Viewing default view with no card selected.
     NothingSelected,
