@@ -9,8 +9,9 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     rustChannel.rust
     rustfmt
-    rls
+    rust-analyzer
     cargo-edit
+
     nodejs
   ];
 

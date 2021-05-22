@@ -1,12 +1,12 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Mutex;
 
 use clap::{App, Arg};
 use rocket::{get, response::content, routes};
 
-use board::{Board, Tag};
+use board::Board;
 
 mod api;
 mod board;
@@ -36,35 +36,17 @@ fn main() {
 
     let board;
     if board_file_path.is_file() {
-        board = Board::load_from_file(&board_file_path).expect("Couldn't load board file");
+        board = Board::load(&board_file_path).expect("Couldn't load board file");
     } else {
         board = Board::new(&board_file_path);
-        board
-            .save_to_file(&board_file_path)
-            .expect("Couldn't save new board file");
+        board.save().expect("Couldn't save new board file");
     }
 
     let board = Mutex::new(board);
 
     rocket::ignite()
         .mount("/", routes![index, index_bundle])
-        .mount(
-            "/api",
-            routes![
-                api::validate_tag,
-                api::set_board_name,
-                api::get_board_view_default,
-                api::get_board_view_by_category,
-                api::add_card,
-                api::delete_card,
-                api::set_card_text,
-                api::add_card_tag,
-                api::delete_card_tag,
-                api::move_card_within_default_card_order,
-                api::move_card_in_column,
-                api::move_column_in_category,
-            ],
-        )
+        .mount("/api", routes![api::validate_tag, api::perform_action])
         .manage(board)
         .launch();
 }

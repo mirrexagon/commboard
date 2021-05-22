@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::{self, Read, Write};
+use std::io;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -18,23 +18,36 @@ use card::CardError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Action {
-    SetBoardName { board_name: String },
+    SetBoardName { name: String },
     NewCard,
-    DeleteCard { card_id: CardId },
-    SetCardText { card_id: CardId, text: String },
-    AddCardTag { card_id: CardId, tag: Tag },
-    DeleteCardTag { card_id: CardId, tag: Tag },
+    DeleteCurrentCard,
+    //SetCurrentCardText { text: String },
+    //AddTagToCurrentCard { tag: Tag },
+    //DeleteTagFromCurrentCard { card_id: CardId, tag: Tag },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
     name: String,
 
     cards: BTreeMap<CardId, Card>,
     next_card_id: CardId,
 
+    // A tag represents a category and column.
+    // Categories are listed in alphabetical order.
+    // Columns within a category have a saved order.
+    // Cards within a column have a saved order.
+    column_position_in_category: HashMap<Tag, usize>,
+    card_position_in_column: HashMap<(CardId, Tag), usize>,
+
     /// Path to JSON file this board saves to.
+    #[serde(skip_serializing)]
+    #[serde(skip_deserializing)]
     file_path: PathBuf,
+
+    #[serde(skip_serializing)]
+    #[serde(skip_deserializing)]
+    interaction_state: InteractionState,
 }
 
 impl Board {
@@ -46,37 +59,97 @@ impl Board {
             cards: BTreeMap::new(),
             next_card_id: CardId::new(0),
 
+            column_position_in_category: HashMap::new(),
+            card_position_in_column: HashMap::new(),
+
             file_path: file_path.as_ref().to_owned(),
+            interaction_state: Default::default(),
         }
     }
 
-    pub fn get_state_as_json(&self) -> String {
-        json!({
-            "name": self.name,
-            "cards": self.cards,
-            ""
-        });
-    }
-
-    pub fn mutate(&mut self, action: &Action) -> Result<(), BoardError> {
-        todo!();
-    }
-
     pub fn save(&self) -> Result<(), BoardError> {
-        self.save_to_file(&self.file_path)
-    }
-
-    fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<(), BoardError> {
-        let mut f = File::create(path)?;
+        let f = File::create(&self.file_path)?;
         serde_json::to_writer_pretty(f, self)?;
         Ok(())
     }
 
-    pub fn load_from_file<P: AsRef<Path>>(path: P) -> Result<Self, BoardError> {
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, BoardError> {
         let f = File::open(path.as_ref())?;
         let mut board: Board = serde_json::from_reader(f)?;
         board.file_path = path.as_ref().to_owned();
         Ok(board)
+    }
+
+    pub fn get_state_as_json(&self) -> Result<serde_json::Value, BoardError> {
+        Ok(json!({
+            "name": self.name,
+            "cards": self.cards,
+            "interaction_state": self.interaction_state,
+        }))
+    }
+
+    pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
+        // Remember to validate everything before performing the action, so it is atomic!
+
+        match action {
+            Action::SetBoardName { name } => {
+                self.name = name.to_owned();
+                Ok(())
+            }
+
+            Action::NewCard => {
+                let new_card_id = self.get_next_card_id();
+                self.cards.insert(new_card_id, Card::new(new_card_id));
+
+                match self.interaction_state {
+                    InteractionState::NothingSelected | InteractionState::DefaultView { .. } => {
+                        // The new card was added to the end of the view, select it.
+                        self.interaction_state = InteractionState::DefaultView {
+                            selected_card_id: new_card_id,
+                        };
+                        Ok(())
+                    }
+                }
+            }
+
+            Action::DeleteCurrentCard => match self.interaction_state {
+                InteractionState::NothingSelected => Err(BoardError::NoCardSelected),
+
+                InteractionState::DefaultView {
+                    selected_card_id: to_remove_card_id,
+                } => {
+                    self.cards.remove(&to_remove_card_id);
+
+                    self.interaction_state =
+                        if let Some(max_card_id) = self.get_current_max_card_id() {
+                            let new_selected_card_id = if to_remove_card_id > max_card_id {
+                                // The just-removed card was on the end of the
+                                // default view, so select the new end of the view.
+                                max_card_id
+                            } else {
+                                // Find the card that is now taking the spot the removed card was in (the next card down).
+                                *self
+                                    .cards
+                                    .keys()
+                                    .find(|card_id| *card_id > &to_remove_card_id)
+                                    .unwrap()
+                            };
+
+                            InteractionState::DefaultView {
+                                selected_card_id: new_selected_card_id,
+                            }
+                        } else {
+                            // There are no more cards.
+                            InteractionState::NothingSelected
+                        };
+                    Ok(())
+                }
+            },
+        }
+    }
+
+    fn get_current_max_card_id(&self) -> Option<CardId> {
+        self.cards.keys().last().map(|id| *id)
     }
 
     fn get_next_card_id(&mut self) -> CardId {
@@ -84,238 +157,26 @@ impl Board {
         self.next_card_id = self.next_card_id.next();
         next_card_id
     }
+}
 
-    // -- Cards --
-    /// Creates a new card with no tags and no text, and returns its ID.
-    pub fn new_card(&mut self) -> CardId {
-        let id = self.get_next_card_id();
-        self.cards.insert(id, Card::new(id));
-        self.default_card_order.push(id);
+/// The state of a session interacting with the board.
+#[derive(Debug, Serialize)]
+pub enum InteractionState {
+    /// Viewing default view with no card selected.
+    NothingSelected,
 
-        self.save().expect("Failed to save board after adding card");
+    /// Viewing default view with a card selected.
+    DefaultView { selected_card_id: CardId },
+    // Viewing a category, with a card selected.
+    // CategoryView {
+    //     selected_tag: Tag,
+    //     selected_card_id: CardId,
+    // },
+}
 
-        id
-    }
-
-    /// Deletes a card from the board.
-    pub fn delete_card(&mut self, card_id: CardId) -> Result<(), BoardError> {
-        if !self.cards.contains_key(&card_id) {
-            return Err(BoardError::NoSuchCard(card_id));
-        }
-
-        // Remove from default order.
-        {
-            let pos = self
-                .default_card_order
-                .iter()
-                .position(|&i| i == card_id)
-                .unwrap();
-
-            self.default_card_order.remove(pos);
-        }
-
-        // Remove from categories.
-        // Need to build this separately because otherwise self is kept borrowed immutably in the loop.
-        let mut card_tags = Vec::new();
-        for tag in self.cards[&card_id].get_tags() {
-            card_tags.push(tag.clone());
-        }
-
-        for tag in card_tags.iter() {
-            let category = self.get_category_by_tag_mut(tag).expect(&format!(
-                "tried to delete card '{}' from board, but it had tag '{}' and its category did not exist",
-                card_id,
-                tag.tag()
-            ));
-
-            category.delete_card_tag(card_id, tag);
-        }
-
-        // Remove from main hashmap.
-        self.cards.remove(&card_id);
-
-        self.save()
-            .expect("Failed to save board after deleting card");
-
-        Ok(())
-    }
-
-    /// Returns a reference to the card with the specified ID, or `None` if
-    /// the specified card does not exist.
-    pub fn get_card(&self, id: CardId) -> Option<&Card> {
-        self.cards.get(&id)
-    }
-
-    /// Returns a mutable reference to the card with the specified ID, or
-    /// `None` if the specified card does not exist.
-    pub fn get_card_mut(&mut self, id: CardId) -> Option<&mut Card> {
-        self.cards.get_mut(&id)
-    }
-
-    pub fn set_card_text<S: Into<String>>(
-        &mut self,
-        id: CardId,
-        text: S,
-    ) -> Result<(), BoardError> {
-        if let Some(card) = self.get_card_mut(id) {
-            card.text = text.into();
-            self.save()
-                .expect("Failed to save board after setting card text");
-            Ok(())
-        } else {
-            Err(BoardError::NoSuchCard(id))
-        }
-    }
-
-    pub fn move_card_within_default_card_order(
-        &mut self,
-        id: CardId,
-        new_index: usize,
-    ) -> Result<(), BoardError> {
-        if new_index >= self.default_card_order.len() {
-            return Err(BoardError::PositionOutOfBounds(new_index));
-        }
-
-        if let Some(old_index) = self.default_card_order.iter().position(|&i| i == id) {
-            self.default_card_order.remove(old_index);
-            self.default_card_order.insert(new_index, id);
-            self.save()
-                .expect("Failed to save board after moving card within default card order");
-            Ok(())
-        } else {
-            Err(BoardError::NoSuchCard(id))
-        }
-    }
-
-    pub fn move_column_in_category(&mut self, tag: &Tag, to_pos: usize) -> Result<(), BoardError> {
-        let category = self
-            .get_category_by_tag_mut(tag)
-            .ok_or(BoardError::NoSuchCategory)?;
-
-        let result = category.move_column(tag, to_pos);
-
-        self.save()
-            .expect("Failed to save board after moving a column within a category");
-
-        result
-    }
-
-    pub fn move_card_in_column(
-        &mut self,
-        card_id: CardId,
-        tag: &Tag,
-        to_pos: usize,
-    ) -> Result<(), BoardError> {
-        {
-            let card = self
-                .get_card(card_id)
-                .ok_or(BoardError::NoSuchCard(card_id))?;
-
-            if !card.has_tag(tag) {
-                return Err(BoardError::CardDoesntHaveTag);
-            }
-        }
-
-        let category = self
-            .get_category_by_tag_mut(tag)
-            .ok_or(BoardError::NoSuchCategory)?;
-
-        let result = category.move_card_in_column(card_id, tag, to_pos);
-
-        self.save()
-            .expect("Failed to save board after moving a card within a column");
-
-        result
-    }
-
-    /// Adds a tag to a card in the board.
-    pub fn add_card_tag(&mut self, card_id: CardId, tag: &Tag) -> Result<(), BoardError> {
-        // Add tag to card object.
-        let card = self
-            .get_card_mut(card_id)
-            .ok_or(BoardError::NoSuchCard(card_id))?;
-        card.add_tag(tag.clone())?;
-
-        // Add card to its category, creating the category for this tag if it doesn't exist.
-        let category = match self.get_category_by_tag_mut(tag) {
-            Some(category) => category,
-            None => {
-                self.categories.push(Category {
-                    name: tag.category().to_owned(),
-                    columns: Vec::new(),
-                });
-
-                // Keep categories sorted in alphabetical order.
-                self.categories.sort_by(|a, b| a.name.cmp(&b.name));
-
-                self.get_category_by_tag_mut(tag).unwrap()
-            }
-        };
-
-        category.add_card_tag(card_id, tag);
-
-        self.save()
-            .expect("Failed to save board after adding tag to card");
-
-        Ok(())
-    }
-
-    /// Deletes a tag from a card in the board.
-    pub fn delete_card_tag(&mut self, card_id: CardId, tag: &Tag) -> Result<(), BoardError> {
-        // Delete tag from card object.
-        let card = self
-            .get_card_mut(card_id)
-            .ok_or(BoardError::NoSuchCard(card_id))?;
-        card.delete_tag(tag)?;
-
-        // Delete the card from its category/column.
-        let category_pos = self.get_category_position_by_tag(tag).expect(&format!(
-            "tried to delete card '{}' tag '{}' from board, but the tag's category did not exist",
-            card_id,
-            tag.tag()
-        ));
-
-        self.categories[category_pos].delete_card_tag(card_id, tag);
-
-        // If the category has no columns now, remove it.
-        if self.categories[category_pos].columns.is_empty() {
-            self.categories.remove(category_pos);
-        }
-
-        self.save()
-            .expect("Failed to save board after deleting tag from card");
-
-        Ok(())
-    }
-
-    fn get_category_mut(&mut self, category_name: &str) -> Option<&mut Category> {
-        match self.get_category_position(category_name) {
-            Some(pos) => Some(&mut self.categories[pos]),
-            None => None,
-        }
-    }
-
-    fn has_category(&self, category_name: &str) -> bool {
-        self.get_category_position(category_name).is_some()
-    }
-
-    fn get_category_position(&self, category_name: &str) -> Option<usize> {
-        self.categories
-            .iter()
-            .position(|category| category.name() == category_name)
-    }
-
-    fn get_category_by_tag_mut(&mut self, tag: &Tag) -> Option<&mut Category> {
-        match self.get_category_position_by_tag(tag) {
-            Some(pos) => Some(&mut self.categories[pos]),
-            None => None,
-        }
-    }
-
-    fn get_category_position_by_tag(&self, tag: &Tag) -> Option<usize> {
-        self.categories
-            .iter()
-            .position(|category| category.name == tag.category())
+impl Default for InteractionState {
+    fn default() -> Self {
+        InteractionState::NothingSelected
     }
 }
 
@@ -344,4 +205,7 @@ pub enum BoardError {
 
     #[error("card error: {0}")]
     CardError(#[from] CardError),
+
+    #[error("no card selected")]
+    NoCardSelected,
 }
