@@ -27,6 +27,29 @@ pub enum Action {
     //DeleteTagFromCurrentCard { card_id: CardId, tag: Tag },
 }
 
+/// The state of a session interacting with the board.
+/// TOOD: Track whether the selected card is being viewed, so the UI can keep rendering everything declaratively
+#[derive(Debug, Serialize)]
+#[serde(tag = "type")]
+pub enum InteractionState {
+    /// Viewing default view with no card selected.
+    NothingSelected,
+
+    /// Viewing default view with a card selected.
+    DefaultView { selected_card_id: CardId },
+    // Viewing a category, with a card selected.
+    // CategoryView {
+    //     selected_tag: Tag,
+    //     selected_card_id: CardId,
+    // },
+}
+
+impl Default for InteractionState {
+    fn default() -> Self {
+        InteractionState::NothingSelected
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
     name: String,
@@ -158,29 +181,6 @@ impl Board {
         let next_card_id = self.next_card_id;
         self.next_card_id = self.next_card_id.next();
         next_card_id
-    }
-}
-
-/// The state of a session interacting with the board.
-/// TOOD: Track whether the selected card is being viewed, so the UI can keep rendering everything declaratively
-#[derive(Debug, Serialize)]
-#[serde(tag = "type")]
-pub enum InteractionState {
-    /// Viewing default view with no card selected.
-    NothingSelected,
-
-    /// Viewing default view with a card selected.
-    DefaultView { selected_card_id: CardId },
-    // Viewing a category, with a card selected.
-    // CategoryView {
-    //     selected_tag: Tag,
-    //     selected_card_id: CardId,
-    // },
-}
-
-impl Default for InteractionState {
-    fn default() -> Self {
-        InteractionState::NothingSelected
     }
 }
 

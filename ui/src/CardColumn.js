@@ -10,6 +10,7 @@ const CardColumn = (props) => {
                 id={card.id}
                 text={card.text}
                 tags={card.tags}
+                selected={props.selectedCardId == card.id}
             />
         </li>
     ));

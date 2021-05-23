@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import { useGet, useMutate } from "restful-react";
 import useKeyPress from "./useKeyPress.js";
@@ -6,6 +6,7 @@ import useKeyPress from "./useKeyPress.js";
 import Board from "./Board.js";
 
 const App = () => {
+    // -- Getting app state --
     const base = "/api";
 
     const { data: appState, refetch: refetchAppState } = useGet({
@@ -13,8 +14,10 @@ const App = () => {
         base
     });
 
-    // ---
+    // -- UI local state --
+    const [isViewingCurrentCard, setIsViewingCurrentCard] = useState(false);
 
+    // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({
         verb: "POST",
         path: "/action",
@@ -35,18 +38,18 @@ const App = () => {
         });
     });
 
-    // ---
-
+    // -- Render --
     if (appState) {
         return (
             <div>
                 <Board
                     appState={appState}
+                    isViewingCurrentCard={isViewingCurrentCard}
                 />
             </div>
         );
     } else {
-        return "Loading...";
+        return null;
     }
 };
 

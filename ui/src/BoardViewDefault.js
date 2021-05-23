@@ -4,13 +4,14 @@ import "./BoardViewDefault.css";
 import CardColumn from "./CardColumn.js";
 
 const BoardViewDefault = (props) => {
-    const cards = props.defaultCardOrder.map(
+    const cards = props.cardOrder.map(
         (cardId) => props.cards[cardId]
     );
 
     return (
         <CardColumn
             cards={cards}
+            selectedCardId={props.selectedCardId}
         />
     );
 }

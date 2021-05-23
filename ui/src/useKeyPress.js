@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react";
 
 function useKeyPress(targetKey, downAction) {
-    const [keyPressed, setKeyPressed] = useState(false);
+    let keyPressed = false;
 
     useEffect(() => {
         const onKeyDown = ({ key }) => {
             if (key === targetKey) {
-                setKeyPressed(true);
+                if (!keyPressed) {
+                    downAction();
+                }
+
+                keyPressed = true;
             }
         };
 
         const onKeyUp = ({ key }) => {
             if (key === targetKey) {
-                setKeyPressed(false);
+                keyPressed = false;
             }
         };
 

@@ -5,6 +5,10 @@
     padding: 10px;
 }
 
+.card-container-selected {
+    border-color: red;
+}
+
 .card-text {
     font-size: 12pt;
 }

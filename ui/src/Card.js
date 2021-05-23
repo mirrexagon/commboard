@@ -8,7 +8,7 @@ const Tag = (props) => {
 const Text = (props) => {
     return (
         <div className="card-text">
-            props.text
+            {props.text}
         </div>
     );
 }
@@ -21,7 +21,7 @@ const Card = (props) => {
     ));
 
     return (
-        <div className="card-container">
+        <div className={`card-container ${props.selected ? "card-container-selected" : ""}`}>
             <Text
                 text={props.text}
                 />
