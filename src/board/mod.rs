@@ -116,6 +116,8 @@ impl Board {
         })
     }
 
+    // TODO: Implement searching in the current view and selecting a card from the results.
+
     pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
         // Remember to validate everything before performing the action, so it is atomic!
 
