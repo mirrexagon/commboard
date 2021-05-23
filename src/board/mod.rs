@@ -90,7 +90,7 @@ impl Board {
         })
     }
 
-    pub fn mutate(&mut self, action: &Action) -> Result<(), BoardError> {
+    pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
         // Remember to validate everything before performing the action, so it is atomic!
 
         match action {

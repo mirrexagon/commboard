@@ -15,22 +15,22 @@ const App = () => {
 
     // ---
 
-    const { mutate: mutateBoardBase } = useMutate({
+    const { mutate: performActionBase } = useMutate({
         verb: "POST",
-        path: "/mutate",
+        path: "/action",
         base
     });
 
-    const mutateBoard = (action) => mutateBoardBase(action).then(() => refetchAppState());
+    const performAction = (action) => performActionBase(action).then(() => refetchAppState());
 
     useKeyPress("a", () => {
-        mutateBoard({
+        performAction({
             "type": "NewCard",
         });
     });
 
     useKeyPress("d", () => {
-        mutateBoard({
+        performAction({
             "type": "DeleteCurrentCard",
         });
     });

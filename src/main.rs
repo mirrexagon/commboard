@@ -48,7 +48,11 @@ fn main() {
         .mount("/", routes![index, index_bundle])
         .mount(
             "/api",
-            routes![api::validate_tag, api::get_current_state, api::mutate],
+            routes![
+                api::validate_tag,
+                api::get_current_state,
+                api::perform_action
+            ],
         )
         .manage(board)
         .launch();
