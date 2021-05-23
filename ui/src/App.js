@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 import { useGet, useMutate } from "restful-react";
 import useKeyPress from "./useKeyPress.js";
@@ -15,7 +15,7 @@ const App = () => {
     });
 
     // -- UI local state --
-    const [isViewingCurrentCard, setIsViewingCurrentCard] = useState(false);
+    const isViewingCurrentCard = useRef(false);
 
     // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({
@@ -26,16 +26,28 @@ const App = () => {
 
     const performAction = (action) => performActionBase(action).then(() => refetchAppState());
 
-    useKeyPress("a", () => {
-        performAction({
-            "type": "NewCard",
+    const bindKeyNormal = (key, action) => {
+        useKeyPress(key, () => {
+            if (!isViewingCurrentCard.current) {
+                performAction(action);
+            }
         });
+    };
+
+    bindKeyNormal("a", {
+        "type": "NewCard",
     });
 
-    useKeyPress("d", () => {
-        performAction({
-            "type": "DeleteCurrentCard",
-        });
+    bindKeyNormal("d", {
+        "type": "DeleteCurrentCard",
+    });
+
+    bindKeyNormal("j", {
+        "type": "SelectCardBelow",
+    });
+
+    bindKeyNormal("k", {
+        "type": "SelectCardAbove",
     });
 
     // -- Render --

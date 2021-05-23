@@ -22,6 +22,7 @@ const Card = (props) => {
 
     return (
         <div className={`card-container ${props.selected ? "card-container-selected" : ""}`}>
+            <p>{props.id}</p>
             <Text
                 text={props.text}
                 />

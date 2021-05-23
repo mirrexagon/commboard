@@ -22,6 +22,8 @@ pub enum Action {
     SetBoardName { name: String },
     NewCard,
     DeleteCurrentCard,
+    SelectCardAbove,
+    SelectCardBelow,
     //SetCurrentCardText { text: String },
     //AddTagToCurrentCard { tag: Tag },
     //DeleteTagFromCurrentCard { card_id: CardId, tag: Tag },
@@ -54,6 +56,7 @@ impl Default for InteractionState {
 pub struct Board {
     name: String,
 
+    /// The default view shows all cards in card ID order.
     cards: BTreeMap<CardId, Card>,
     next_card_id: CardId,
 
@@ -170,11 +173,61 @@ impl Board {
                     Ok(())
                 }
             },
+
+            Action::SelectCardBelow => match self.interaction_state {
+                InteractionState::NothingSelected => Err(BoardError::NoCardSelected),
+
+                InteractionState::DefaultView {
+                    selected_card_id: originally_selected_card_id,
+                } => {
+                    if let Some(new_selected_card_id) =
+                        self.get_next_card_in_default_order(originally_selected_card_id)
+                    {
+                        self.interaction_state = InteractionState::DefaultView {
+                            selected_card_id: new_selected_card_id,
+                        };
+                    }
+
+                    Ok(())
+                }
+            },
+
+            Action::SelectCardAbove => match self.interaction_state {
+                InteractionState::NothingSelected => Err(BoardError::NoCardSelected),
+
+                InteractionState::DefaultView {
+                    selected_card_id: originally_selected_card_id,
+                } => {
+                    if let Some(new_selected_card_id) =
+                        self.get_previous_card_in_default_order(originally_selected_card_id)
+                    {
+                        self.interaction_state = InteractionState::DefaultView {
+                            selected_card_id: new_selected_card_id,
+                        };
+                    }
+
+                    Ok(())
+                }
+            },
         }
+    }
+
+    fn get_current_min_card_id(&self) -> Option<CardId> {
+        self.cards.keys().next().map(|id| *id)
     }
 
     fn get_current_max_card_id(&self) -> Option<CardId> {
         self.cards.keys().last().map(|id| *id)
+    }
+
+    fn get_next_card_in_default_order(&self, card_id: CardId) -> Option<CardId> {
+        let index = self.cards.keys().position(|id| *id == card_id)?;
+        self.cards.keys().nth(index.saturating_add(1)).map(|id| *id)
+    }
+
+    fn get_previous_card_in_default_order(&self, card_id: CardId) -> Option<CardId> {
+        let index = self.cards.keys().position(|id| *id == card_id)?;
+        self.cards.keys().nth(index.saturating_sub(1)).map(|id| *id)
     }
 
     fn get_next_card_id(&mut self) -> CardId {
