@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Card.css";
 
 const Tag = (props) => {
@@ -14,6 +14,14 @@ const Text = (props) => {
 }
 
 const Card = (props) => {
+    // Scroll this card into view if it is selected.
+    const scrollRef = useRef(null);
+    useEffect(() => {
+        if (props.selected) {
+            scrollRef.current.scrollIntoView({ block: "nearest" });
+        }
+    }, [props.selected]);
+
     const tags = props.tags.map((tagString) => (
         <li className="card-tag" key={tagString}>
             <Tag tagString={tagString} />
@@ -21,7 +29,7 @@ const Card = (props) => {
     ));
 
     return (
-        <div className={`card-container ${props.selected ? "card-container-selected" : ""}`}>
+        <div ref={scrollRef} className={`card-container ${props.selected ? "card-container-selected" : ""}`}>
             <p>{props.id}</p>
             <Text
                 text={props.text}
