@@ -174,33 +174,23 @@ impl Board {
                 }
             },
 
-            Action::SelectCardBelow => match self.interaction_state {
+            Action::SelectCardBelow | Action::SelectCardAbove => match self.interaction_state {
                 InteractionState::NothingSelected => Err(BoardError::NoCardSelected),
 
                 InteractionState::DefaultView {
                     selected_card_id: originally_selected_card_id,
                 } => {
-                    if let Some(new_selected_card_id) =
-                        self.get_next_card_in_default_order(originally_selected_card_id)
-                    {
-                        self.interaction_state = InteractionState::DefaultView {
-                            selected_card_id: new_selected_card_id,
-                        };
-                    }
+                    let new_selected_card_id = match action {
+                        Action::SelectCardBelow => {
+                            self.get_next_card_in_default_order(originally_selected_card_id)
+                        }
+                        Action::SelectCardAbove => {
+                            self.get_previous_card_in_default_order(originally_selected_card_id)
+                        }
+                        _ => unreachable!(),
+                    };
 
-                    Ok(())
-                }
-            },
-
-            Action::SelectCardAbove => match self.interaction_state {
-                InteractionState::NothingSelected => Err(BoardError::NoCardSelected),
-
-                InteractionState::DefaultView {
-                    selected_card_id: originally_selected_card_id,
-                } => {
-                    if let Some(new_selected_card_id) =
-                        self.get_previous_card_in_default_order(originally_selected_card_id)
-                    {
+                    if let Some(new_selected_card_id) = new_selected_card_id {
                         self.interaction_state = InteractionState::DefaultView {
                             selected_card_id: new_selected_card_id,
                         };
