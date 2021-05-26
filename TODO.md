@@ -15,7 +15,8 @@
 - Own inline input based on https://dev.to/joelmturner/build-an-inline-edit-text-input-with-react-hooks-4nah
 
 ## Vim keys/keyboard workflow
-hjkl to move which card is selected, shift-hjkl to move current card
-
-Enter to edit card, Esc to go back
+- hjkl to move which card is selected, shift-hjkl to move current card
+- Enter to view card, Esc to go back
+    - Enter again to edit text, Esc to go back
+- t to add tag to selected card - how to delete/edit existing tags?
 
