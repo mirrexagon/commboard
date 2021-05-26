@@ -15,7 +15,8 @@ const App = () => {
     });
 
     // -- UI local state --
-    const isViewingCurrentCard = useRef(false);
+    // board (normal board view) | card (viewing selected card) | edit (editing text of selected card)
+    const uiLocalState = useRef("board");
 
     // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({

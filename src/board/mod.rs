@@ -27,28 +27,39 @@ pub enum Action {
     //SetCurrentCardText { text: String },
     //AddTagToCurrentCard { tag: Tag },
     //DeleteTagFromCurrentCard { card_id: CardId, tag: Tag },
+    //SetFilter { filter: String },
 }
 
-/// The state of a session interacting with the board.
-/// TOOD: Track whether the selected card is being viewed, so the UI can keep rendering everything declaratively
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
-pub enum InteractionState {
-    /// Viewing default view with no card selected.
-    NothingSelected,
-
-    /// Viewing default view with a card selected.
-    DefaultView { selected_card_id: CardId },
-    // Viewing a category, with a card selected.
-    // CategoryView {
+enum InteractionView {
+    Default {
+        /// If there are no cards, no card can be selected, and the default view
+        /// is the only view available.
+        selected_card_id: Option<CardId>,
+    },
+    // Category {
+    //     /// A tag represents a column in a category.
     //     selected_tag: Tag,
     //     selected_card_id: CardId,
     // },
 }
 
+/// The state of a session interacting with the board.
+#[derive(Debug, Serialize)]
+struct InteractionState {
+    view: InteractionView,
+    filter: String,
+}
+
 impl Default for InteractionState {
     fn default() -> Self {
-        InteractionState::NothingSelected
+        InteractionState {
+            view: InteractionView::Default {
+                selected_card_id: None,
+            },
+            filter: String::new(),
+        }
     }
 }
 
@@ -116,8 +127,6 @@ impl Board {
         })
     }
 
-    // TODO: Implement searching in the current view and selecting a card from the results.
-
     pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
         // Remember to validate everything before performing the action, so it is atomic!
 
@@ -131,76 +140,87 @@ impl Board {
                 let new_card_id = self.get_next_card_id();
                 self.cards.insert(new_card_id, Card::new(new_card_id));
 
-                match self.interaction_state {
-                    InteractionState::NothingSelected | InteractionState::DefaultView { .. } => {
-                        // The new card was added to the end of the view, select it.
-                        self.interaction_state = InteractionState::DefaultView {
-                            selected_card_id: new_card_id,
+                match self.interaction_state.view {
+                    InteractionView::Default { .. } => {
+                        // The new card was added to the end of the view
+                        // (because the default view is ordered by card ID and
+                        // the new card has the highest card ID), select it.
+                        self.interaction_state.view = InteractionView::Default {
+                            selected_card_id: Some(new_card_id),
                         };
                         Ok(())
                     }
                 }
             }
 
-            Action::DeleteCurrentCard => match self.interaction_state {
-                InteractionState::NothingSelected => Err(BoardError::NoCardSelected),
-
-                InteractionState::DefaultView {
+            Action::DeleteCurrentCard => match self.interaction_state.view {
+                InteractionView::Default {
                     selected_card_id: to_remove_card_id,
                 } => {
-                    self.cards.remove(&to_remove_card_id);
+                    if let Some(to_remove_card_id) = to_remove_card_id {
+                        self.cards.remove(&to_remove_card_id);
 
-                    self.interaction_state =
-                        if let Some(max_card_id) = self.get_current_max_card_id() {
-                            let new_selected_card_id = if to_remove_card_id > max_card_id {
-                                // The just-removed card was on the end of the
-                                // default view, so select the new end of the view.
-                                max_card_id
+                        self.interaction_state.view =
+                            if let Some(max_card_id) = self.get_current_max_card_id() {
+                                let new_selected_card_id = if to_remove_card_id > max_card_id {
+                                    // The just-removed card was on the end of the
+                                    // default view, so select the new end of the view.
+                                    max_card_id
+                                } else {
+                                    // Find the card that is now taking the spot the removed card was in (the next card down).
+                                    *self
+                                        .cards
+                                        .keys()
+                                        .find(|card_id| *card_id > &to_remove_card_id)
+                                        .unwrap()
+                                };
+
+                                InteractionView::Default {
+                                    selected_card_id: Some(new_selected_card_id),
+                                }
                             } else {
-                                // Find the card that is now taking the spot the removed card was in (the next card down).
-                                *self
-                                    .cards
-                                    .keys()
-                                    .find(|card_id| *card_id > &to_remove_card_id)
-                                    .unwrap()
+                                // There are no more cards.
+                                InteractionView::Default {
+                                    selected_card_id: None,
+                                }
                             };
 
-                            InteractionState::DefaultView {
-                                selected_card_id: new_selected_card_id,
-                            }
-                        } else {
-                            // There are no more cards.
-                            InteractionState::NothingSelected
-                        };
-                    Ok(())
-                }
-            },
-
-            Action::SelectCardBelow | Action::SelectCardAbove => match self.interaction_state {
-                InteractionState::NothingSelected => Err(BoardError::NoCardSelected),
-
-                InteractionState::DefaultView {
-                    selected_card_id: originally_selected_card_id,
-                } => {
-                    let new_selected_card_id = match action {
-                        Action::SelectCardBelow => {
-                            self.get_next_card_in_default_order(originally_selected_card_id)
-                        }
-                        Action::SelectCardAbove => {
-                            self.get_previous_card_in_default_order(originally_selected_card_id)
-                        }
-                        _ => unreachable!(),
-                    };
-
-                    if let Some(new_selected_card_id) = new_selected_card_id {
-                        self.interaction_state = InteractionState::DefaultView {
-                            selected_card_id: new_selected_card_id,
-                        };
+                        Ok(())
+                    } else {
+                        Err(BoardError::NoCardSelected)
                     }
-
-                    Ok(())
                 }
             },
+
+            Action::SelectCardBelow | Action::SelectCardAbove => {
+                match self.interaction_state.view {
+                    InteractionView::Default {
+                        selected_card_id: originally_selected_card_id,
+                    } => {
+                        if let Some(originally_selected_card_id) = originally_selected_card_id {
+                            let new_selected_card_id = match action {
+                                Action::SelectCardBelow => {
+                                    self.get_next_card_in_default_order(originally_selected_card_id)
+                                }
+                                Action::SelectCardAbove => self.get_previous_card_in_default_order(
+                                    originally_selected_card_id,
+                                ),
+                                _ => unreachable!(),
+                            };
+
+                            if let Some(new_selected_card_id) = new_selected_card_id {
+                                self.interaction_state.view = InteractionView::Default {
+                                    selected_card_id: Some(new_selected_card_id),
+                                };
+                            }
+
+                            Ok(())
+                        } else {
+                            Err(BoardError::NoCardSelected)
+                        }
+                    }
+                }
+            }
         }
     }
 
