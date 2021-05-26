@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use super::Tag;
 
@@ -50,23 +49,17 @@ impl Card {
         self.id
     }
 
-    /// Adds a tag to the card.
-    pub fn add_tag(&mut self, tag: Tag) -> Result<(), CardError> {
-        if !self.tags.contains(&tag) {
-            self.tags.insert(tag);
-            Ok(())
-        } else {
-            Err(CardError::AlreadyHasTag)
+    /// Adds a tag to the card, ignoring if it already exists.
+    pub fn add_tag(&mut self, tag: &Tag) {
+        if !self.has_tag(&tag) {
+            self.tags.insert(tag.clone());
         }
     }
 
-    /// Deletes a tag from the card.
-    pub fn delete_tag(&mut self, tag: &Tag) -> Result<(), CardError> {
-        if self.tags.contains(&tag) {
+    /// Deletes a tag from the card, ignoring if it doesn't exist.
+    pub fn delete_tag(&mut self, tag: &Tag) {
+        if self.has_tag(&tag) {
             self.tags.remove(tag);
-            Ok(())
-        } else {
-            Err(CardError::NoSuchTag)
         }
     }
 
@@ -99,12 +92,4 @@ impl Card {
             .filter(|tag| tag.category() == category)
             .collect()
     }
-}
-
-#[derive(Debug, Error)]
-pub enum CardError {
-    #[error("card already has this tag")]
-    AlreadyHasTag,
-    #[error("no such tag in card")]
-    NoSuchTag,
 }

@@ -27,8 +27,8 @@ impl Tag {
         &self.0[..self.get_colon_index()]
     }
 
-    /// Returns a reference to the value part of the inner string.
-    pub fn value(&self) -> &str {
+    /// Returns a reference to the column part of the inner string.
+    pub fn column(&self) -> &str {
         &self.0[self.get_colon_index() + 1..]
     }
 

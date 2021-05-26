@@ -14,8 +14,6 @@ mod tag;
 pub use card::{Card, CardId};
 pub use tag::Tag;
 
-use card::CardError;
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Action {
@@ -220,13 +218,122 @@ impl Board {
             }
 
             Action::AddTagToCurrentCard { tag } => {
-                todo!()
+                let selected_card_id = self.get_selected_card_id()?;
+                let selected_card = self.cards.get_mut(&selected_card_id).unwrap();
+
+                if selected_card.has_tag(tag) {
+                    return Err(BoardError::CardAlreadyHasTag);
+                }
+
+                // Add tag to the card itself.
+                selected_card.add_tag(tag);
+
+                // Add a position for this column if it is not already present.
+                if !self.column_position_in_category.contains_key(tag) {
+                    self.column_position_in_category.insert(
+                        tag.clone(),
+                        self.get_next_column_position_in_category(tag.category()),
+                    );
+                }
+
+                // Add this card to the column associated with this tag.
+                self.card_position_in_column.insert(
+                    (selected_card_id, tag.clone()),
+                    self.get_next_card_position_for_column(tag),
+                );
+
+                Ok(())
             }
 
             Action::DeleteTagFromCurrentCard { tag } => {
-                todo!()
+                let selected_card_id = self.get_selected_card_id()?;
+                let selected_card = self.cards.get_mut(&selected_card_id).unwrap();
+
+                if !selected_card.has_tag(tag) {
+                    return Err(BoardError::CardDoesntHaveTag);
+                }
+
+                // Remove tag from the card itself.
+                selected_card.delete_tag(tag);
+
+                // Remove this card from the column associated with this tag.
+                {
+                    // Move the other cards up.
+                    let cards = self.get_cards_in_column_ordered(tag);
+                    let card_index = cards
+                        .iter()
+                        .position(|card_id| *card_id == selected_card_id)
+                        .unwrap();
+
+                    self.card_position_in_column
+                        .remove(&(selected_card_id, tag.clone()));
+
+                    for (card_id, pos) in self.card_position_in_column.iter_mut() {
+                        if *pos > card_index {
+                            *pos -= 1;
+                        }
+                    }
+                }
+
+                // If there are no more cards in this column, remove the column.
+                if self.get_cards_in_column_ordered(tag).is_empty() {
+                    let columns = self.get_columns_in_category_ordered(tag.category());
+                    let tag_column_index = columns
+                        .iter()
+                        .position(|column| tag.column() == column)
+                        .unwrap();
+
+                    self.column_position_in_category.remove(tag);
+
+                    // Move the other columns up.
+                    for (tag, pos) in self.column_position_in_category.iter_mut() {
+                        if *pos > tag_column_index {
+                            *pos -= 1;
+                        }
+                    }
+                }
+
+                Ok(())
             }
         }
+    }
+
+    fn get_next_card_position_for_column(&self, tag: &Tag) -> usize {
+        self.get_cards_in_column_ordered(tag).len()
+    }
+
+    fn get_cards_in_column_ordered(&self, tag: &Tag) -> Vec<CardId> {
+        let mut cards: Vec<_> = self
+            .card_position_in_column
+            .iter()
+            .filter(|((card_id, card_tag), pos)| card_tag == tag)
+            .collect();
+
+        cards.sort_by_key(|(_, pos)| *pos);
+
+        cards
+            .iter()
+            .map(|((card_id, card_tag), _)| card_id.clone())
+            .collect()
+    }
+
+    fn get_next_column_position_in_category(&self, category: &str) -> usize {
+        self.get_columns_in_category_ordered(category).len()
+    }
+
+    fn get_columns_in_category_ordered(&self, category: &str) -> Vec<String> {
+        let mut columns: Vec<_> = self
+            .column_position_in_category
+            .iter()
+            .filter(|(tag, pos)| tag.category() == category)
+            .collect();
+
+        columns.sort_by_key(|(_, pos)| *pos);
+
+        columns
+            .iter()
+            .map(|(tag, _)| tag.column().to_owned())
+            .collect()
     }
 
     /// Get the ID of the currently-selected card, or return an error.
@@ -291,8 +398,8 @@ pub enum BoardError {
     #[error("card doesn't have the specified tag")]
     CardDoesntHaveTag,
 
-    #[error("card error: {0}")]
-    CardError(#[from] CardError),
+    #[error("card already has the specified tag")]
+    CardAlreadyHasTag,
 
     #[error("no card selected")]
     NoCardSelected,
