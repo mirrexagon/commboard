@@ -242,6 +242,8 @@ impl Board {
                     self.get_next_card_position_for_column(tag),
                 );
 
+                // TODO: Debug assert that the two maps have no gaps in the positions of columns/cards.
+
                 Ok(())
             }
 
@@ -292,6 +294,8 @@ impl Board {
                         }
                     }
                 }
+
+                // TODO: Debug assert that the two maps have no gaps in the positions of columns/cards.
 
                 Ok(())
             }
