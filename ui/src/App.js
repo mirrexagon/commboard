@@ -16,7 +16,8 @@ const App = () => {
 
     // -- UI local state --
     // board (normal board view) | card (viewing selected card) | edit (editing text of selected card)
-    const uiLocalState = useRef("board");
+    const uiLocalState = useState("board");
+    const uiLocalStateRef = useRef(uiLocalState);
 
     // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({
@@ -27,37 +28,39 @@ const App = () => {
 
     const performAction = (action) => performActionBase(action).then(() => refetchAppState());
 
-    const bindKeyNormal = (key, action) => {
+    const bindKeyBoard = (key, action) => {
         useKeyPress(key, () => {
-            if (!isViewingCurrentCard.current) {
+            if (uiLocalStateRef.current) {
                 performAction(action);
             }
         });
     };
 
-    bindKeyNormal("a", {
+    bindKeyBoard("a", {
         "type": "NewCard",
     });
 
-    bindKeyNormal("d", {
+    bindKeyBoard("d", {
         "type": "DeleteCurrentCard",
     });
 
-    bindKeyNormal("j", {
+    bindKeyBoard("j", {
         "type": "SelectCardBelow",
     });
 
-    bindKeyNormal("k", {
+    bindKeyBoard("k", {
         "type": "SelectCardAbove",
     });
 
     // -- Render --
+    uiLocalStateRef.current = uiLocalState;
+
     if (appState) {
         return (
             <div>
                 <Board
                     appState={appState}
-                    isViewingCurrentCard={isViewingCurrentCard}
+                    uiLocalState={uiLocalState}
                 />
             </div>
         );

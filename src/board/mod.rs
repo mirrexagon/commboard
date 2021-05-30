@@ -3,6 +3,8 @@ use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use log::info;
+
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -121,6 +123,8 @@ impl Board {
 
             "default_card_order": self.cards.keys().collect::<Vec<_>>(),
 
+            "categories": self.get_categories_ordered(),
+
             "interaction_state": self.interaction_state,
         })
     }
@@ -146,6 +150,9 @@ impl Board {
                         self.interaction_state.view = InteractionView::Default {
                             selected_card_id: Some(new_card_id),
                         };
+
+                        info!("{:?}", self.interaction_state);
+
                         Ok(())
                     }
                 }
@@ -338,6 +345,20 @@ impl Board {
             .iter()
             .map(|(tag, _)| tag.column().to_owned())
             .collect()
+    }
+
+    /// Get a list of all categories in the board, in alphabetical order.
+    fn get_categories_ordered(&self) -> Vec<String> {
+        let mut categories: Vec<_> = self
+            .column_position_in_category
+            .keys()
+            .map(|tag| tag.category().to_owned())
+            .collect();
+
+        categories.sort();
+        categories.dedup();
+
+        categories
     }
 
     /// Get the ID of the currently-selected card, or return an error.
