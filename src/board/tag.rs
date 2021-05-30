@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub struct Tag(String);
 
 impl Tag {
@@ -34,5 +36,13 @@ impl Tag {
 
     fn get_colon_index(&self) -> usize {
         self.0.find(':').unwrap()
+    }
+}
+
+impl TryFrom<String> for Tag {
+    type Error = &'static str;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Tag::new(value).map_err(|_| "string is not a valid tag (no colon)")
     }
 }

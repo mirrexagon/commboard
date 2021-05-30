@@ -52,6 +52,16 @@ const App = () => {
         "type": "SelectCardAbove",
     });
 
+    bindKeyBoard("t", {
+        "type": "AddTagToCurrentCard",
+        "tag": "fruit:apple",
+    });
+
+    bindKeyBoard("r", {
+        "type": "DeleteTagFromCurrentCard",
+        "tag": "fruit:apple",
+    });
+
     // -- Render --
     uiLocalStateRef.current = uiLocalState;
 
