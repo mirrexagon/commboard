@@ -8,8 +8,6 @@ const BoardViewDefault = (props) => {
         (cardId) => props.cards[cardId]
     );
 
-    console.log("Selected card: " + props.selectedCardId);
-
     return (
         <CardColumn
             cards={cards}

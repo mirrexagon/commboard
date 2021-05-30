@@ -3,8 +3,6 @@ use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use log::info;
-
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -150,8 +148,6 @@ impl Board {
                         self.interaction_state.view = InteractionView::Default {
                             selected_card_id: Some(new_card_id),
                         };
-
-                        info!("{:?}", self.interaction_state);
 
                         Ok(())
                     }
@@ -383,7 +379,10 @@ impl Board {
     /// Returns `None` if there are no cards (and so no card is selected).
     fn get_next_card_in_default_order(&self, card_id: CardId) -> Option<CardId> {
         let index = self.cards.keys().position(|id| *id == card_id)?;
-        self.cards.keys().nth(index.saturating_add(1)).map(|id| *id)
+        self.cards
+            .keys()
+            .nth(index.saturating_add(1).clamp(0, self.cards.len() - 1))
+            .map(|id| *id)
     }
 
     /// Returns `None` if there are no cards (and so no card is selected).
