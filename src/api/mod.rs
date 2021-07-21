@@ -3,10 +3,9 @@ use std::sync::Mutex;
 use rocket::{
     get, post,
     response::{content, status},
+    serde::json::Json,
     State,
 };
-
-use rocket_contrib::json::Json;
 
 use crate::board::{self, Tag};
 
@@ -19,7 +18,7 @@ pub fn validate_tag(tag: String) -> &'static str {
 }
 
 #[get("/state")]
-pub fn get_current_state(board: State<Mutex<board::Board>>) -> content::Json<String> {
+pub fn get_current_state(board: &State<Mutex<board::Board>>) -> content::Json<String> {
     let board = board.lock().unwrap();
 
     content::Json(board.get_state_as_json().to_string())
@@ -27,7 +26,7 @@ pub fn get_current_state(board: State<Mutex<board::Board>>) -> content::Json<Str
 
 #[post("/action", data = "<action>")]
 pub fn perform_action(
-    board: State<Mutex<board::Board>>,
+    board: &State<Mutex<board::Board>>,
     action: Json<board::Action>,
 ) -> Result<(), status::BadRequest<String>> {
     let mut board = board.lock().unwrap();

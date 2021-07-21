@@ -1,13 +1,10 @@
-let
-  nixpkgs-mozilla = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
-  pkgs = import <nixpkgs> { overlays = [ nixpkgs-mozilla ]; };
+{ pkgs ? import <nixpkgs> { } }:
 
-  rustChannel = (pkgs.rustChannelOf { date = "2021-04-30"; channel = "nightly"; });
-  # rustChannels.nightly.rust
-in
 pkgs.mkShell {
   buildInputs = with pkgs; [
-    rustChannel.rust
+    rustc
+    cargo
+
     rustfmt
     rust-analyzer
     cargo-edit

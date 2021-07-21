@@ -1,10 +1,8 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
 use std::path::Path;
 use std::sync::Mutex;
 
 use clap::{App, Arg};
-use rocket::{get, response::content, routes};
+use rocket::{get, launch, response::content, routes};
 
 use board::Board;
 
@@ -21,7 +19,8 @@ fn index_bundle() -> content::JavaScript<&'static str> {
     content::JavaScript(include_str!("../ui/dist/bundle.js"))
 }
 
-fn main() {
+#[launch]
+fn rocket() -> _ {
     env_logger::init();
 
     let arg_matches = App::new("Commboard")
@@ -44,7 +43,7 @@ fn main() {
 
     let board = Mutex::new(board);
 
-    rocket::ignite()
+    rocket::build()
         .mount("/", routes![index, index_bundle])
         .mount(
             "/api",
@@ -55,5 +54,4 @@ fn main() {
             ],
         )
         .manage(board)
-        .launch();
 }

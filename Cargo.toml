@@ -5,21 +5,13 @@ authors = ["Andrew Abbott <mirrexagon@mirrexagon.com>"]
 edition = "2018"
 
 [dependencies]
-log = "0.4"
-env_logger = "0.8"
-
-thiserror = "1.0.21"
-
-serde = { version = "1.0.117", features = ["derive"] }
-serde_json = "1.0.59"
-
-rocket = "0.4.5"
+log = "0.4.14"
+env_logger = "0.9.0"
+thiserror = "1.0.26"
+serde = { version = "1.0.126", features = ["derive"] }
+serde_json = "1.0.64"
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
 clap = "2.33.3"
 
-[dependencies.rocket_contrib]
-version = "0.4.5"
-default-features = false
-features = ["json"]
-
 [build-dependencies]
-walkdir = "2.3.1"
+walkdir = "2.3.2"
