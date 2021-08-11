@@ -1,6 +1,13 @@
 "Client defines the interface" - rewrite the UI, try out ideas, figure out good JSON representation that the UI would like to consume.
 
 # TODO
+- Change to have a single global card order
+    - Simpler, card order can be "what order do I want to commission these in"
+- Make everything as declarative as possible:
+    - Categories are shown in alphabetical order
+    - Columns in a category are also in alphabetical order, change name to rearrange (prefix with number)
+    - Cards are always in global order.
+
 - Card text Markdown rendering, including embedding images
     - Try https://github.com/remarkjs/react-markdown to render Markdown.
     - Store files (eg. images), that the UI can request from a certain subdirectory in the URL path, so it can display images based on Markdown image tags. UI shows other kinds of files as just the link to download.
