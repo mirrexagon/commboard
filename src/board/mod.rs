@@ -31,31 +31,35 @@ pub enum Action {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 enum InteractionView {
+    Empty,
     Default {
-        /// If there are no cards, no card can be selected, and the default view
-        /// is the only view available.
-        selected_card_id: Option<CardId>,
+        selected_card_id: CardId,
     },
-    // Category {
-    //     /// A tag represents a column in a category.
-    //     selected_tag: Tag,
-    //     selected_card_id: CardId,
-    // },
+    Category {
+        /// A tag represents a column in a category.
+        selected_tag: Tag,
+        selected_card_id: CardId,
+    },
 }
 
 /// The state of a session interacting with the board.
+///
+/// - If neither a card or tag is selected, the board is empty.
+/// - If only a card is selected, the default all card view is shown.
+/// - If both a card and a tag are selected, the category view for that tag is shown, with that card selected.
+/// - If no card is selected but a tag is selected, that is invalid.
 #[derive(Debug, Serialize)]
 struct InteractionState {
-    view: InteractionView,
+    selected_card_id: Option<CardId>,
+    selected_tag: Option<Tag>,
     filter: String,
 }
 
 impl Default for InteractionState {
     fn default() -> Self {
         InteractionState {
-            view: InteractionView::Default {
-                selected_card_id: None,
-            },
+            selected_card_id: None,
+            selected_tag: None,
             filter: String::new(),
         }
     }
@@ -65,16 +69,9 @@ impl Default for InteractionState {
 pub struct Board {
     name: String,
 
-    /// The default view shows all cards in card ID order.
     cards: BTreeMap<CardId, Card>,
     next_card_id: CardId,
-
-    // A tag represents a category and column.
-    // Categories are listed in alphabetical order.
-    // Columns within a category have a saved order.
-    // Cards within a column have a saved order.
-    column_position_in_category: HashMap<Tag, usize>,
-    card_position_in_column: HashMap<(CardId, Tag), usize>,
+    card_order: Vec<CardId>,
 
     /// Path to JSON file this board saves to.
     #[serde(skip)]
@@ -92,9 +89,7 @@ impl Board {
 
             cards: BTreeMap::new(),
             next_card_id: CardId::new(0),
-
-            column_position_in_category: HashMap::new(),
-            card_position_in_column: HashMap::new(),
+            card_order: Vec::new(),
 
             file_path: file_path.as_ref().to_owned(),
             interaction_state: Default::default(),
@@ -114,19 +109,87 @@ impl Board {
         Ok(board)
     }
 
+    /// Get the next card ID for a new card and increment the next ID.
+    fn get_next_card_id(&mut self) -> CardId {
+        let next_card_id = self.next_card_id;
+        self.next_card_id = self.next_card_id.next();
+        next_card_id
+    }
+
+    // -- Viewing the board --
     pub fn get_state_as_json(&self) -> serde_json::Value {
         json!({
             "board_name": self.name,
+
             "cards": self.cards,
+            "card_order": self.card_order,
 
-            "default_card_order": self.cards.keys().collect::<Vec<_>>(),
-
-            "categories": self.get_categories_ordered(),
+            "categories": self.get_categories(),
 
             "interaction_state": self.interaction_state,
+
+            // TODO: Fix this
+            "current_category_view": if let Some(selected_card_id) = self.interaction_state.selected_card_id {
+                Some(self.get_category(selected_tag.category()),
+            } else { None },
         })
     }
 
+    /// Returns a list of all categories in the board, in alphabetical order.
+    fn get_categories(&self) -> Vec<String> {
+        let mut categories: Vec<_> = self
+            .get_all_tags()
+            .into_iter()
+            .map(|tag| tag.category().to_owned())
+            .collect();
+
+        categories.sort();
+        categories.dedup();
+
+        categories
+    }
+
+    /// Returns a map of tag values (column names) to a vector of the cards with
+    /// that tag (columns).
+    fn get_category(&self, category: &str) -> BTreeMap<String, Vec<CardId>> {
+        self.get_tags_with_category(category)
+            .iter()
+            .map(|tag| (tag.column().to_owned(), self.get_cards_with_tag(tag)))
+            .collect()
+    }
+
+    /// Returns a vector of all cards with this tag, in the global card order.
+    ///
+    /// Such a vector is equivalent to a column.
+    fn get_cards_with_tag(&self, tag: &Tag) -> Vec<CardId> {
+        self.card_order
+            .iter()
+            .map(|card_id| *card_id)
+            .filter(|card_id| self.cards.get(card_id).unwrap().has_tag(tag))
+            .collect()
+    }
+
+    /// Returns a vector of all tags with the specified category.
+    fn get_tags_with_category(&self, category: &str) -> Vec<Tag> {
+        self.get_all_tags()
+            .into_iter()
+            .filter(|tag| tag.category() == category)
+            .collect()
+    }
+
+    /// Returns a list of all the tags in the board, in alphabetical order.
+    fn get_all_tags(&self) -> Vec<Tag> {
+        let mut tags: Vec<Tag> = self
+            .cards
+            .values()
+            .flat_map(|card| card.get_tags().into_iter())
+            .collect();
+
+        tags.sort();
+        tags
+    }
+
+    // -- Manipulating the board --
     pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
         // Remember to validate everything before performing the action, so it is atomic!
 
@@ -141,16 +204,25 @@ impl Board {
                 self.cards.insert(new_card_id, Card::new(new_card_id));
 
                 match self.interaction_state.view {
-                    InteractionView::Default { .. } => {
-                        // The new card was added to the end of the view
-                        // (because the default view is ordered by card ID and
-                        // the new card has the highest card ID), select it.
+                    InteractionView::Empty | InteractionView::Default { .. } => {
                         self.interaction_state.view = InteractionView::Default {
-                            selected_card_id: Some(new_card_id),
+                            selected_card_id: new_card_id,
                         };
 
                         Ok(())
                     }
+
+                    InteractionView::Category {
+                        selected_tag,
+                        selected_card_id,
+                    } => {
+                        self
+                        self.interaction_state.view = InteractionView::Category {
+                        }
+
+
+                        Ok(())
+                        },
                 }
             }
 
@@ -305,59 +377,7 @@ impl Board {
         }
     }
 
-    fn get_next_card_position_for_column(&self, tag: &Tag) -> usize {
-        self.get_cards_in_column_ordered(tag).len()
-    }
-
-    fn get_cards_in_column_ordered(&self, tag: &Tag) -> Vec<CardId> {
-        let mut cards: Vec<_> = self
-            .card_position_in_column
-            .iter()
-            .filter(|((card_id, card_tag), pos)| card_tag == tag)
-            .collect();
-
-        cards.sort_by_key(|(_, pos)| *pos);
-
-        cards
-            .iter()
-            .map(|((card_id, card_tag), _)| card_id.clone())
-            .collect()
-    }
-
-    fn get_next_column_position_in_category(&self, category: &str) -> usize {
-        self.get_columns_in_category_ordered(category).len()
-    }
-
-    fn get_columns_in_category_ordered(&self, category: &str) -> Vec<String> {
-        let mut columns: Vec<_> = self
-            .column_position_in_category
-            .iter()
-            .filter(|(tag, pos)| tag.category() == category)
-            .collect();
-
-        columns.sort_by_key(|(_, pos)| *pos);
-
-        columns
-            .iter()
-            .map(|(tag, _)| tag.column().to_owned())
-            .collect()
-    }
-
-    /// Get a list of all categories in the board, in alphabetical order.
-    fn get_categories_ordered(&self) -> Vec<String> {
-        let mut categories: Vec<_> = self
-            .column_position_in_category
-            .keys()
-            .map(|tag| tag.category().to_owned())
-            .collect();
-
-        categories.sort();
-        categories.dedup();
-
-        categories
-    }
-
-    /// Get the ID of the currently-selected card, or return an error.
+    /// Returns the ID of the currently-selected card, or an error if no card is selected.
     fn get_selected_card_id(&self) -> Result<CardId, BoardError> {
         match self.interaction_state.view {
             InteractionView::Default { selected_card_id } => {
@@ -389,13 +409,6 @@ impl Board {
     fn get_previous_card_in_default_order(&self, card_id: CardId) -> Option<CardId> {
         let index = self.cards.keys().position(|id| *id == card_id)?;
         self.cards.keys().nth(index.saturating_sub(1)).map(|id| *id)
-    }
-
-    /// Get the next card ID for a new card.
-    fn get_next_card_id(&mut self) -> CardId {
-        let next_card_id = self.next_card_id;
-        self.next_card_id = self.next_card_id.next();
-        next_card_id
     }
 }
 

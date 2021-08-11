@@ -64,8 +64,8 @@ impl Card {
     }
 
     /// Returns a vector of all tags in this card, in alphabetical order.
-    pub fn get_tags(&self) -> Vec<&Tag> {
-        let mut tags_vec: Vec<_> = self.tags.iter().collect();
+    pub fn get_tags(&self) -> Vec<Tag> {
+        let mut tags_vec: Vec<_> = self.tags.iter().map(|tag| tag.clone()).collect();
         tags_vec.sort();
         tags_vec
     }
