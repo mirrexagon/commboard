@@ -86,7 +86,7 @@ impl Card {
     }
 
     /// Returns a vector of all tags with the given category, in alphabetical order.
-    pub fn get_tags_with_category(&self, category: &str) -> Vec<&Tag> {
+    pub fn get_tags_with_category(&self, category: &str) -> Vec<Tag> {
         self.get_tags()
             .into_iter()
             .filter(|tag| tag.category() == category)
