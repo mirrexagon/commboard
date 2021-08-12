@@ -25,6 +25,7 @@ pub enum Action {
     SetCurrentCardText { text: String },
     AddTagToCurrentCard { tag: Tag },
     DeleteTagFromCurrentCard { tag: Tag },
+    ViewCategory { category: String },
     //SetFilter { filter: String },
 }
 
@@ -315,6 +316,31 @@ impl Board {
                 selected_card.delete_tag(tag);
 
                 Ok(())
+            }
+
+            Action::ViewCategory { category } => {
+                let categories = self.get_categories();
+
+                if categories.contains(&category) {
+                    // The presence of at least one category means that at least
+                    // one card exists and thus a card is selected.
+                    let selected_card_id = self.interaction_state.selection.card_id.unwrap();
+
+                    if self
+                        .cards
+                        .get(&selected_card_id)
+                        .unwrap()
+                        .has_category(category)
+                    {
+                        self.interaction_state.selection.card_id = selected_card_id;
+                        self.interaction_state.selection.tag = todo!(); // The first tag on that card in this category.
+                    } else {
+                        // Select the nearest card in this category?
+                        todo!();
+                    }
+                } else {
+                    Err(BoardError::NoSuchCategory)
+                }
             }
         }
     }
