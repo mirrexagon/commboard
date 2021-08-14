@@ -31,10 +31,7 @@ pub enum Action {
 
 /// The state of a session interacting with the board.
 ///
-/// - If neither a card or tag is selected, the board is empty.
-/// - If only a card is selected, the default all card view is shown.
-/// - If both a card and a tag are selected, the category view for that tag is shown, with that card selected.
-/// - If no card is selected but a tag is selected, that is invalid.
+
 #[derive(Debug, Serialize)]
 struct InteractionState {
     selection: CardSelection,
@@ -50,6 +47,10 @@ impl Default for InteractionState {
     }
 }
 
+/// - If neither a card or tag is selected, the board is empty.
+/// - If only a card is selected, the default all card view is shown.
+/// - If both a card and a tag are selected, the category view for that tag is shown, with that card selected.
+/// - If no card is selected but a tag is selected, that is invalid.
 #[derive(Debug, Serialize)]
 struct CardSelection {
     card_id: Option<CardId>,
