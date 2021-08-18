@@ -22,6 +22,10 @@ pub enum Action {
     DeleteCurrentCard,
     SelectCardAbove,
     SelectCardBelow,
+    // MoveCardUp,
+    // MoveCardDown,
+    // MoveCardLeft,
+    // MoveCardRight,
     SetCurrentCardText { text: String },
     AddTagToCurrentCard { tag: Tag },
     DeleteTagFromCurrentCard { tag: Tag },
@@ -468,12 +472,6 @@ impl Board {
         } else {
             CardOffsetResult::Ok(cards[next_index as usize])
         }
-    }
-
-    /// Returns `None` if there are no cards (and so no card is selected).
-    fn get_previous_card_in_default_order(&self, card_id: CardId) -> Option<CardId> {
-        let index = self.cards.keys().position(|id| *id == card_id)?;
-        self.cards.keys().nth(index.saturating_sub(1)).map(|id| *id)
     }
 }
 
