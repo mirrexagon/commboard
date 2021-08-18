@@ -253,22 +253,20 @@ impl Board {
             }
 
             Action::DeleteCurrentCard => {
-                if let Some(selected_card_id) = self.interaction_state.selection.card_id {
-                    self.interaction_state.selection = self.get_next_selection_card_after_delete();
+                let selected_card_id = self.get_selected_card_id()?;
 
-                    let global_index_to_remove = self
-                        .card_order
-                        .iter()
-                        .position(|card_id| *card_id == selected_card_id)
-                        .unwrap();
+                self.interaction_state.selection = self.get_next_selection_card_after_delete();
 
-                    self.card_order.remove(global_index_to_remove);
-                    self.cards.remove(&selected_card_id);
+                let global_index_to_remove = self
+                    .card_order
+                    .iter()
+                    .position(|card_id| *card_id == selected_card_id)
+                    .unwrap();
 
-                    Ok(())
-                } else {
-                    Err(BoardError::NoCardSelected)
-                }
+                self.card_order.remove(global_index_to_remove);
+                self.cards.remove(&selected_card_id);
+
+                Ok(())
             }
 
             Action::SelectCardBelow | Action::SelectCardAbove => {
@@ -327,18 +325,15 @@ impl Board {
                 let categories = self.get_categories();
 
                 if categories.contains(&category) {
-                    // The presence of at least one category means that at least
-                    // one card exists and thus a card is selected.
-                    let selected_card_id = self.interaction_state.selection.card_id.unwrap();
+                    let selected_card_id = self.get_selected_card_id()?;
+                    let selected_card = self.cards.get(&selected_card_id).unwrap();
 
-                    if self
-                        .cards
-                        .get(&selected_card_id)
-                        .unwrap()
-                        .has_category(category)
-                    {
-                        self.interaction_state.selection.card_id = selected_card_id;
-                        self.interaction_state.selection.tag = todo!(); // The first tag on that card in this category.
+                    if selected_card.has_category(category) {
+                        self.interaction_state.selection.card_id = Some(selected_card_id);
+                        self.interaction_state.selection.tag =
+                            Some(selected_card.get_tags_with_category(category)[0].clone());
+
+                        Ok(())
                     } else {
                         // Select the nearest card in this category?
                         todo!();
