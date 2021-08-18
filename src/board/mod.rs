@@ -335,14 +335,37 @@ impl Board {
 
                         Ok(())
                     } else {
-                        // Select the nearest card in this category?
-                        todo!();
+                        let nearest_card_in_category = self
+                            .get_cards_by_distance_from_selected()?
+                            .into_iter()
+                            .skip_while(|card_id| {
+                                !self.cards.get(&card_id).unwrap().has_category(category)
+                            })
+                            .next()
+                            .unwrap();
+
+                        self.interaction_state.selection.card_id = Some(nearest_card_in_category);
+                        self.interaction_state.selection.tag = Some(
+                            self.cards
+                                .get(&nearest_card_in_category)
+                                .unwrap()
+                                .get_tags_with_category(category)[0]
+                                .clone(),
+                        );
+
+                        Ok(())
                     }
                 } else {
                     Err(BoardError::NoSuchCategory)
                 }
             }
         }
+    }
+
+    /// Get the list of cards ordered by their distance from the selected card..
+    /// Goes card below, card above, card two slots below, card two slots above, etc.
+    fn get_cards_by_distance_from_selected(&self) -> Result<Vec<CardId>, BoardError> {
+        todo!()
     }
 
     fn get_next_selection_card_after_delete(&self) -> CardSelection {
