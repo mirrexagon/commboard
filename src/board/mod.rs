@@ -363,10 +363,47 @@ impl Board {
         }
     }
 
-    /// Get the list of cards ordered by their distance from the selected card..
+    /// Get the list of cards ordered by their distance from the selected card in the overall card order.
+    /// The list excludes the selected card.
+    ///
     /// Goes card below, card above, card two slots below, card two slots above, etc.
     fn get_cards_by_distance_from_selected(&self) -> Result<Vec<CardId>, BoardError> {
-        todo!()
+        let selected_card_id = self.get_selected_card_id()?;
+        let selected_card_index_in_order = self
+            .card_order
+            .iter()
+            .position(|card_id| *card_id == selected_card_id)
+            .unwrap();
+
+        let mut elements_before = Vec::new();
+        let mut elements_after = Vec::new();
+
+        for i in 0..selected_card_index_in_order {
+            elements_before.push(self.card_order[i]);
+        }
+        dbg!(&elements_before);
+
+        for i in (selected_card_index_in_order + 1)..self.card_order.len() {
+            elements_after.push(self.card_order[i]);
+        }
+        elements_after.reverse();
+        dbg!(&elements_after);
+
+        let mut result = Vec::new();
+
+        while !elements_before.is_empty() || !elements_after.is_empty() {
+            if let Some(card_id) = elements_after.pop() {
+                result.push(card_id);
+            }
+
+            if let Some(card_id) = elements_before.pop() {
+                result.push(card_id);
+            }
+        }
+
+        dbg!(&result);
+
+        Ok(result)
     }
 
     fn get_next_selection_card_after_delete(&self) -> Result<CardSelection, BoardError> {
