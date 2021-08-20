@@ -322,9 +322,7 @@ impl Board {
             }
 
             Action::ViewCategory { category } => {
-                let categories = self.get_categories();
-
-                if categories.contains(&category) {
+                if self.get_categories().contains(&category) {
                     let selected_card_id = self.get_selected_card_id()?;
                     let selected_card = self.cards.get(&selected_card_id).unwrap();
 
