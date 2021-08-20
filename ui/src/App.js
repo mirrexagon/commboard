@@ -62,6 +62,10 @@ const App = () => {
         "tag": "fruit:apple",
     });
 
+    bindKeyBoard("v", {
+        "type": "ViewDefault",
+    });
+
     bindKeyBoard("c", {
         "type": "ViewCategory",
         "category": "fruit",

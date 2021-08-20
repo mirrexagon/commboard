@@ -29,6 +29,7 @@ pub enum Action {
     SetCurrentCardText { text: String },
     AddTagToCurrentCard { tag: Tag },
     DeleteTagFromCurrentCard { tag: Tag },
+    ViewDefault,
     ViewCategory { category: String },
     //SetFilter { filter: String },
 }
@@ -324,6 +325,15 @@ impl Board {
                 Ok(())
             }
 
+            Action::ViewDefault => {
+                if self.interaction_state.selection.tag.is_some() {
+                    self.interaction_state.selection.tag = None;
+                    Ok(())
+                } else {
+                    Err(BoardError::NoTagSelected)
+                }
+            }
+
             Action::ViewCategory { category } => {
                 if self.get_categories().contains(&category) {
                     let selected_card_id = self.get_selected_card_id()?;
@@ -381,13 +391,11 @@ impl Board {
         for i in 0..selected_card_index_in_order {
             elements_before.push(self.card_order[i]);
         }
-        dbg!(&elements_before);
 
         for i in (selected_card_index_in_order + 1)..self.card_order.len() {
             elements_after.push(self.card_order[i]);
         }
         elements_after.reverse();
-        dbg!(&elements_after);
 
         let mut result = Vec::new();
 
@@ -400,8 +408,6 @@ impl Board {
                 result.push(card_id);
             }
         }
-
-        dbg!(&result);
 
         Ok(result)
     }
@@ -564,4 +570,7 @@ pub enum BoardError {
 
     #[error("no card selected")]
     NoCardSelected,
+
+    #[error("no tag selected")]
+    NoTagSelected,
 }
