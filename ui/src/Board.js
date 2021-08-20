@@ -2,7 +2,7 @@ import React from "react";
 import "./Board.css";
 
 import BoardViewDefault from "./BoardViewDefault.js";
-// import BoardViewCategory from "./BoardViewCategory.js";
+import BoardViewCategory from "./BoardViewCategory.js";
 
 const BoardPanel = (props) => {
     const categories = props.categories.map((categoryName) => <li key={categoryName}>{categoryName}</li>);
@@ -21,7 +21,16 @@ const BoardPanel = (props) => {
 };
 
 const Board = (props) => {
-    const boardView = (
+    const boardView = props.appState.current_category_view
+    ? (
+        <BoardViewCategory
+            cards={props.appState.cards}
+            selectedCardId={props.appState.interaction_state.selection.card_id}
+            selectedTag={props.appState.interaction_state.selection.tag}
+            categoryView={props.appState.current_category_view}
+        />
+    )
+    : (
         <BoardViewDefault
             cards={props.appState.cards}
             cardOrder={props.appState.card_order}
