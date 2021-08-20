@@ -62,6 +62,11 @@ const App = () => {
         "tag": "fruit:apple",
     });
 
+    bindKeyBoard("c", {
+        "type": "ViewCategory",
+        "category": "fruit",
+    });
+
     // -- Render --
     uiLocalStateRef.current = uiLocalState;
 

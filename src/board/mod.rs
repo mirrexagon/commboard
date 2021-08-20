@@ -255,7 +255,7 @@ impl Board {
             Action::DeleteCurrentCard => {
                 let selected_card_id = self.get_selected_card_id()?;
 
-                self.interaction_state.selection = self.get_next_selection_card_after_delete();
+                self.interaction_state.selection = self.get_next_selection_card_after_delete()?;
 
                 let global_index_to_remove = self
                     .card_order
@@ -270,6 +270,9 @@ impl Board {
             }
 
             Action::SelectCardBelow | Action::SelectCardAbove => {
+                // Ensure a card is selected.
+                self.get_selected_card_id()?;
+
                 let offset = match action {
                     Action::SelectCardAbove => -1,
                     Action::SelectCardBelow => 1,
@@ -277,7 +280,7 @@ impl Board {
                 };
 
                 if let CardOffsetResult::Ok(card_id) =
-                    self.get_card_at_offset_from_current_in_current_view(offset)
+                    self.get_card_at_offset_from_current_in_current_view(offset)?
                 {
                     self.interaction_state.selection.card_id = Some(card_id);
                 }
@@ -366,7 +369,7 @@ impl Board {
         todo!()
     }
 
-    fn get_next_selection_card_after_delete(&self) -> CardSelection {
+    fn get_next_selection_card_after_delete(&self) -> Result<CardSelection, BoardError> {
         // If selecting a tag. try:
         // - Next card in cards with tag in global order.
         // - Previous card with tag in global order.
@@ -383,66 +386,66 @@ impl Board {
             let cards_with_tag = self.get_cards_with_tag(&tag);
 
             if let CardOffsetResult::Ok(card_id) =
-                self.get_card_at_offset_from_current_in_list(&cards_with_tag, 1)
+                self.get_card_at_offset_from_current_in_list(&cards_with_tag, 1)?
             {
-                return CardSelection {
+                return Ok(CardSelection {
                     card_id: Some(card_id),
                     tag: Some(tag.clone()),
-                };
+                });
             }
 
             if let CardOffsetResult::Ok(card_id) =
-                self.get_card_at_offset_from_current_in_list(&cards_with_tag, -1)
+                self.get_card_at_offset_from_current_in_list(&cards_with_tag, -1)?
             {
-                return CardSelection {
+                return Ok(CardSelection {
                     card_id: Some(card_id),
                     tag: Some(tag.clone()),
-                };
+                });
             }
 
             let cards_with_category = self.get_cards_with_category(tag.category());
 
             if let CardOffsetResult::Ok(card_id) =
-                self.get_card_at_offset_from_current_in_list(&cards_with_category, 1)
+                self.get_card_at_offset_from_current_in_list(&cards_with_category, 1)?
             {
-                return CardSelection {
+                return Ok(CardSelection {
                     card_id: Some(card_id),
                     tag: Some(tag.clone()),
-                };
+                });
             }
 
             if let CardOffsetResult::Ok(card_id) =
-                self.get_card_at_offset_from_current_in_list(&cards_with_category, -1)
+                self.get_card_at_offset_from_current_in_list(&cards_with_category, -1)?
             {
-                return CardSelection {
+                return Ok(CardSelection {
                     card_id: Some(card_id),
                     tag: Some(tag.clone()),
-                };
+                });
             }
         }
 
         if let CardOffsetResult::Ok(card_id) =
-            self.get_card_at_offset_from_current_in_list(&self.card_order, 1)
+            self.get_card_at_offset_from_current_in_list(&self.card_order, 1)?
         {
-            return CardSelection {
+            return Ok(CardSelection {
                 card_id: Some(card_id),
                 tag: None,
-            };
+            });
         }
 
         if let CardOffsetResult::Ok(card_id) =
-            self.get_card_at_offset_from_current_in_list(&self.card_order, -1)
+            self.get_card_at_offset_from_current_in_list(&self.card_order, -1)?
         {
-            return CardSelection {
+            return Ok(CardSelection {
                 card_id: Some(card_id),
                 tag: None,
-            };
+            });
         }
 
-        CardSelection {
+        Ok(CardSelection {
             card_id: None,
             tag: None,
-        }
+        })
     }
 
     fn get_selected_card_id(&self) -> Result<CardId, BoardError> {
@@ -452,9 +455,10 @@ impl Board {
             .ok_or(BoardError::NoCardSelected)
     }
 
-    // Panics if no card is selected.
-    // Panics if the currently-selected card is not in the list provided.
-    fn get_card_at_offset_from_current_in_current_view(&self, offset: isize) -> CardOffsetResult {
+    fn get_card_at_offset_from_current_in_current_view(
+        &self,
+        offset: isize,
+    ) -> Result<CardOffsetResult, BoardError> {
         let cards;
 
         if let Some(tag) = &self.interaction_state.selection.tag {
@@ -466,14 +470,13 @@ impl Board {
         self.get_card_at_offset_from_current_in_list(&cards, offset)
     }
 
-    // Panics if no card is selected.
     // Panics if the currently-selected card is not in the list provided.
     fn get_card_at_offset_from_current_in_list(
         &self,
         cards: &[CardId],
         offset: isize,
-    ) -> CardOffsetResult {
-        let selected_card_id = self.interaction_state.selection.card_id.unwrap();
+    ) -> Result<CardOffsetResult, BoardError> {
+        let selected_card_id = self.get_selected_card_id()?;
 
         let selected_index = cards
             .iter()
@@ -482,12 +485,12 @@ impl Board {
 
         let next_index = selected_index + offset;
 
-        if next_index < 0 || next_index >= cards.len() as isize {
+        Ok(if next_index < 0 || next_index >= cards.len() as isize {
             let next_index = next_index.clamp(0, cards.len() as isize - 1);
             CardOffsetResult::Clamped(cards[next_index as usize])
         } else {
             CardOffsetResult::Ok(cards[next_index as usize])
-        }
+        })
     }
 }
 

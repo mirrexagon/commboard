@@ -24,8 +24,8 @@ const Board = (props) => {
     const boardView = (
         <BoardViewDefault
             cards={props.appState.cards}
-            cardOrder={props.appState.default_card_order}
-            selectedCardId={props.appState.interaction_state.view.selected_card_id}
+            cardOrder={props.appState.card_order}
+            selectedCardId={props.appState.interaction_state.selection.card_id}
         />
     );
 
