@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import { useGet, useMutate } from "restful-react";
 import useKeyPress from "./useKeyPress.js";
@@ -14,10 +14,9 @@ const App = () => {
         base
     });
 
-    // -- UI local state --
+    // -- UI mode --
     // board (normal board view) | card (viewing selected card) | edit (editing text of selected card)
-    const uiLocalState = useState("board");
-    const uiLocalStateRef = useRef(uiLocalState);
+    const [uiMode, setUiMode] = useState("board");
 
     // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({
@@ -28,58 +27,76 @@ const App = () => {
 
     const performAction = (action) => performActionBase(action).then(() => refetchAppState());
 
-    const bindKeyBoard = (key, action) => {
-        useKeyPress(key, () => {
-            if (uiLocalStateRef.current) {
-                performAction(action);
+    // -- Key bindings --
+    const bindKey = (mode, key, action) => {
+        const onKeyDown = useCallback((e) => {
+            if (uiMode == mode && e.key == key) {
+                const boardAction = action();
+                if (boardAction) {
+                    performAction(boardAction);
+                }
             }
-        });
+        }, [uiMode]);
+
+        useEffect(() => {
+            window.addEventListener("keydown", onKeyDown);
+
+            return () => {
+                window.removeEventListener("keydown", onKeyDown);
+            };
+        }, [onKeyDown]);
     };
 
-    bindKeyBoard("a", {
+    bindKey("board", "m", () => {
+        setUiMode("card");
+    });
+
+    bindKey("card", "m", () => {
+        setUiMode("board");
+    });
+
+    bindKey("board", "a", () => ({
         "type": "NewCard",
-    });
+    }));
 
-    bindKeyBoard("d", {
+    bindKey("board", "d", () => ({
         "type": "DeleteCurrentCard",
-    });
+    }));
 
-    bindKeyBoard("j", {
+    bindKey("board", "j", () => ({
         "type": "SelectCardBelow",
-    });
+    }));
 
-    bindKeyBoard("k", {
+    bindKey("board", "k", () => ({
         "type": "SelectCardAbove",
-    });
+    }));
 
-    bindKeyBoard("t", {
+    bindKey("board", "t", () => ({
         "type": "AddTagToCurrentCard",
         "tag": "fruit:apple",
-    });
+    }));
 
-    bindKeyBoard("r", {
+    bindKey("board", "r", () => ({
         "type": "DeleteTagFromCurrentCard",
         "tag": "fruit:apple",
-    });
+    }));
 
-    bindKeyBoard("v", {
+    bindKey("board", "v", () => ({
         "type": "ViewDefault",
-    });
+    }));
 
-    bindKeyBoard("c", {
+    bindKey("board", "c", () => ({
         "type": "ViewCategory",
         "category": "fruit",
-    });
+    }));
 
     // -- Render --
-    uiLocalStateRef.current = uiLocalState;
-
     if (appState) {
         return (
             <div>
                 <Board
                     appState={appState}
-                    uiLocalState={uiLocalState}
+                    uiMode={uiMode}
                 />
             </div>
         );
