@@ -5,8 +5,6 @@ pkgs.mkShell {
     rustc
     cargo
 
-    rustfmt
-    rust-analyzer
     cargo-edit
 
     nodejs
