@@ -29,20 +29,34 @@ const App = () => {
 
     // -- Key bindings --
     const bindKey = (mode, key, action) => {
+        let keyPressed = false;
+
         const onKeyDown = useCallback((e) => {
-            if (uiMode == mode && e.key == key) {
-                const boardAction = action();
-                if (boardAction) {
-                    performAction(boardAction);
+            if (!keyPressed && e.key == key) {
+                keyPressed = true;
+
+                if (uiMode == mode) {
+                    const boardAction = action();
+                    if (boardAction) {
+                        performAction(boardAction);
+                    }
                 }
+            }
+        }, [uiMode]);
+
+        const onKeyUp = useCallback((e) => {
+            if (e.key == key) {
+                keyPressed = false;
             }
         }, [uiMode]);
 
         useEffect(() => {
             window.addEventListener("keydown", onKeyDown);
+            window.addEventListener("keyup", onKeyUp);
 
             return () => {
                 window.removeEventListener("keydown", onKeyDown);
+                window.removeEventListener("keyup", onKeyUp);
             };
         }, [onKeyDown]);
     };
