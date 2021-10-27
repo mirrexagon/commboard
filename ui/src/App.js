@@ -14,8 +14,13 @@ const App = () => {
     });
 
     // -- UI mode --
-    // board (normal board view) | card (viewing selected card) | edit (editing text of selected card)
-    const [uiMode, setUiMode] = useState("board");
+    // ViewBoard
+    // SelectCategory
+    // ViewCard
+    //   EditCardText
+    //     AddCardTag
+    //     DeleteCardTag
+    const [uiMode, setUiMode] = useState("ViewBoard");
 
     // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({
@@ -35,19 +40,19 @@ const App = () => {
                 keyPressed = true;
 
                 if (uiMode == mode) {
-                    const boardAction = action();
+                    const boardAction = action(appState, uiMode);
                     if (boardAction) {
                         performAction(boardAction);
                     }
                 }
             }
-        }, [uiMode]);
+        }, [appState, uiMode]);
 
         const onKeyUp = useCallback((e) => {
             if (e.key == key) {
                 keyPressed = false;
             }
-        }, [uiMode]);
+        }, [appState, uiMode]);
 
         useEffect(() => {
             window.addEventListener("keydown", onKeyDown);
@@ -60,45 +65,47 @@ const App = () => {
         }, [onKeyDown]);
     };
 
-    bindKey("board", "m", () => {
-        setUiMode("card");
+    bindKey("ViewBoard", "Enter", (appState, uiMode) => {
+        if (appState.interaction_state.selection.card_id) {
+            setUiMode("ViewCard");
+        }
     });
 
-    bindKey("card", "m", () => {
-        setUiMode("board");
+    bindKey("ViewCard", "Escape", (appState, uiMode) => {
+        setUiMode("ViewBoard");
     });
 
-    bindKey("board", "a", () => ({
+    bindKey("ViewBoard", "a", () => ({
         "type": "NewCard",
     }));
 
-    bindKey("board", "d", () => ({
+    bindKey("ViewBoard", "d", () => ({
         "type": "DeleteCurrentCard",
     }));
 
-    bindKey("board", "j", () => ({
+    bindKey("ViewBoard", "j", () => ({
         "type": "SelectCardBelow",
     }));
 
-    bindKey("board", "k", () => ({
+    bindKey("ViewBoard", "k", () => ({
         "type": "SelectCardAbove",
     }));
 
-    bindKey("board", "t", () => ({
+    bindKey("ViewBoard", "t", () => ({
         "type": "AddTagToCurrentCard",
         "tag": "fruit:apple",
     }));
 
-    bindKey("board", "r", () => ({
+    bindKey("ViewBoard", "r", () => ({
         "type": "DeleteTagFromCurrentCard",
         "tag": "fruit:apple",
     }));
 
-    bindKey("board", "v", () => ({
+    bindKey("ViewBoard", "v", () => ({
         "type": "ViewDefault",
     }));
 
-    bindKey("board", "c", () => ({
+    bindKey("ViewBoard", "c", () => ({
         "type": "ViewCategory",
         "category": "fruit",
     }));

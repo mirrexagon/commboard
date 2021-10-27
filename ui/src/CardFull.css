@@ -1,0 +1,26 @@
+.card-full {
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0%;
+    top: 0%;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scroll if needed */
+    background-color: #ffffffd0;
+}
+
+.card-full-content {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+
+    margin: auto;
+    width: 80%;
+    height: 80%;
+
+    padding: 10px;
+    background-color: #fff;
+    border-style: solid;
+    border-width: 4px;
+    border-color: #000;
+}

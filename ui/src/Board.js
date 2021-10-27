@@ -3,6 +3,7 @@ import "./Board.css";
 
 import BoardViewDefault from "./BoardViewDefault.js";
 import BoardViewCategory from "./BoardViewCategory.js";
+import CardFull from "./CardFull.js";
 
 const BoardPanel = (props) => {
     const categories = props.categories.map((categoryName) => <li key={categoryName}>{categoryName}</li>);
@@ -12,6 +13,10 @@ const BoardPanel = (props) => {
             <h1>
                 {props.boardName}
             </h1>
+
+            <p>
+                {props.uiMode}
+            </p>
 
             <ul>
                 {categories}
@@ -38,14 +43,24 @@ const Board = (props) => {
         />
     );
 
+    const cardFull = props.uiMode == "ViewCard"
+        ? (
+            <CardFull
+                card={props.appState.cards[props.appState.interaction_state.selection.card_id]}
+            />
+        ) : null;
+
     return (
         <div>
             <BoardPanel
                 boardName={props.appState.board_name}
                 categories={props.appState.categories}
+                uiMode={props.uiMode}
             />
 
             <div className="board-view-container">{boardView}</div>
+
+            {cardFull}
         </div>
     );
 };
