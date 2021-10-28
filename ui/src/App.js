@@ -15,11 +15,13 @@ const App = () => {
 
     // -- UI mode --
     // ViewBoard
-    // SelectCategory
+    //   SelectCategory
+    //   AddTagFromViewBoard
+    //   DeleteTagFromViewBoard
     // ViewCard
     //   EditCardText
-    //     AddCardTag
-    //     DeleteCardTag
+    //   AddTagFromViewCard
+    //   DeleteTagFromViewCard
     const [uiMode, setUiMode] = useState("ViewBoard");
 
     // -- Manipulating app state --
@@ -49,13 +51,13 @@ const App = () => {
                     }
                 }
             }
-        }, [appState, uiMode]);
+        }, [appState, uiMode, action]);
 
         const onKeyUp = useCallback((e) => {
             if (e.key == key) {
                 keyPressed = false;
             }
-        }, [appState, uiMode]);
+        }, [appState, uiMode, action]);
 
         useEffect(() => {
             window.addEventListener("keydown", onKeyDown);
@@ -65,8 +67,24 @@ const App = () => {
                 window.removeEventListener("keydown", onKeyDown);
                 window.removeEventListener("keyup", onKeyUp);
             };
-        }, [onKeyDown]);
+        }, [onKeyDown, onKeyUp]);
     };
+
+    bindKey(["ViewBoard", "ViewCard"], "j", () => ({
+        "type": "SelectCardBelow",
+    }));
+
+    bindKey(["ViewBoard", "ViewCard"], "k", () => ({
+        "type": "SelectCardAbove",
+    }));
+
+    bindKey(["ViewBoard"], "a", () => ({
+        "type": "NewCard",
+    }));
+
+    bindKey(["ViewBoard"], "d", () => ({
+        "type": "DeleteCurrentCard",
+    }));
 
     bindKey(["ViewBoard"], "Enter", (appState, uiMode) => {
         if (appState.interaction_state.selection.card_id != null) {
@@ -77,22 +95,6 @@ const App = () => {
     bindKey(["ViewCard"], "Escape", (appState, uiMode) => {
         setUiMode("ViewBoard");
     });
-
-    bindKey(["ViewBoard"], "a", () => ({
-        "type": "NewCard",
-    }));
-
-    bindKey(["ViewBoard"], "d", () => ({
-        "type": "DeleteCurrentCard",
-    }));
-
-    bindKey(["ViewBoard", "ViewCard"], "j", () => ({
-        "type": "SelectCardBelow",
-    }));
-
-    bindKey(["ViewBoard", "ViewCard"], "k", () => ({
-        "type": "SelectCardAbove",
-    }));
 
     bindKey(["ViewBoard"], "t", () => ({
         "type": "AddTagToCurrentCard",
@@ -120,6 +122,8 @@ const App = () => {
                 <Board
                     appState={appState}
                     uiMode={uiMode}
+                    bindKey={bindKey}
+                    setUiMode={setUiMode}
                 />
             </div>
         );

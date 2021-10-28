@@ -45,10 +45,18 @@ const Board = (props) => {
         />
     );
 
-    const cardFull = props.uiMode == "ViewCard"
+    const showCardFull = props.uiMode == "ViewCard"
+      || props.uiMode == "EditCardText"
+      || props.uiMode == "AddTagFromViewCard"
+      || props.uiMode == "DeleteTagFromViewCard";
+
+    const cardFull = showCardFull
         ? (
             <CardFull
                 card={props.appState.cards[props.appState.interaction_state.selection.card_id]}
+                uiMode={props.uiMode}
+                bindKey={props.bindKey}
+                setUiMode={props.setUiMode}
             />
         ) : null;
 
