@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./Card.css";
 
-const Tag = (props) => {
-    return props.tagString;
-}
+import TagList from "./TagList.js";
 
 const Text = (props) => {
     return (
@@ -22,20 +20,12 @@ const Card = (props) => {
         }
     }, [props.selected]);
 
-    const tags = props.tags.map((tagString) => (
-        <li className="card-tag" key={tagString}>
-            <Tag tagString={tagString} />
-        </li>
-    ));
-
     return (
         <div ref={scrollRef} className={`card-container ${props.selected ? "card-container-selected" : ""}`}>
             <p>{props.id}</p>
-            <Text
-                text={props.text}
-                />
 
-            <ul className="card-tag-list">{tags}</ul>
+            <Text text={props.text} />
+            <TagList tags={props.tags} />
         </div>
     );
 }

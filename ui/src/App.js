@@ -121,7 +121,7 @@ const App = () => {
             </div>
         );
     } else {
-        return null;
+        return <p>Waiting for state from server</p>;
     }
 };
 
