@@ -43,7 +43,7 @@ const App = () => {
 
                 for (let mode of modes) {
                     if (uiMode == mode) {
-                        const boardAction = action(appState, uiMode);
+                        const boardAction = action(appState, uiMode, e);
                         if (boardAction) {
                             performAction(boardAction);
                         }
