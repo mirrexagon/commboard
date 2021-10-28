@@ -14,10 +14,12 @@ const BoardPanel = (props) => {
                 {props.boardName}
             </h1>
 
+            <h2>UI mode</h2>
             <p>
                 {props.uiMode}
             </p>
 
+            <h2>Categories</h2>
             <ul>
                 {categories}
             </ul>

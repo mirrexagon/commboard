@@ -32,17 +32,20 @@ const App = () => {
     const performAction = (action) => performActionBase(action).then(() => refetchAppState());
 
     // -- Key bindings --
-    const bindKey = (mode, key, action) => {
+    const bindKey = (modes, key, action) => {
         let keyPressed = false;
 
         const onKeyDown = useCallback((e) => {
             if (!keyPressed && e.key == key) {
                 keyPressed = true;
 
-                if (uiMode == mode) {
-                    const boardAction = action(appState, uiMode);
-                    if (boardAction) {
-                        performAction(boardAction);
+                for (let mode of modes) {
+                    if (uiMode == mode) {
+                        const boardAction = action(appState, uiMode);
+                        if (boardAction) {
+                            performAction(boardAction);
+                        }
+                        return;
                     }
                 }
             }
@@ -65,47 +68,47 @@ const App = () => {
         }, [onKeyDown]);
     };
 
-    bindKey("ViewBoard", "Enter", (appState, uiMode) => {
-        if (appState.interaction_state.selection.card_id) {
+    bindKey(["ViewBoard"], "Enter", (appState, uiMode) => {
+        if (appState.interaction_state.selection.card_id != null) {
             setUiMode("ViewCard");
         }
     });
 
-    bindKey("ViewCard", "Escape", (appState, uiMode) => {
+    bindKey(["ViewCard"], "Escape", (appState, uiMode) => {
         setUiMode("ViewBoard");
     });
 
-    bindKey("ViewBoard", "a", () => ({
+    bindKey(["ViewBoard"], "a", () => ({
         "type": "NewCard",
     }));
 
-    bindKey("ViewBoard", "d", () => ({
+    bindKey(["ViewBoard"], "d", () => ({
         "type": "DeleteCurrentCard",
     }));
 
-    bindKey("ViewBoard", "j", () => ({
+    bindKey(["ViewBoard", "ViewCard"], "j", () => ({
         "type": "SelectCardBelow",
     }));
 
-    bindKey("ViewBoard", "k", () => ({
+    bindKey(["ViewBoard", "ViewCard"], "k", () => ({
         "type": "SelectCardAbove",
     }));
 
-    bindKey("ViewBoard", "t", () => ({
+    bindKey(["ViewBoard"], "t", () => ({
         "type": "AddTagToCurrentCard",
         "tag": "fruit:apple",
     }));
 
-    bindKey("ViewBoard", "r", () => ({
+    bindKey(["ViewBoard"], "r", () => ({
         "type": "DeleteTagFromCurrentCard",
         "tag": "fruit:apple",
     }));
 
-    bindKey("ViewBoard", "v", () => ({
+    bindKey(["ViewBoard"], "v", () => ({
         "type": "ViewDefault",
     }));
 
-    bindKey("ViewBoard", "c", () => ({
+    bindKey(["ViewBoard"], "c", () => ({
         "type": "ViewCategory",
         "category": "fruit",
     }));
