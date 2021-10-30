@@ -112,6 +112,14 @@ impl Board {
         let f = File::open(path.as_ref())?;
         let mut board: Board = serde_json::from_reader(f)?;
         board.file_path = path.as_ref().to_owned();
+        board.interaction_state = InteractionState {
+            selection: CardSelection {
+                card_id: board.card_order.get(0).map(|id| *id),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
         Ok(board)
     }
 
@@ -210,7 +218,7 @@ impl Board {
     pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
         // Remember to validate everything before performing the action, so it is atomic!
 
-        match action {
+        let result = match action {
             Action::SetBoardName { name } => {
                 self.name = name.to_owned();
                 Ok(())
@@ -370,7 +378,13 @@ impl Board {
                     Err(BoardError::NoSuchCategory)
                 }
             }
+        };
+
+        if result.is_ok() {
+            self.save()?;
         }
+
+        result
     }
 
     /// Get the list of cards ordered by their distance from the selected card in the overall card order.
