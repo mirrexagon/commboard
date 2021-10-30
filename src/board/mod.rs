@@ -20,8 +20,7 @@ pub enum Action {
     SetBoardName { name: String },
     NewCard,
     DeleteCurrentCard,
-    SelectCardAbove,
-    SelectCardBelow,
+    SelectCardOffset { offset: isize },
     // MoveCurrentCardUp,
     // MoveCurrentCardDown,
     // MoveCurrentCardLeft,
@@ -278,21 +277,16 @@ impl Board {
                 Ok(())
             }
 
-            Action::SelectCardBelow | Action::SelectCardAbove => {
+            Action::SelectCardOffset { offset } => {
                 // Ensure a card is selected.
                 self.get_selected_card_id()?;
 
-                let offset = match action {
-                    Action::SelectCardAbove => -1,
-                    Action::SelectCardBelow => 1,
-                    _ => unreachable!(),
+                let card_id = match self.get_card_at_offset_from_current_in_current_view(*offset)? {
+                    CardOffsetResult::Ok(card_id) => card_id,
+                    CardOffsetResult::Clamped(card_id) => card_id,
                 };
 
-                if let CardOffsetResult::Ok(card_id) =
-                    self.get_card_at_offset_from_current_in_current_view(offset)?
-                {
-                    self.interaction_state.selection.card_id = Some(card_id);
-                }
+                self.interaction_state.selection.card_id = Some(card_id);
 
                 Ok(())
             }

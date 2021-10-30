@@ -71,11 +71,13 @@ const App = () => {
     };
 
     bindKey(["ViewBoard", "ViewCard"], "j", () => ({
-        "type": "SelectCardBelow",
+        "type": "SelectCardOffset",
+        "offset": 1,
     }));
 
     bindKey(["ViewBoard", "ViewCard"], "k", () => ({
-        "type": "SelectCardAbove",
+        "type": "SelectCardOffset",
+        "offset": -1,
     }));
 
     bindKey(["ViewBoard"], "a", () => ({
