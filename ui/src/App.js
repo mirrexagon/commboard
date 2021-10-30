@@ -35,12 +35,8 @@ const App = () => {
 
     // -- Key bindings --
     const bindKey = (modes, key, action) => {
-        let keyPressed = false;
-
         const onKeyDown = useCallback((e) => {
-            if (!keyPressed && e.key == key) {
-                keyPressed = true;
-
+            if (!e.repeat && e.key == key) {
                 for (let mode of modes) {
                     if (uiMode == mode) {
                         const boardAction = action(appState, uiMode, e);
@@ -53,21 +49,13 @@ const App = () => {
             }
         }, [appState, uiMode, action]);
 
-        const onKeyUp = useCallback((e) => {
-            if (e.key == key) {
-                keyPressed = false;
-            }
-        }, [appState, uiMode, action]);
-
         useEffect(() => {
             window.addEventListener("keydown", onKeyDown);
-            window.addEventListener("keyup", onKeyUp);
 
             return () => {
                 window.removeEventListener("keydown", onKeyDown);
-                window.removeEventListener("keyup", onKeyUp);
             };
-        }, [onKeyDown, onKeyUp]);
+        }, [onKeyDown]);
     };
 
     bindKey(["ViewBoard", "ViewCard"], "j", () => ({
@@ -84,9 +72,29 @@ const App = () => {
         "type": "NewCard",
     }));
 
-    bindKey(["ViewBoard"], "d", () => ({
-        "type": "DeleteCurrentCard",
-    }));
+    bindKey(["ViewBoard"], "d", (appState, uiMode, e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            return {
+                "type": "SelectCardOffset",
+                "offset": 5,
+            };
+        } else {
+            return {
+                "type": "DeleteCurrentCard",
+            };
+        }
+    });
+
+    bindKey(["ViewBoard"], "u", (appState, uiMode, e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            return {
+                "type": "SelectCardOffset",
+                "offset": -5,
+            };
+        }
+    });
 
     bindKey(["ViewBoard"], "Enter", (appState, uiMode) => {
         if (appState.interaction_state.selection.card_id != null) {
