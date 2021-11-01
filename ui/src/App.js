@@ -16,8 +16,6 @@ const App = () => {
     // -- UI mode --
     // ViewBoard
     //   SelectCategory
-    //   AddTagFromViewBoard
-    //   DeleteTagFromViewBoard
     // ViewCard
     //   EditCardText
     //   AddTagFromViewCard
@@ -106,23 +104,13 @@ const App = () => {
         setUiMode("ViewBoard");
     });
 
-    bindKey(["ViewBoard"], "t", () => ({
-        "type": "AddTagToCurrentCard",
-        "tag": "fruit:apple",
-    }));
-
-    bindKey(["ViewBoard"], "r", () => ({
-        "type": "DeleteTagFromCurrentCard",
-        "tag": "fruit:apple",
-    }));
-
-    bindKey(["ViewBoard"], "v", () => ({
-        "type": "ViewDefault",
-    }));
-
     bindKey(["ViewBoard"], "c", () => ({
         "type": "ViewCategory",
         "category": "fruit",
+    }));
+
+    bindKey(["ViewBoard"], "Escape", () => ({
+        "type": "ViewDefault",
     }));
 
     // -- Render --

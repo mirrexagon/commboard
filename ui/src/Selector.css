@@ -1,0 +1,34 @@
+.selector-fullscreen-container {
+    position: fixed;
+    z-index: 2;
+
+    left: 0%;
+    top: 0%;
+    width: 100%;
+    height: 100%;
+}
+
+.selector {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+
+    margin: auto;
+    width: 300px;
+    height: 100px;
+
+    padding: 10px;
+    background-color: #fff;
+    border-style: solid;
+    border-width: 4px;
+    border-color: #000;
+}
+
+.selector-suggestions {
+    list-style: none;
+    padding: 0;
+}
+
+.selector-suggestion {
+    text-color: #ff0000;
+}

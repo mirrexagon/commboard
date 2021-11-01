@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./CardFull.css";
 
 import TagList from "./TagList.js";
+import Selector from "./Selector.js";
 
 const CardFull = (props) => {
     const isEditingText = props.uiMode == "EditCardText";
@@ -22,13 +23,70 @@ const CardFull = (props) => {
         inputElement.current.focus()
     });
 
-    props.bindKey(["EditCardText"], "Escape", (appState, uiMode) => {
+    props.bindKey(["EditCardText"], "Escape", (appState, uiMode, e) => {
         props.setUiMode("ViewCard");
 
         return {
             "type": "SetCurrentCardText",
             "text": editedText,
         };
+    });
+
+    const isAddingTag = props.uiMode == "AddTagFromViewCard";
+    const isDeletingTag = props.uiMode == "DeleteTagFromViewCard";
+
+    const [tagSelectText, setTagSelectText] = useState("");
+
+    const tagSelectorElement = useRef(null);
+
+    props.bindKey(["ViewCard"], "a", (appState, uiMode, e) => {
+        // Prevent from entering newline in the input we are about to focus.
+        e.preventDefault();
+
+        props.setUiMode("AddTagFromViewCard");
+        tagSelectorElement.current.focus();
+    });
+
+    props.bindKey(["AddTagFromViewCard"], "Enter", (appState, uiMode, e) => {
+        props.setUiMode("ViewCard");
+
+        setTagSelectText("");
+
+        return {
+            "type": "AddTagToCurrentCard",
+            "tag": tagSelectText,
+        };
+    });
+
+    props.bindKey(["AddTagFromViewCard"], "Escape", (appState, uiMode, e) => {
+        // Cancel adding tag.
+        props.setUiMode("ViewCard");
+        setTagSelectText("");
+    });
+
+    props.bindKey(["ViewCard"], "d", (appState, uiMode, e) => {
+        // Prevent from entering newline in the input we are about to focus.
+        e.preventDefault();
+
+        props.setUiMode("DeleteTagFromViewCard");
+        tagSelectorElement.current.focus();
+    });
+
+    props.bindKey(["DeleteTagFromViewCard"], "Enter", (appState, uiMode, e) => {
+        props.setUiMode("ViewCard");
+
+        setTagSelectText("");
+
+        return {
+            "type": "DeleteTagFromCurrentCard",
+            "tag": tagSelectText,
+        };
+    });
+
+    props.bindKey(["DeleteTagFromViewCard"], "Escape", (appState, uiMode, e) => {
+        // Cancel deleting tag.
+        props.setUiMode("ViewCard");
+        setTagSelectText("");
     });
 
     return (
@@ -48,6 +106,14 @@ const CardFull = (props) => {
                 />
 
                 <TagList tags={props.card.tags} />
+
+                <Selector
+                    inputRef={tagSelectorElement}
+                    visible={isAddingTag || isDeletingTag}
+                    value={tagSelectText}
+                    suggestions={["event:party", "event:lunch", "color:blue", "color:green"]}
+                    onChange={(e) => setTagSelectText(e.target.value)}
+                    />
             </div>
         </div>
     );
