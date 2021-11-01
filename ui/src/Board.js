@@ -62,6 +62,64 @@ const Board = (props) => {
             />
         ) : null;
 
+    props.bindKey(["ViewBoard", "ViewCard"], "j", () => ({
+        "type": "SelectCardVerticalOffset",
+        "offset": 1,
+    }));
+
+    props.bindKey(["ViewBoard", "ViewCard"], "k", () => ({
+        "type": "SelectCardVerticalOffset",
+        "offset": -1,
+    }));
+
+    props.bindKey(["ViewBoard", "ViewCard"], "h", () => ({
+        "type": "SelectCardHorizontalOffset",
+        "offset": -1,
+    }));
+
+    props.bindKey(["ViewBoard", "ViewCard"], "l", () => ({
+        "type": "SelectCardHorizontalOffset",
+        "offset": 1,
+    }));
+
+    props.bindKey(["ViewBoard"], "a", () => ({
+        "type": "NewCard",
+    }));
+
+    props.bindKey(["ViewBoard"], "d", (appState, uiMode, e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            return {
+                "type": "SelectCardOffset",
+                "offset": 5,
+            };
+        } else {
+            return {
+                "type": "DeleteCurrentCard",
+            };
+        }
+    });
+
+    props.bindKey(["ViewBoard"], "u", (appState, uiMode, e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            return {
+                "type": "SelectCardOffset",
+                "offset": -5,
+            };
+        }
+    });
+
+    props.bindKey(["ViewBoard"], "Enter", (appState, uiMode) => {
+        if (appState.interaction_state.selection.card_id != null) {
+            props.setUiMode("ViewCard");
+        }
+    });
+
+    props.bindKey(["ViewCard"], "Escape", (appState, uiMode) => {
+        props.setUiMode("ViewBoard");
+    });
+
     const isSelectingCategory = props.uiMode == "SelectCategory";
     const [categorySelectText, setCategorySelectText] = useState("");
     const categorySelectorElement = useRef(null);

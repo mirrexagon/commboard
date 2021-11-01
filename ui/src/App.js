@@ -56,54 +56,6 @@ const App = () => {
         }, [onKeyDown]);
     };
 
-    bindKey(["ViewBoard", "ViewCard"], "j", () => ({
-        "type": "SelectCardOffset",
-        "offset": 1,
-    }));
-
-    bindKey(["ViewBoard", "ViewCard"], "k", () => ({
-        "type": "SelectCardOffset",
-        "offset": -1,
-    }));
-
-    bindKey(["ViewBoard"], "a", () => ({
-        "type": "NewCard",
-    }));
-
-    bindKey(["ViewBoard"], "d", (appState, uiMode, e) => {
-        if (e.ctrlKey) {
-            e.preventDefault();
-            return {
-                "type": "SelectCardOffset",
-                "offset": 5,
-            };
-        } else {
-            return {
-                "type": "DeleteCurrentCard",
-            };
-        }
-    });
-
-    bindKey(["ViewBoard"], "u", (appState, uiMode, e) => {
-        if (e.ctrlKey) {
-            e.preventDefault();
-            return {
-                "type": "SelectCardOffset",
-                "offset": -5,
-            };
-        }
-    });
-
-    bindKey(["ViewBoard"], "Enter", (appState, uiMode) => {
-        if (appState.interaction_state.selection.card_id != null) {
-            setUiMode("ViewCard");
-        }
-    });
-
-    bindKey(["ViewCard"], "Escape", (appState, uiMode) => {
-        setUiMode("ViewBoard");
-    });
-
     // -- Render --
     if (appState) {
         return (
