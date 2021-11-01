@@ -72,6 +72,22 @@ const Board = (props) => {
         "offset": -1,
     }));
 
+    props.bindKey(["ViewBoard", "ViewCard"], "J", (appState, uiMode, e) => {
+        e.preventDefault();
+        return {
+            "type": "MoveCurrentCardVerticalOffset",
+            "offset": 1,
+        };
+    });
+
+    props.bindKey(["ViewBoard", "ViewCard"], "K", (appState, uiMode, e) => {
+        e.preventDefault();
+        return {
+            "type": "MoveCurrentCardVerticalOffset",
+            "offset": -1,
+        };
+    });
+
     props.bindKey(["ViewBoard", "ViewCard"], "h", () => ({
         "type": "SelectCardHorizontalOffset",
         "offset": -1,
@@ -90,7 +106,7 @@ const Board = (props) => {
         if (e.ctrlKey) {
             e.preventDefault();
             return {
-                "type": "SelectCardOffset",
+                "type": "SelectCardVerticalOffset",
                 "offset": 5,
             };
         } else {
@@ -104,7 +120,7 @@ const Board = (props) => {
         if (e.ctrlKey) {
             e.preventDefault();
             return {
-                "type": "SelectCardOffset",
+                "type": "SelectCardVerticalOffset",
                 "offset": -5,
             };
         }

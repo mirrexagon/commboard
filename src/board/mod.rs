@@ -22,10 +22,7 @@ pub enum Action {
     DeleteCurrentCard,
     SelectCardVerticalOffset { offset: isize },
     SelectCardHorizontalOffset { offset: isize },
-    // MoveCurrentCardUp,
-    // MoveCurrentCardDown,
-    // MoveCurrentCardLeft,
-    // MoveCurrentCardRight,
+    MoveCurrentCardVerticalOffset { offset: isize },
     SetCurrentCardText { text: String },
     AddTagToCurrentCard { tag: Tag },
     DeleteTagFromCurrentCard { tag: Tag },
@@ -297,47 +294,71 @@ impl Board {
             Action::SelectCardHorizontalOffset { offset } => {
                 // Ensure a card is selected.
                 let selected_card_id = self.get_selected_card_id()?;
-                dbg!(selected_card_id);
 
                 let selected_tag = match &self.interaction_state.selection.tag {
                     Some(tag) => tag,
                     None => return Err(BoardError::NotInCategoryView),
                 };
-                dbg!(selected_tag);
 
                 let tags_in_category = self.get_tags_with_category(selected_tag.category());
-                dbg!(&tags_in_category);
                 let current_tag_in_category_index = tags_in_category
                     .iter()
                     .position(|t| t == selected_tag)
                     .unwrap() as isize;
-                dbg!(current_tag_in_category_index);
                 let target_tag_in_category_index = (current_tag_in_category_index + offset)
                     .clamp(0, (tags_in_category.len() as isize) - 1)
                     as usize;
-                dbg!(target_tag_in_category_index);
                 let target_tag = &tags_in_category[target_tag_in_category_index];
-                dbg!(target_tag);
 
                 let cards_in_tag = self.get_cards_with_tag(selected_tag);
-                dbg!(&cards_in_tag);
                 let current_card_in_tag_index = cards_in_tag
                     .iter()
                     .position(|c| *c == selected_card_id)
                     .unwrap() as isize;
-                dbg!(current_card_in_tag_index);
 
                 let cards_in_target_tag = self.get_cards_with_tag(&target_tag);
-                dbg!(&cards_in_target_tag);
                 let target_card_in_tag_index = current_card_in_tag_index
                     .clamp(0, (cards_in_target_tag.len() as isize) - 1)
                     as usize;
-                dbg!(target_card_in_tag_index);
                 let target_card_id = cards_in_target_tag[target_card_in_tag_index];
-                dbg!(target_card_id);
 
                 self.interaction_state.selection.card_id = Some(target_card_id);
                 self.interaction_state.selection.tag = Some(target_tag.clone());
+
+                Ok(())
+            }
+
+            Action::MoveCurrentCardVerticalOffset { offset } => {
+                let selected_card_id = self.get_selected_card_id()?;
+                let selected_card_index_in_order = self
+                    .card_order
+                    .iter()
+                    .position(|card_id| *card_id == selected_card_id)
+                    .unwrap();
+
+                let target_index_in_card_order = match &self.interaction_state.selection.tag {
+                    Some(tag) => {
+                        let card_in_target_spot = match self
+                            .get_card_at_offset_from_current_in_current_view(*offset)
+                            .unwrap()
+                        {
+                            CardOffsetResult::Ok(card_id) => card_id,
+                            CardOffsetResult::Clamped(card_id) => card_id,
+                        };
+
+                        self.card_order
+                            .iter()
+                            .position(|c| *c == card_in_target_spot)
+                            .unwrap()
+                    }
+                    None => ((selected_card_index_in_order as isize) + offset)
+                        .clamp(0, self.card_order.len() as isize)
+                        as usize,
+                } as usize;
+
+                self.card_order.remove(selected_card_index_in_order);
+                self.card_order
+                    .insert(target_index_in_card_order, selected_card_id);
 
                 Ok(())
             }
