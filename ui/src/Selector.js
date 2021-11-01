@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./Selector.css";
 
 const Selector = (props) => {
-    const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+    const filteredSuggestions = props.suggestions.filter(s => s.includes(props.value));
 
     return (
         <div className="selector-fullscreen-container">
@@ -10,7 +10,7 @@ const Selector = (props) => {
                 <input ref={props.inputRef} className="selector-text" value={props.value} onChange={props.onChange} />
 
                 <ul className="selector-suggestions">
-                    {props.suggestions.map((s) => <li key={s} className="selector-suggestion">{s}</li>)}
+                    {filteredSuggestions.map(s => <li key={s} className="selector-suggestion">{s}</li>)}
                 </ul>
             </div>
         </div>

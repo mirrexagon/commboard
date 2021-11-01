@@ -108,7 +108,7 @@ const CardFull = (props) => {
                     inputRef={tagSelectorElement}
                     visible={isAddingTag || isDeletingTag}
                     value={tagSelectText}
-                    suggestions={["event:party", "event:lunch", "color:blue", "color:green"]}
+                    suggestions={props.allTags}
                     onChange={(e) => setTagSelectText(e.target.value)}
                     />
             </div>

@@ -55,6 +55,7 @@ const Board = (props) => {
         ? (
             <CardFull
                 card={props.appState.cards[props.appState.interaction_state.selection.card_id]}
+                allTags={props.appState.tags}
                 uiMode={props.uiMode}
                 bindKey={props.bindKey}
                 setUiMode={props.setUiMode}

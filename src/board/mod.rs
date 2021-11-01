@@ -143,6 +143,7 @@ impl Board {
             "card_order": self.card_order,
 
             "categories": self.get_categories(),
+            "tags": self.get_all_tags(),
 
             "interaction_state": self.interaction_state,
 
