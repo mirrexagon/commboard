@@ -104,15 +104,6 @@ const App = () => {
         setUiMode("ViewBoard");
     });
 
-    bindKey(["ViewBoard"], "c", () => ({
-        "type": "ViewCategory",
-        "category": "fruit",
-    }));
-
-    bindKey(["ViewBoard"], "Escape", () => ({
-        "type": "ViewDefault",
-    }));
-
     // -- Render --
     if (appState) {
         return (

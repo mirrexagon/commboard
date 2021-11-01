@@ -34,12 +34,12 @@ const CardFull = (props) => {
 
     const isAddingTag = props.uiMode == "AddTagFromViewCard";
     const isDeletingTag = props.uiMode == "DeleteTagFromViewCard";
-
     const [tagSelectText, setTagSelectText] = useState("");
-
     const tagSelectorElement = useRef(null);
 
     props.bindKey(["ViewCard"], "a", (appState, uiMode, e) => {
+        setTagSelectText("");
+
         // Prevent from entering newline in the input we are about to focus.
         e.preventDefault();
 
@@ -50,7 +50,6 @@ const CardFull = (props) => {
     props.bindKey(["AddTagFromViewCard"], "Enter", (appState, uiMode, e) => {
         props.setUiMode("ViewCard");
 
-        setTagSelectText("");
 
         return {
             "type": "AddTagToCurrentCard",
@@ -61,10 +60,11 @@ const CardFull = (props) => {
     props.bindKey(["AddTagFromViewCard"], "Escape", (appState, uiMode, e) => {
         // Cancel adding tag.
         props.setUiMode("ViewCard");
-        setTagSelectText("");
     });
 
     props.bindKey(["ViewCard"], "d", (appState, uiMode, e) => {
+        setTagSelectText("");
+
         // Prevent from entering newline in the input we are about to focus.
         e.preventDefault();
 
@@ -75,8 +75,6 @@ const CardFull = (props) => {
     props.bindKey(["DeleteTagFromViewCard"], "Enter", (appState, uiMode, e) => {
         props.setUiMode("ViewCard");
 
-        setTagSelectText("");
-
         return {
             "type": "DeleteTagFromCurrentCard",
             "tag": tagSelectText,
@@ -86,7 +84,6 @@ const CardFull = (props) => {
     props.bindKey(["DeleteTagFromViewCard"], "Escape", (appState, uiMode, e) => {
         // Cancel deleting tag.
         props.setUiMode("ViewCard");
-        setTagSelectText("");
     });
 
     return (

@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Board.css";
 
 import BoardViewDefault from "./BoardViewDefault.js";
 import BoardViewCategory from "./BoardViewCategory.js";
 import CardFull from "./CardFull.js";
+import Selector from "./Selector.js";
 
 const BoardPanel = (props) => {
     const categories = props.categories.map((categoryName) => <li key={categoryName}>{categoryName}</li>);
@@ -60,6 +61,39 @@ const Board = (props) => {
             />
         ) : null;
 
+    const isSelectingCategory = props.uiMode == "SelectCategory";
+    const [categorySelectText, setCategorySelectText] = useState("");
+    const categorySelectorElement = useRef(null);
+
+    props.bindKey(["ViewBoard"], "c", (appState, uiMode, e) => {
+        setCategorySelectText("");
+
+        // Prevent from entering newline in the input we are about to focus.
+        e.preventDefault();
+
+        props.setUiMode("SelectCategory");
+        categorySelectorElement.current.focus();
+    });
+
+    props.bindKey(["SelectCategory"], "Enter", (appState, uiMode, e) => {
+        props.setUiMode("ViewBoard");
+
+        return {
+            "type": "ViewCategory",
+            "category": categorySelectText,
+        };
+    });
+
+    props.bindKey(["SelectCategory"], "Escape", (appState, uiMode, e) => {
+        // Cancel selecting category.
+        props.setUiMode("ViewCard");
+    });
+
+    // While viewing category, press Escape to go back to default view.
+    props.bindKey(["ViewBoard"], "Escape", () => ({
+        "type": "ViewDefault",
+    }));
+
     return (
         <div>
             <BoardPanel
@@ -71,6 +105,14 @@ const Board = (props) => {
             <div className="board-view-container">{boardView}</div>
 
             {cardFull}
+
+            <Selector
+                inputRef={categorySelectorElement}
+                visible={isSelectingCategory}
+                value={categorySelectText}
+                suggestions={props.appState.categories}
+                onChange={(e) => setCategorySelectText(e.target.value)}
+                />
         </div>
     );
 };
