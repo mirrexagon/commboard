@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./CardFull.css";
 
+import ReactMarkdown from "react-markdown";
+
 import TagList from "./TagList.js";
 import Selector from "./Selector.js";
 
@@ -91,13 +93,17 @@ const CardFull = (props) => {
             <div className="card-full-content">
                 <h3>{props.card.id}</h3>
 
-                <p className={`card-full-text_static--${isEditingText ? "hidden" : "active"}`}>
+                <p
+                    style={{visibility: isEditingText ? "hidden" : "visible"}}
+                    className="card-full-text-static"
+                >
                     {props.card.text}
                 </p>
 
                 <textarea
                     ref={inputElement}
-                    className={`card-full-text_textarea--${isEditingText ? "active" : "hidden"}`}
+                    style={{visibility: isEditingText ? "visible" : "hidden"}}
+                    className="card-full-text-textarea"
                     value={editedText}
                     onChange={(e) => setEditedText(e.target.value)}
                 />
