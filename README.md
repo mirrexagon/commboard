@@ -1,5 +1,7 @@
 # Commboard
-Boards of category-tagged cards.
+A multi-dimensional Kanban board.
+
+**Note:** This is a tool created for a specific personal use-case, and as a learning experience. The code is messy, and the program is buggy and non-intuitive to use. I only work on this when I feel like it, so I am not actively maintaining it (only as much as needed for my use-case).
 
 ## Building
 1. In `ui/`, run `npm install`.
@@ -8,19 +10,15 @@ Boards of category-tagged cards.
 ## Usage
 Run `commboard <name>.json`, where the JSON file is the boards file. If it doesn't exist, it will be created.
 
-Every modification to the boards will write this file, so you can exit the application at any point and everything will be saved.
+Every modification to the board will write this file, so you can exit the application at any point and everything will be saved.
 
 ## Basics
-A board is a collection of cards. Boards are completely separate from each other. Only one board can be viewed at a time.
-
-A card is a block of Markdown text, with any number of tags.
+- A board is a collection of cards.
+- A card is a block of Markdown text, with any number of tags.
 
 Tags are of the form `category:value`, eg. `status:in-progress`. Any character up to the first `:` is treated as the category name, and the rest is the value. Both parts of the tag (category and value) are required.
 
-Tags are always ordered alphabetically where displayed, ie. on cards and in the category grouping list.
-
-## Filtering
-You can filter cards by substring match on body text and tags.
+Tags are always ordered alphabetically where displayed, ie. on cards in the category grouping list, and in the order of columns in a category view/grouping.
 
 ## Grouping
 By default, all cards are displayed without any grouping.
