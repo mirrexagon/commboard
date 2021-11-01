@@ -1,4 +1,6 @@
 {
+    "name": "commboard-ui",
+    "version": "0.1.0",
     "scripts": {
         "build": "webpack --mode=production",
         "build-dev": "webpack --mode=development",
