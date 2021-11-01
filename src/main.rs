@@ -4,6 +4,8 @@ use std::sync::Mutex;
 use clap::{App, Arg};
 use rocket::{get, launch, response::content, routes};
 
+use env_logger::Env;
+
 use board::Board;
 
 mod api;
@@ -21,7 +23,8 @@ fn index_bundle() -> content::JavaScript<&'static str> {
 
 #[launch]
 fn rocket() -> _ {
-    env_logger::init();
+    // Set default log level to info.
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let arg_matches = App::new("Commboard")
         .arg(
