@@ -352,11 +352,12 @@ impl Board {
                             .unwrap()
                     }
                     None => ((selected_card_index_in_order as isize) + offset)
-                        .clamp(0, self.card_order.len() as isize)
+                        .clamp(0, (self.card_order.len() - 1) as isize)
                         as usize,
                 } as usize;
 
                 self.card_order.remove(selected_card_index_in_order);
+
                 self.card_order
                     .insert(target_index_in_card_order, selected_card_id);
 

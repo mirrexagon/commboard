@@ -74,17 +74,31 @@ const Board = (props) => {
 
     props.bindKey(["ViewBoard", "ViewCard"], "J", (appState, uiMode, e) => {
         e.preventDefault();
+
+        let offset = 1;
+
+        if (e.ctrlKey) {
+            offset = 5;
+        }
+
         return {
             "type": "MoveCurrentCardVerticalOffset",
-            "offset": 1,
+            "offset": offset,
         };
     });
 
     props.bindKey(["ViewBoard", "ViewCard"], "K", (appState, uiMode, e) => {
         e.preventDefault();
+
+        let offset = 1;
+
+        if (e.ctrlKey) {
+            offset = 5;
+        }
+
         return {
             "type": "MoveCurrentCardVerticalOffset",
-            "offset": -1,
+            "offset": -offset,
         };
     });
 
