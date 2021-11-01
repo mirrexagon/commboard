@@ -102,15 +102,33 @@ const Board = (props) => {
         };
     });
 
-    props.bindKey(["ViewBoard", "ViewCard"], "h", () => ({
-        "type": "SelectCardHorizontalOffset",
-        "offset": -1,
-    }));
+    props.bindKey(["ViewBoard", "ViewCard"], "h", (appState, uiMode, e) => {
+        return {
+            "type": "SelectCardHorizontalOffset",
+            "offset": -1,
+        };
+    });
 
-    props.bindKey(["ViewBoard", "ViewCard"], "l", () => ({
-        "type": "SelectCardHorizontalOffset",
-        "offset": 1,
-    }));
+    props.bindKey(["ViewBoard", "ViewCard"], "l", (appState, uiMode, e) => {
+        return {
+            "type": "SelectCardHorizontalOffset",
+            "offset": 1,
+        };
+    });
+
+    props.bindKey(["ViewBoard", "ViewCard"], "H", (appState, uiMode, e) => {
+        return {
+            "type": "MoveCurrentCardHorizontalInCategory",
+            "offset": -1,
+        };
+    });
+
+    props.bindKey(["ViewBoard", "ViewCard"], "L", (appState, uiMode, e) => {
+        return {
+            "type": "MoveCurrentCardHorizontalInCategory",
+            "offset": 1,
+        };
+    });
 
     props.bindKey(["ViewBoard"], "a", () => ({
         "type": "NewCard",
@@ -175,7 +193,7 @@ const Board = (props) => {
 
     props.bindKey(["SelectCategory"], "Escape", (appState, uiMode, e) => {
         // Cancel selecting category.
-        props.setUiMode("ViewCard");
+        props.setUiMode("ViewBoard");
     });
 
     // While viewing category, press Escape to go back to default view.

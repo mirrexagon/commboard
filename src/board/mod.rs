@@ -23,6 +23,7 @@ pub enum Action {
     SelectCardVerticalOffset { offset: isize },
     SelectCardHorizontalOffset { offset: isize },
     MoveCurrentCardVerticalOffset { offset: isize },
+    MoveCurrentCardHorizontalInCategory { offset: isize },
     SetCurrentCardText { text: String },
     AddTagToCurrentCard { tag: Tag },
     DeleteTagFromCurrentCard { tag: Tag },
@@ -292,7 +293,6 @@ impl Board {
             }
 
             Action::SelectCardHorizontalOffset { offset } => {
-                // Ensure a card is selected.
                 let selected_card_id = self.get_selected_card_id()?;
 
                 let selected_tag = match &self.interaction_state.selection.tag {
@@ -360,6 +360,38 @@ impl Board {
 
                 self.card_order
                     .insert(target_index_in_card_order, selected_card_id);
+
+                Ok(())
+            }
+
+            Action::MoveCurrentCardHorizontalInCategory { offset } => {
+                // Ensure a card is selected.
+                self.get_selected_card_id()?;
+
+                let selected_tag = match &self.interaction_state.selection.tag {
+                    Some(tag) => tag.clone(),
+                    None => return Err(BoardError::NotInCategoryView),
+                };
+
+                let tags_in_category = self.get_tags_with_category(selected_tag.category());
+                let current_tag_in_category_index = tags_in_category
+                    .iter()
+                    .position(|t| *t == selected_tag)
+                    .unwrap() as isize;
+                let target_tag_in_category_index = (current_tag_in_category_index + offset)
+                    .clamp(0, (tags_in_category.len() as isize) - 1)
+                    as usize;
+                let target_tag = &tags_in_category[target_tag_in_category_index];
+
+                self.perform_action(&Action::DeleteTagFromCurrentCard {
+                    tag: selected_tag.clone(),
+                })?;
+
+                self.perform_action(&Action::AddTagToCurrentCard {
+                    tag: target_tag.clone(),
+                })?;
+
+                self.interaction_state.selection.tag = Some(target_tag.clone());
 
                 Ok(())
             }
