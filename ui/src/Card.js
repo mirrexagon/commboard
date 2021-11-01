@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./Card.css";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import TagList from "./TagList.js";
 
 const Text = (props) => {
     return (
         <div className="card-text">
-            {props.text}
+            <ReactMarkdown children={props.text} remarkPlugins={[remarkGfm]} />
         </div>
     );
 }

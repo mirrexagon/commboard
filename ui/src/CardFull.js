@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./CardFull.css";
 
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import TagList from "./TagList.js";
 import Selector from "./Selector.js";
@@ -93,12 +94,12 @@ const CardFull = (props) => {
             <div className="card-full-content">
                 <h3>{props.card.id}</h3>
 
-                <p
+                <div
                     style={{visibility: isEditingText ? "hidden" : "visible"}}
                     className="card-full-text-static"
                 >
-                    {props.card.text}
-                </p>
+                    <ReactMarkdown children={props.card.text} remarkPlugins={[remarkGfm]} />
+                </div>
 
                 <textarea
                     ref={inputElement}
