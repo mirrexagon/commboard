@@ -9,7 +9,7 @@ import TagList from "./TagList.js";
 const Text = (props) => {
     return (
         <div className="card-text">
-            <ReactMarkdown children={props.text} remarkPlugins={[remarkGfm]} />
+            <p>{props.text}</p>
         </div>
     );
 }
