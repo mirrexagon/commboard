@@ -5,8 +5,8 @@ const Selector = (props) => {
     const filteredSuggestions = props.suggestions.filter(s => s.includes(props.value));
 
     return (
-        <div className="selector-fullscreen-container">
-            <div className="selector" style={{visibility: props.visible ? 'visible' : 'hidden' }}>
+        <div className="selector-fullscreen-container" style={{visibility: props.visible ? 'visible' : 'hidden' }}>
+            <div className="selector">
                 <input ref={props.inputRef} className="selector-text" value={props.value} onChange={props.onChange} />
 
                 <ul className="selector-suggestions">
