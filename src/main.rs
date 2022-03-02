@@ -6,6 +6,7 @@ use clap::{App, Arg};
 use board::Board;
 
 mod board;
+mod tui;
 
 fn main() {
     let arg_matches = App::new("Commboard")
