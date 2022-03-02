@@ -2,30 +2,12 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use clap::{App, Arg};
-use rocket::{get, launch, response::content, routes};
-
-use env_logger::Env;
 
 use board::Board;
 
-mod api;
 mod board;
 
-#[get("/")]
-fn index() -> content::Html<&'static str> {
-    content::Html(include_str!("../ui/dist/index.html"))
-}
-
-#[get("/bundle.js")]
-fn index_bundle() -> content::JavaScript<&'static str> {
-    content::JavaScript(include_str!("../ui/dist/bundle.js"))
-}
-
-#[launch]
-fn rocket() -> _ {
-    // Set default log level to info.
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-
+fn main() {
     let arg_matches = App::new("Commboard")
         .arg(
             Arg::with_name("FILE")
@@ -43,18 +25,4 @@ fn rocket() -> _ {
         board = Board::new(&board_file_path);
         board.save().expect("Couldn't save new board file");
     }
-
-    let board = Mutex::new(board);
-
-    rocket::build()
-        .mount("/", routes![index, index_bundle])
-        .mount(
-            "/api",
-            routes![
-                api::validate_tag,
-                api::get_current_state,
-                api::perform_action
-            ],
-        )
-        .manage(board)
 }
