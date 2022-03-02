@@ -28,7 +28,7 @@ Cards can be arranged grouped by a single category. This is like treating the ca
 Cards can have multiple tags with the same category and different values. This will make a card show in two different columns when cards are grouped by that category. They are the same card, so updates to one will be reflected in the other.
 
 ## Feature status
-### Done
+### Todo
 - Cards
     - Add, delete
     - Move up and down in both default and category view
@@ -41,7 +41,6 @@ Cards can have multiple tags with the same category and different values. This w
 - Category view
     - Select category to view, or go back to default view
 
-### Todo
 - Proper autocomplete
     - Tags when adding or removing
     - Categories when selecting for category view
