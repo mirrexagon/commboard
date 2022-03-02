@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use super::Tag;
 
@@ -32,7 +32,19 @@ impl fmt::Display for CardId {
 pub struct Card {
     id: CardId,
     pub text: String,
+
+    #[serde(serialize_with = "serialize_tags")]
     tags: HashSet<Tag>,
+}
+
+fn serialize_tags<S>(tags: &HashSet<Tag>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    // Serialize in alphabetical order.
+    let mut tags_vec: Vec<_> = tags.iter().map(|tag| tag.clone()).collect();
+    tags_vec.sort();
+    tags_vec.serialize(s)
 }
 
 impl Card {
