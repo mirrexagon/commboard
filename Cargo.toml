@@ -1,11 +1,11 @@
 [package]
 name = "commboard"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Andrew Abbott <andrew@mirx.dev>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-thiserror = "1.0.26"
-serde = { version = "1.0.126", features = ["derive"] }
-serde_json = "1.0.64"
-clap = "2.33.3"
+thiserror = "1.0.30"
+serde = { version = "1.0.136", features = ["derive"] }
+serde_json = "1.0.79"
+clap = "3.1.3"
