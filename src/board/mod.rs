@@ -11,6 +11,9 @@ use thiserror::Error;
 mod card;
 mod tag;
 
+#[cfg(test)]
+mod tests;
+
 pub use card::{Card, CardId};
 pub use tag::Tag;
 
