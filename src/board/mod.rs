@@ -33,8 +33,6 @@ pub enum Action {
 }
 
 /// The state of a session interacting with the board.
-///
-
 #[derive(Debug, Serialize)]
 struct InteractionState {
     selection: CardSelection,
@@ -71,7 +69,10 @@ impl Default for CardSelection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Board {
-    name: String,
+    /// The name of this board.
+    ///
+    /// Freely modifiable.
+    pub name: String,
 
     cards: BTreeMap<CardId, Card>,
     next_card_id: CardId,
@@ -215,275 +216,282 @@ impl Board {
     }
 
     // -- Manipulating the board --
-    pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
-        // Remember to validate everything before performing the action, so it is atomic!
+    // Remember to validate everything before performing the action, so it is atomic!
 
+    pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
         let result = match action {
             Action::SetBoardName { name } => {
                 self.name = name.to_owned();
                 Ok(())
             }
 
-            Action::NewCard => {
-                let new_card_id = self.get_next_card_id();
-                self.cards.insert(new_card_id, Card::new(new_card_id));
-
-                // Insert the new card into the order after the current card.
-                if let Some(selected_card_id) = self.interaction_state.selection.card_id {
-                    let insert_at_index = self
-                        .card_order
-                        .iter()
-                        .position(|card_id| *card_id == selected_card_id)
-                        .unwrap()
-                        + 1;
-
-                    if insert_at_index < self.card_order.len() {
-                        self.card_order.insert(insert_at_index, new_card_id)
-                    } else {
-                        self.card_order.push(new_card_id);
-                    }
-                } else {
-                    // There are no cards, just push this one on.
-                    self.card_order.push(new_card_id);
-                }
-
-                // Select the new card.
-                self.interaction_state.selection.card_id = Some(new_card_id);
-
-                // If we are viewing a tag, add that tag to the card.
-                if let Some(selected_tag) = &self.interaction_state.selection.tag {
-                    self.cards
-                        .get_mut(&new_card_id)
-                        .unwrap()
-                        .add_tag(&selected_tag);
-                }
-
-                Ok(())
+            Action::NewCard => self.add_card().and(Ok(())),
+            Action::DeleteCurrentCard => self.delete_current_card(),
+            Action::SelectCardVerticalOffset { offset } => self.move_selection_vertical(*offset),
+            Action::SelectCardHorizontalOffset { offset } => {
+                self.move_selection_horizontal(*offset)
             }
-
-            Action::DeleteCurrentCard => {
-                let selected_card_id = self.get_selected_card_id()?;
-
-                self.interaction_state.selection = self.get_next_selection_card_after_delete()?;
-
-                let global_index_to_remove = self
-                    .card_order
-                    .iter()
-                    .position(|card_id| *card_id == selected_card_id)
-                    .unwrap();
-
-                self.card_order.remove(global_index_to_remove);
-                self.cards.remove(&selected_card_id);
-
-                Ok(())
+            Action::MoveCurrentCardVerticalOffset { offset } => {
+                self.move_current_card_vertical(*offset)
             }
+            Action::MoveCurrentCardHorizontalInCategory { offset } => {
+                self.move_current_card_horizontal(*offset)
+            }
+            Action::SetCurrentCardText { text } => self.set_current_card_text(text),
+            Action::AddTagToCurrentCard { tag } => self.add_tag_to_current_card(tag),
+            Action::DeleteTagFromCurrentCard { tag } => self.delete_tag_from_current_card(tag),
+            Action::ViewDefault => self.view_default(),
+            Action::ViewCategory { category } => self.view_category(category),
+        };
 
-            Action::SelectCardVerticalOffset { offset } => {
-                // Ensure a card is selected.
-                self.get_selected_card_id()?;
+        if result.is_ok() {
+            self.save()
+        } else {
+            Err(BoardError::NoSuchCategory)
+        }
+    }
 
-                let card_id = match self.get_card_at_offset_from_current_in_current_view(*offset)? {
+    pub fn add_card(&mut self) -> Result<CardId, BoardError> {
+        let new_card_id = self.get_next_card_id();
+        self.cards.insert(new_card_id, Card::new(new_card_id));
+
+        // Insert the new card into the order after the current card.
+        if let Some(selected_card_id) = self.interaction_state.selection.card_id {
+            let insert_at_index = self
+                .card_order
+                .iter()
+                .position(|card_id| *card_id == selected_card_id)
+                .unwrap()
+                + 1;
+
+            if insert_at_index < self.card_order.len() {
+                self.card_order.insert(insert_at_index, new_card_id)
+            } else {
+                self.card_order.push(new_card_id);
+            }
+        } else {
+            // There are no cards, just push this one on.
+            self.card_order.push(new_card_id);
+        }
+
+        // Select the new card.
+        self.interaction_state.selection.card_id = Some(new_card_id);
+
+        // If we are viewing a tag, add that tag to the card.
+        if let Some(selected_tag) = &self.interaction_state.selection.tag {
+            self.cards
+                .get_mut(&new_card_id)
+                .unwrap()
+                .add_tag(&selected_tag);
+        }
+
+        Ok(new_card_id)
+    }
+
+    pub fn delete_current_card(&mut self) -> Result<(), BoardError> {
+        let selected_card_id = self.get_selected_card_id()?;
+
+        self.interaction_state.selection = self.get_next_selection_card_after_delete()?;
+
+        let global_index_to_remove = self
+            .card_order
+            .iter()
+            .position(|card_id| *card_id == selected_card_id)
+            .unwrap();
+
+        self.card_order.remove(global_index_to_remove);
+        self.cards.remove(&selected_card_id);
+
+        Ok(())
+    }
+
+    pub fn move_selection_vertical(&mut self, offset: isize) -> Result<(), BoardError> {
+        // Ensure a card is selected.
+        self.get_selected_card_id()?;
+
+        let card_id = match self.get_card_at_offset_from_current_in_current_view(offset)? {
+            CardOffsetResult::Ok(card_id) => card_id,
+            CardOffsetResult::Clamped(card_id) => card_id,
+        };
+
+        self.interaction_state.selection.card_id = Some(card_id);
+
+        Ok(())
+    }
+
+    pub fn move_selection_horizontal(&mut self, offset: isize) -> Result<(), BoardError> {
+        let selected_card_id = self.get_selected_card_id()?;
+
+        let selected_tag = match &self.interaction_state.selection.tag {
+            Some(tag) => tag,
+            None => return Err(BoardError::NotInCategoryView),
+        };
+
+        let tags_in_category = self.get_tags_with_category(selected_tag.category());
+        let current_tag_in_category_index = tags_in_category
+            .iter()
+            .position(|t| t == selected_tag)
+            .unwrap() as isize;
+        let target_tag_in_category_index = (current_tag_in_category_index + offset)
+            .clamp(0, (tags_in_category.len() as isize) - 1)
+            as usize;
+        let target_tag = &tags_in_category[target_tag_in_category_index];
+
+        let cards_in_tag = self.get_cards_with_tag(selected_tag);
+        let current_card_in_tag_index = cards_in_tag
+            .iter()
+            .position(|c| *c == selected_card_id)
+            .unwrap() as isize;
+
+        let cards_in_target_tag = self.get_cards_with_tag(&target_tag);
+        let target_card_in_tag_index =
+            current_card_in_tag_index.clamp(0, (cards_in_target_tag.len() as isize) - 1) as usize;
+        let target_card_id = cards_in_target_tag[target_card_in_tag_index];
+
+        self.interaction_state.selection.card_id = Some(target_card_id);
+        self.interaction_state.selection.tag = Some(target_tag.clone());
+
+        Ok(())
+    }
+
+    pub fn move_current_card_vertical(&mut self, offset: isize) -> Result<(), BoardError> {
+        let selected_card_id = self.get_selected_card_id()?;
+        let selected_card_index_in_order = self
+            .card_order
+            .iter()
+            .position(|card_id| *card_id == selected_card_id)
+            .unwrap();
+
+        let target_index_in_card_order = match &self.interaction_state.selection.tag {
+            Some(tag) => {
+                let card_in_target_spot = match self
+                    .get_card_at_offset_from_current_in_current_view(offset)
+                    .unwrap()
+                {
                     CardOffsetResult::Ok(card_id) => card_id,
                     CardOffsetResult::Clamped(card_id) => card_id,
                 };
 
-                self.interaction_state.selection.card_id = Some(card_id);
-
-                Ok(())
-            }
-
-            Action::SelectCardHorizontalOffset { offset } => {
-                let selected_card_id = self.get_selected_card_id()?;
-
-                let selected_tag = match &self.interaction_state.selection.tag {
-                    Some(tag) => tag,
-                    None => return Err(BoardError::NotInCategoryView),
-                };
-
-                let tags_in_category = self.get_tags_with_category(selected_tag.category());
-                let current_tag_in_category_index = tags_in_category
-                    .iter()
-                    .position(|t| t == selected_tag)
-                    .unwrap() as isize;
-                let target_tag_in_category_index = (current_tag_in_category_index + offset)
-                    .clamp(0, (tags_in_category.len() as isize) - 1)
-                    as usize;
-                let target_tag = &tags_in_category[target_tag_in_category_index];
-
-                let cards_in_tag = self.get_cards_with_tag(selected_tag);
-                let current_card_in_tag_index = cards_in_tag
-                    .iter()
-                    .position(|c| *c == selected_card_id)
-                    .unwrap() as isize;
-
-                let cards_in_target_tag = self.get_cards_with_tag(&target_tag);
-                let target_card_in_tag_index = current_card_in_tag_index
-                    .clamp(0, (cards_in_target_tag.len() as isize) - 1)
-                    as usize;
-                let target_card_id = cards_in_target_tag[target_card_in_tag_index];
-
-                self.interaction_state.selection.card_id = Some(target_card_id);
-                self.interaction_state.selection.tag = Some(target_tag.clone());
-
-                Ok(())
-            }
-
-            Action::MoveCurrentCardVerticalOffset { offset } => {
-                let selected_card_id = self.get_selected_card_id()?;
-                let selected_card_index_in_order = self
-                    .card_order
-                    .iter()
-                    .position(|card_id| *card_id == selected_card_id)
-                    .unwrap();
-
-                let target_index_in_card_order = match &self.interaction_state.selection.tag {
-                    Some(tag) => {
-                        let card_in_target_spot = match self
-                            .get_card_at_offset_from_current_in_current_view(*offset)
-                            .unwrap()
-                        {
-                            CardOffsetResult::Ok(card_id) => card_id,
-                            CardOffsetResult::Clamped(card_id) => card_id,
-                        };
-
-                        self.card_order
-                            .iter()
-                            .position(|c| *c == card_in_target_spot)
-                            .unwrap()
-                    }
-                    None => ((selected_card_index_in_order as isize) + offset)
-                        .clamp(0, (self.card_order.len() - 1) as isize)
-                        as usize,
-                } as usize;
-
-                self.card_order.remove(selected_card_index_in_order);
-
                 self.card_order
-                    .insert(target_index_in_card_order, selected_card_id);
-
-                Ok(())
-            }
-
-            Action::MoveCurrentCardHorizontalInCategory { offset } => {
-                // Ensure a card is selected.
-                self.get_selected_card_id()?;
-
-                let selected_tag = match &self.interaction_state.selection.tag {
-                    Some(tag) => tag.clone(),
-                    None => return Err(BoardError::NotInCategoryView),
-                };
-
-                let tags_in_category = self.get_tags_with_category(selected_tag.category());
-                let current_tag_in_category_index = tags_in_category
                     .iter()
-                    .position(|t| *t == selected_tag)
-                    .unwrap() as isize;
-                let target_tag_in_category_index = (current_tag_in_category_index + offset)
-                    .clamp(0, (tags_in_category.len() as isize) - 1)
-                    as usize;
-                let target_tag = &tags_in_category[target_tag_in_category_index];
-
-                self.perform_action(&Action::DeleteTagFromCurrentCard {
-                    tag: selected_tag.clone(),
-                })?;
-
-                self.perform_action(&Action::AddTagToCurrentCard {
-                    tag: target_tag.clone(),
-                })?;
-
-                self.interaction_state.selection.tag = Some(target_tag.clone());
-
-                Ok(())
+                    .position(|c| *c == card_in_target_spot)
+                    .unwrap()
             }
+            None => ((selected_card_index_in_order as isize) + offset)
+                .clamp(0, (self.card_order.len() - 1) as isize) as usize,
+        } as usize;
 
-            Action::SetCurrentCardText { text } => {
-                let selected_card_id = self.get_selected_card_id()?;
+        self.card_order.remove(selected_card_index_in_order);
 
-                self.cards.get_mut(&selected_card_id).unwrap().text = text.to_owned();
+        self.card_order
+            .insert(target_index_in_card_order, selected_card_id);
 
-                Ok(())
-            }
+        Ok(())
+    }
 
-            Action::AddTagToCurrentCard { tag } => {
-                let selected_card_id = self.get_selected_card_id()?;
-                let selected_card = self.cards.get_mut(&selected_card_id).unwrap();
+    pub fn move_current_card_horizontal(&mut self, offset: isize) -> Result<(), BoardError> {
+        // Ensure a card is selected.
+        self.get_selected_card_id()?;
 
-                if selected_card.has_tag(tag) {
-                    return Err(BoardError::CardAlreadyHasTag);
-                }
-
-                // Add tag to the card itself.
-                selected_card.add_tag(tag);
-
-                Ok(())
-            }
-
-            Action::DeleteTagFromCurrentCard { tag } => {
-                let selected_card_id = self.get_selected_card_id()?;
-                let selected_card = self.cards.get_mut(&selected_card_id).unwrap();
-
-                if !selected_card.has_tag(tag) {
-                    return Err(BoardError::CardDoesntHaveTag);
-                }
-
-                // Remove tag from the card itself.
-                selected_card.delete_tag(tag);
-
-                Ok(())
-            }
-
-            Action::ViewDefault => {
-                if self.interaction_state.selection.tag.is_some() {
-                    self.interaction_state.selection.tag = None;
-                    Ok(())
-                } else {
-                    Err(BoardError::NoTagSelected)
-                }
-            }
-
-            Action::ViewCategory { category } => {
-                if self.get_categories().contains(&category) {
-                    let selected_card_id = self.get_selected_card_id()?;
-                    let selected_card = self.cards.get(&selected_card_id).unwrap();
-
-                    if selected_card.has_category(category) {
-                        self.interaction_state.selection.card_id = Some(selected_card_id);
-                        self.interaction_state.selection.tag =
-                            Some(selected_card.get_tags_with_category(category)[0].clone());
-
-                        Ok(())
-                    } else {
-                        let nearest_card_in_category = self
-                            .get_cards_by_distance_from_selected()?
-                            .into_iter()
-                            .skip_while(|card_id| {
-                                !self.cards.get(&card_id).unwrap().has_category(category)
-                            })
-                            .next()
-                            .unwrap();
-
-                        self.interaction_state.selection.card_id = Some(nearest_card_in_category);
-                        self.interaction_state.selection.tag = Some(
-                            self.cards
-                                .get(&nearest_card_in_category)
-                                .unwrap()
-                                .get_tags_with_category(category)[0]
-                                .clone(),
-                        );
-
-                        Ok(())
-                    }
-                } else {
-                    Err(BoardError::NoSuchCategory)
-                }
-            }
+        let selected_tag = match &self.interaction_state.selection.tag {
+            Some(tag) => tag.clone(),
+            None => return Err(BoardError::NotInCategoryView),
         };
 
-        if result.is_ok() {
-            self.save()?;
+        let tags_in_category = self.get_tags_with_category(selected_tag.category());
+        let current_tag_in_category_index = tags_in_category
+            .iter()
+            .position(|t| *t == selected_tag)
+            .unwrap() as isize;
+        let target_tag_in_category_index = (current_tag_in_category_index + offset)
+            .clamp(0, (tags_in_category.len() as isize) - 1)
+            as usize;
+        let target_tag = &tags_in_category[target_tag_in_category_index];
+
+        self.delete_tag_from_current_card(&selected_tag)?;
+        self.add_tag_to_current_card(target_tag)?;
+
+        self.interaction_state.selection.tag = Some(target_tag.clone());
+
+        Ok(())
+    }
+
+    pub fn set_current_card_text(&mut self, text: &str) -> Result<(), BoardError> {
+        let selected_card_id = self.get_selected_card_id()?;
+        self.cards.get_mut(&selected_card_id).unwrap().text = text.to_owned();
+        Ok(())
+    }
+
+    pub fn add_tag_to_current_card(&mut self, tag: &Tag) -> Result<(), BoardError> {
+        let selected_card_id = self.get_selected_card_id()?;
+        let selected_card = self.cards.get_mut(&selected_card_id).unwrap();
+
+        if selected_card.has_tag(tag) {
+            return Err(BoardError::CardAlreadyHasTag);
         }
 
-        result
+        // Add tag to the card itself.
+        selected_card.add_tag(tag);
+
+        Ok(())
+    }
+
+    pub fn delete_tag_from_current_card(&mut self, tag: &Tag) -> Result<(), BoardError> {
+        let selected_card_id = self.get_selected_card_id()?;
+        let selected_card = self.cards.get_mut(&selected_card_id).unwrap();
+
+        if !selected_card.has_tag(tag) {
+            return Err(BoardError::CardDoesntHaveTag);
+        }
+
+        // Remove tag from the card itself.
+        selected_card.delete_tag(tag);
+
+        Ok(())
+    }
+
+    pub fn view_default(&mut self) -> Result<(), BoardError> {
+        if self.interaction_state.selection.tag.is_some() {
+            self.interaction_state.selection.tag = None;
+            Ok(())
+        } else {
+            Err(BoardError::NoTagSelected)
+        }
+    }
+
+    pub fn view_category(&mut self, category: &str) -> Result<(), BoardError> {
+        if self.get_categories().contains(&category.to_owned()) {
+            let selected_card_id = self.get_selected_card_id()?;
+            let selected_card = self.cards.get(&selected_card_id).unwrap();
+
+            if selected_card.has_category(category) {
+                self.interaction_state.selection.card_id = Some(selected_card_id);
+                self.interaction_state.selection.tag =
+                    Some(selected_card.get_tags_with_category(category)[0].clone());
+
+                Ok(())
+            } else {
+                let nearest_card_in_category = self
+                    .get_cards_by_distance_from_selected()?
+                    .into_iter()
+                    .skip_while(|card_id| !self.cards.get(&card_id).unwrap().has_category(category))
+                    .next()
+                    .unwrap();
+
+                self.interaction_state.selection.card_id = Some(nearest_card_in_category);
+                self.interaction_state.selection.tag = Some(
+                    self.cards
+                        .get(&nearest_card_in_category)
+                        .unwrap()
+                        .get_tags_with_category(category)[0]
+                        .clone(),
+                );
+
+                Ok(())
+            }
+        } else {
+            Err(BoardError::NoSuchCategory)
+        }
     }
 
     /// Get the list of cards ordered by their distance from the selected card in the overall card order.
