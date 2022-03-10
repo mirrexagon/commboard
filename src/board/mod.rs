@@ -363,7 +363,7 @@ impl Board {
             .unwrap();
 
         let target_index_in_card_order = match &self.interaction_state.selection.tag {
-            Some(tag) => {
+            Some(_tag) => {
                 let card_in_target_spot = match self
                     .get_card_at_offset_from_current_in_current_view(offset)
                     .unwrap()
@@ -671,17 +671,8 @@ pub enum BoardError {
     #[error("I/O error")]
     IoError(#[from] io::Error),
 
-    #[error("no such card with ID '{0}'")]
-    NoSuchCard(CardId),
-
     #[error("no such category")]
     NoSuchCategory,
-
-    #[error("no such column")]
-    NoSuchColumn,
-
-    #[error("supplied position '{0}' was out of bounds")]
-    PositionOutOfBounds(usize),
 
     #[error("card doesn't have the specified tag")]
     CardDoesntHaveTag,
