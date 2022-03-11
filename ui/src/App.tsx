@@ -34,7 +34,7 @@ const App: FC = () => {
     });
 
     // -- UI mode --
-    const [uiMode, setUiMode:] = useState<UiMode>("ViewBoard");
+    const [uiMode, setUiMode] = useState<UiMode>("ViewBoard");
 
     // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({

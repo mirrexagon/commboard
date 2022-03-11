@@ -1,9 +1,18 @@
-import React from "react";
+import React, { FC } from "react";
 import "./BoardViewCategory.css";
+
+import * as API from "./ApiTypes";
+import { UiMode, SetUiModeFunction, BindKeyFunction } from "./App";
 
 import CardColumn from "./CardColumn";
 
-const CategoryColumn = (props) => {
+interface CategoryColumnProps {
+    name: API.CategoryName;
+    cards: API.Card[];
+    selectedCardId: API.CardId | null;
+}
+
+const CategoryColumn: FC<CategoryColumnProps> = (props) => {
     return (
         <div>
             <h2>{props.name}</h2>
@@ -13,42 +22,47 @@ const CategoryColumn = (props) => {
             />
         </div>
     );
+};
+
+interface BoardViewCategoryProps {
+    cards: API.Cards;
+    categoryView: API.CategoryView;
+    selectedCardId: API.CardId;
+    selectedTag: API.Tag;
 }
 
-const BoardViewCategory = (props) => {
-    const [selectedCategoryName, selectedColumnName] = props.selectedTag.split(":");
+const BoardViewCategory: FC<BoardViewCategoryProps> = (props) => {
+    const [selectedCategoryName, selectedColumnName] =
+        props.selectedTag.split(":");
 
     // In alphabetical order for consistency.
-    let columnNames = Object.keys(props.categoryView);
+    const columnNames = Object.keys(props.categoryView);
     columnNames.sort();
 
-    const columns = columnNames.map(
-        (columnName) => {
-            const column = props.categoryView[columnName];
+    const columns = columnNames.map((columnName) => {
+        const column = props.categoryView[columnName];
 
-            const cards = column.map(
-                (cardId) => props.cards[cardId]
-            );
+        const cards = column.map((cardId) => props.cards[cardId]);
 
-            return (
-                <li
-                    className="category-view-column"
-                    key={selectedCategoryName + ":" + columnName}
-                >
-                    <CategoryColumn
-                        name={columnName}
-                        tag={`${selectedCategoryName}:${columnName}`}
-                        cards={cards}
-                        selectedCardId={columnName == selectedColumnName ? props.selectedCardId : null}
-                    />
-                </li>
-            );
-        }
-    );
+        return (
+            <li
+                className="category-view-column"
+                key={selectedCategoryName + ":" + columnName}
+            >
+                <CategoryColumn
+                    name={columnName}
+                    cards={cards}
+                    selectedCardId={
+                        columnName == selectedColumnName
+                            ? props.selectedCardId
+                            : null
+                    }
+                />
+            </li>
+        );
+    });
 
-    return (
-        <ul className="category-view">{columns}</ul>
-    );
-}
+    return <ul className="category-view">{columns}</ul>;
+};
 
 export default BoardViewCategory;

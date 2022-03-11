@@ -185,7 +185,7 @@ const Board: FC<BoardProps> = (props) => {
 
     const isSelectingCategory = props.uiMode == "SelectCategory";
     const [categorySelectText, setCategorySelectText] = useState("");
-    const categorySelectorElement = useRef<HTMLInputElement | null>(null);
+    const categorySelectorElement = useRef<HTMLInputElement>(null);
 
     props.bindKey(["ViewBoard"], "c", (appState, uiMode, e) => {
         setCategorySelectText("");

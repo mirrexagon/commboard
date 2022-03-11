@@ -4,12 +4,16 @@ export type CategoryName = string; // The "category" part of a tag.
 
 export interface AppState {
     board_name: string;
-    cards: Card[];
+    cards: Cards;
     card_order: CardId[];
     categories: CategoryName[];
     tags: Tag[];
     interaction_state: InteractionState;
     current_category_view: null | CategoryView;
+}
+
+export interface Cards {
+    [card_id: CardId]: Card;
 }
 
 export interface CategoryView {

@@ -2,7 +2,7 @@ import React, { FC, useState, useEffect, useRef } from "react";
 import "./Selector.css";
 
 interface SelectorProps {
-    inputRef: React.MutableRefObject<HTMLInputElement | null>;
+    inputRef: React.RefObject<HTMLInputElement>;
     visible: boolean;
     value: string;
     suggestions: string[];

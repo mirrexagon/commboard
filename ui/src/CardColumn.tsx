@@ -1,9 +1,15 @@
-import React from "react";
+import React, { FC } from "react";
 import "./CardColumn.css";
+
+import * as API from "./ApiTypes";
 
 import Card from "./Card";
 
-const CardColumn = (props) => {
+interface CardColumnProps {
+    cards: API.Card[];
+}
+
+const CardColumn: FC<CardColumnProps> = (props) => {
     const cards = props.cards.map((card) => (
         <li className="card-column-item" key={card.id}>
             <Card
@@ -15,9 +21,7 @@ const CardColumn = (props) => {
         </li>
     ));
 
-    return (
-        <ul className="card-column">{cards}</ul>
-    );
-}
+    return <ul className="card-column">{cards}</ul>;
+};
 
 export default CardColumn;
