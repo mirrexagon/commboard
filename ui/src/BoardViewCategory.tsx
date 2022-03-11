@@ -2,7 +2,6 @@ import React, { FC } from "react";
 import "./BoardViewCategory.css";
 
 import * as API from "./ApiTypes";
-import { UiMode, SetUiModeFunction, BindKeyFunction } from "./App";
 
 import CardColumn from "./CardColumn";
 

@@ -44,15 +44,15 @@ const Board: FC<BoardProps> = (props) => {
     const boardView = props.appState.current_category_view ? (
         <BoardViewCategory
             cards={props.appState.cards}
-            selectedCardId={props.appState.interaction_state.selection.card_id}
-            selectedTag={props.appState.interaction_state.selection.tag}
+            selectedCardId={props.appState.interaction_state.selection.card_id!}
+            selectedTag={props.appState.interaction_state.selection.tag!}
             categoryView={props.appState.current_category_view}
         />
     ) : (
         <BoardViewDefault
             cards={props.appState.cards}
             cardOrder={props.appState.card_order}
-            selectedCardId={props.appState.interaction_state.selection.card_id}
+            selectedCardId={props.appState.interaction_state.selection.card_id!}
         />
     );
 
@@ -171,6 +171,8 @@ const Board: FC<BoardProps> = (props) => {
                 offset: -5,
             };
         }
+
+        return;
     });
 
     props.bindKey(["ViewBoard"], "Enter", (appState, uiMode) => {
