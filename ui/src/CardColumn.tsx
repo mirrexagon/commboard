@@ -1,7 +1,7 @@
 import React from "react";
 import "./CardColumn.css";
 
-import Card from "./Card.js";
+import Card from "./Card";
 
 const CardColumn = (props) => {
     const cards = props.cards.map((card) => (

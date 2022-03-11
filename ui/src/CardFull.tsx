@@ -4,8 +4,8 @@ import "./CardFull.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import TagList from "./TagList.js";
-import Selector from "./Selector.js";
+import TagList from "./TagList";
+import Selector from "./Selector";
 
 const CardFull = (props) => {
     const isEditingText = props.uiMode == "EditCardText";

@@ -1,7 +1,7 @@
 import React from "react";
 import "./BoardViewCategory.css";
 
-import CardColumn from "./CardColumn.js";
+import CardColumn from "./CardColumn";
 
 const CategoryColumn = (props) => {
     return (

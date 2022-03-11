@@ -3,8 +3,8 @@ import "./MarkdownInlineInput.css";
 
 import ReactMarkdown from "react-markdown";
 
-import useKeyPress from "./useKeyPress.js";
-import useClickOnOutside from "./useClickOnOutside.js";
+import useKeyPress from "./useKeyPress";
+import useClickOnOutside from "./useClickOnOutside";
 
 function MarkdownInlineInput(props) {
     const [isInputActive, setIsInputActive] = useState(false);

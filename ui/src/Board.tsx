@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./Board.css";
 
-import BoardViewDefault from "./BoardViewDefault.js";
-import BoardViewCategory from "./BoardViewCategory.js";
-import CardFull from "./CardFull.js";
-import Selector from "./Selector.js";
+import BoardViewDefault from "./BoardViewDefault";
+import BoardViewCategory from "./BoardViewCategory";
+import CardFull from "./CardFull";
+import Selector from "./Selector";
 
 const BoardPanel = (props) => {
     const categories = props.categories.map((categoryName) => <li key={categoryName}>{categoryName}</li>);

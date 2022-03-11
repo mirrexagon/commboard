@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 
 import { useGet, useMutate } from "restful-react";
 
-import Board from "./Board.js";
+import Board from "./Board";
 
 const App = () => {
     // -- Getting app state --

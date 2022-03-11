@@ -4,7 +4,7 @@ import "./Card.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import TagList from "./TagList.js";
+import TagList from "./TagList";
 
 const Text = (props) => {
     return (
