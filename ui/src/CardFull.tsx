@@ -1,15 +1,26 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { FC, useState, useEffect, useRef } from "react";
 import "./CardFull.css";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import * as API from "./ApiTypes";
+import { UiMode, SetUiModeFunction, BindKeyFunction } from "./App";
+
 import TagList from "./TagList";
 import Selector from "./Selector";
 
-const CardFull = (props) => {
+interface CardFullProps {
+    uiMode: UiMode;
+    setUiMode: SetUiModeFunction;
+    bindKey: BindKeyFunction;
+    card: API.Card;
+    allTags: API.Tag[];
+}
+
+const CardFull: FC<CardFullProps> = (props) => {
     const isEditingText = props.uiMode == "EditCardText";
-    const inputElement = useRef(null);
+    const inputElement = useRef<HTMLTextAreaElement>(null);
     const [editedText, setEditedText] = useState(props.card.text);
 
     useEffect(() => {
@@ -23,22 +34,22 @@ const CardFull = (props) => {
         e.preventDefault();
 
         props.setUiMode("EditCardText");
-        inputElement.current.focus()
+        inputElement.current?.focus();
     });
 
     props.bindKey(["EditCardText"], "Escape", (appState, uiMode, e) => {
         props.setUiMode("ViewCard");
 
         return {
-            "type": "SetCurrentCardText",
-            "text": editedText,
+            type: "SetCurrentCardText",
+            text: editedText,
         };
     });
 
     const isAddingTag = props.uiMode == "AddTagFromViewCard";
     const isDeletingTag = props.uiMode == "DeleteTagFromViewCard";
     const [tagSelectText, setTagSelectText] = useState("");
-    const tagSelectorElement = useRef(null);
+    const tagSelectorElement = useRef<HTMLInputElement>(null);
 
     props.bindKey(["ViewCard"], "a", (appState, uiMode, e) => {
         setTagSelectText("");
@@ -47,16 +58,15 @@ const CardFull = (props) => {
         e.preventDefault();
 
         props.setUiMode("AddTagFromViewCard");
-        tagSelectorElement.current.focus();
+        tagSelectorElement.current?.focus();
     });
 
     props.bindKey(["AddTagFromViewCard"], "Enter", (appState, uiMode, e) => {
         props.setUiMode("ViewCard");
 
-
         return {
-            "type": "AddTagToCurrentCard",
-            "tag": tagSelectText,
+            type: "AddTagToCurrentCard",
+            tag: tagSelectText,
         };
     });
 
@@ -72,22 +82,26 @@ const CardFull = (props) => {
         e.preventDefault();
 
         props.setUiMode("DeleteTagFromViewCard");
-        tagSelectorElement.current.focus();
+        tagSelectorElement.current?.focus();
     });
 
     props.bindKey(["DeleteTagFromViewCard"], "Enter", (appState, uiMode, e) => {
         props.setUiMode("ViewCard");
 
         return {
-            "type": "DeleteTagFromCurrentCard",
-            "tag": tagSelectText,
+            type: "DeleteTagFromCurrentCard",
+            tag: tagSelectText,
         };
     });
 
-    props.bindKey(["DeleteTagFromViewCard"], "Escape", (appState, uiMode, e) => {
-        // Cancel deleting tag.
-        props.setUiMode("ViewCard");
-    });
+    props.bindKey(
+        ["DeleteTagFromViewCard"],
+        "Escape",
+        (appState, uiMode, e) => {
+            // Cancel deleting tag.
+            props.setUiMode("ViewCard");
+        }
+    );
 
     return (
         <div className="card-full">
@@ -95,15 +109,17 @@ const CardFull = (props) => {
                 <h3>{props.card.id}</h3>
 
                 <div
-                    style={{visibility: isEditingText ? "hidden" : "visible"}}
+                    style={{ visibility: isEditingText ? "hidden" : "visible" }}
                     className="card-full-text-static"
                 >
-                    <ReactMarkdown children={props.card.text} remarkPlugins={[remarkGfm]} />
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        props.card.text
+                    </ReactMarkdown>
                 </div>
 
                 <textarea
                     ref={inputElement}
-                    style={{visibility: isEditingText ? "visible" : "hidden"}}
+                    style={{ visibility: isEditingText ? "visible" : "hidden" }}
                     className="card-full-text-textarea"
                     value={editedText}
                     onChange={(e) => setEditedText(e.target.value)}
@@ -117,10 +133,10 @@ const CardFull = (props) => {
                     value={tagSelectText}
                     suggestions={props.allTags}
                     onChange={(e) => setTagSelectText(e.target.value)}
-                    />
+                />
             </div>
         </div>
     );
-}
+};
 
 export default CardFull;

@@ -7,6 +7,7 @@ import Card from "./Card";
 
 interface CardColumnProps {
     cards: API.Card[];
+    selectedCardId: API.CardId;
 }
 
 const CardColumn: FC<CardColumnProps> = (props) => {
