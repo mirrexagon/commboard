@@ -6,7 +6,7 @@ interface TagProps {
 }
 
 const Tag: FC<TagProps> = (props) => {
-    return <p>props.tagString</p>;
+    return <p>{props.tagString}</p>;
 };
 
 interface TagListProps {
