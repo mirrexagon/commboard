@@ -1,16 +1,25 @@
+export type CardId = number;
+export type Tag = string; // A string like "category:value".
+export type CategoryName = string; // The "category" part of a tag.
+
 export interface AppState {
     board_name: string;
     cards: Card[];
-    card_order: number[];
-    categories: string[];
-    tags: string[];
+    card_order: CardId[];
+    categories: CategoryName[];
+    tags: Tag[];
     interaction_state: InteractionState;
+    current_category_view: null | CategoryView;
+}
+
+export interface CategoryView {
+    [tag: Tag]: CardId[];
 }
 
 export interface Card {
-    id: number;
+    id: CardId;
     text: string;
-    tags: string[];
+    tags: Tag[];
 }
 
 export interface InteractionState {
@@ -19,6 +28,28 @@ export interface InteractionState {
 }
 
 export interface CardSelection {
-    card_id: null | number;
-    tag: null | string;
+    card_id: null | CardId;
+    tag: null | Tag;
+}
+
+export interface Action {
+    type:
+        | "SetBoardName"
+        | "NewCard"
+        | "DeleteCurrentCard"
+        | "SelectCardVerticalOffset"
+        | "SelectCardHorizontalOffset"
+        | "MoveCurrentCardVerticalOffset"
+        | "MoveCurrentCardHorizontalInCategory"
+        | "SetCurrentCardText"
+        | "AddTagToCurrentCard"
+        | "DeleteTagFromCurrentCard"
+        | "ViewDefault"
+        | "ViewCategory";
+
+    name?: string;
+    offset?: number;
+    text?: string;
+    tag?: Tag;
+    category?: CategoryName;
 }

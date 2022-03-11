@@ -1,53 +1,69 @@
 import React, { FC, useState, useEffect, useCallback } from "react";
 import { useGet, useMutate } from "restful-react";
 
-import * as ApiTypes from "./ApiTypes";
+import * as API from "./ApiTypes";
 import Board from "./Board";
 
+export type UiMode =
+    | "ViewBoard"
+    | "SelectCategory"
+    | "ViewCard"
+    | "EditCardText"
+    | "AddTagFromViewCard"
+    | "DeleteTagFromViewCard";
 
+export type BindKeyFunction = (
+    modes: UiMode[],
+    key: string,
+    action: (
+        appState: API.AppState,
+        uiMode: string,
+        e: KeyboardEvent
+    ) => void | API.Action
+) => void;
 
-const App: FC = (props) => {
+export type SetUiModeFunction = React.Dispatch<React.SetStateAction<UiMode>>;
+
+const App: FC = () => {
     // -- Getting app state --
     const base = "/api";
 
     const { data: appState, refetch: refetchAppState } = useGet({
         path: "/state",
-        base
+        base,
     });
 
     // -- UI mode --
-    // ViewBoard
-    //   SelectCategory
-    // ViewCard
-    //   EditCardText
-    //   AddTagFromViewCard
-    //   DeleteTagFromViewCard
-    const [uiMode, setUiMode] = useState("ViewBoard");
+    const [uiMode, setUiMode:] = useState<UiMode>("ViewBoard");
 
     // -- Manipulating app state --
     const { mutate: performActionBase } = useMutate({
         verb: "POST",
         path: "/action",
-        base
+        base,
     });
 
-    const performAction = (action: string) => performActionBase(action).then(() => refetchAppState());
+    const performAction = (action: API.Action) =>
+        performActionBase(action).then(() => refetchAppState());
 
     // -- Key bindings --
-    const bindKey = (modes: string[], key: string, action: (appState: AppState, uiMode: string, e: Event) => any) => {
-        const onKeyDown = useCallback((e) => {
-            if (!e.repeat && e.key == key) {
-                for (let mode of modes) {
-                    if (uiMode == mode) {
-                        const boardAction = action(appState, uiMode, e);
-                        if (boardAction) {
-                            performAction(boardAction);
+    const bindKey: BindKeyFunction = (modes, key, action) => {
+        const onKeyDown = useCallback(
+            (e) => {
+                if (!e.repeat && e.key == key) {
+                    for (const mode of modes) {
+                        if (uiMode == mode) {
+                            const boardAction = action(appState, uiMode, e);
+                            if (boardAction) {
+                                performAction(boardAction);
+                            }
+                            return;
                         }
-                        return;
                     }
                 }
-            }
-        }, [appState, uiMode, action]);
+            },
+            [appState, uiMode, action]
+        );
 
         useEffect(() => {
             window.addEventListener("keydown", onKeyDown);

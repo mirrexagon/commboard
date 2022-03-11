@@ -1,44 +1,54 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { FC, useState, useRef } from "react";
 import "./Board.css";
+
+import * as API from "./ApiTypes";
+import { UiMode, SetUiModeFunction, BindKeyFunction } from "./App";
 
 import BoardViewDefault from "./BoardViewDefault";
 import BoardViewCategory from "./BoardViewCategory";
 import CardFull from "./CardFull";
 import Selector from "./Selector";
 
-const BoardPanel = (props) => {
-    const categories = props.categories.map((categoryName) => <li key={categoryName}>{categoryName}</li>);
+interface BoardPanelProps {
+    boardName: string;
+    categories: API.CategoryName[];
+    uiMode: UiMode;
+}
+
+const BoardPanel: FC<BoardPanelProps> = (props) => {
+    const categories = props.categories.map((categoryName) => (
+        <li key={categoryName}>{categoryName}</li>
+    ));
 
     return (
         <div className="board-panel">
-            <h1>
-                {props.boardName}
-            </h1>
+            <h1>{props.boardName}</h1>
 
             <h2>UI mode</h2>
-            <p>
-                {props.uiMode}
-            </p>
+            <p>{props.uiMode}</p>
 
             <h2>Categories</h2>
-            <ul>
-                {categories}
-            </ul>
+            <ul>{categories}</ul>
         </div>
     );
 };
 
-const Board = (props) => {
-    const boardView = props.appState.current_category_view
-    ? (
+interface BoardProps {
+    appState: API.AppState;
+    uiMode: UiMode;
+    setUiMode: SetUiModeFunction;
+    bindKey: BindKeyFunction;
+}
+
+const Board: FC<BoardProps> = (props) => {
+    const boardView = props.appState.current_category_view ? (
         <BoardViewCategory
             cards={props.appState.cards}
             selectedCardId={props.appState.interaction_state.selection.card_id}
             selectedTag={props.appState.interaction_state.selection.tag}
             categoryView={props.appState.current_category_view}
         />
-    )
-    : (
+    ) : (
         <BoardViewDefault
             cards={props.appState.cards}
             cardOrder={props.appState.card_order}
@@ -46,15 +56,20 @@ const Board = (props) => {
         />
     );
 
-    const showCardFull = props.uiMode == "ViewCard"
-      || props.uiMode == "EditCardText"
-      || props.uiMode == "AddTagFromViewCard"
-      || props.uiMode == "DeleteTagFromViewCard";
+    const showCardFull =
+        props.uiMode == "ViewCard" ||
+        props.uiMode == "EditCardText" ||
+        props.uiMode == "AddTagFromViewCard" ||
+        props.uiMode == "DeleteTagFromViewCard";
 
-    const cardFull = showCardFull
-        ? (
+    const cardFull =
+        props.appState.interaction_state.selection.card_id && showCardFull ? (
             <CardFull
-                card={props.appState.cards[props.appState.interaction_state.selection.card_id]}
+                card={
+                    props.appState.cards[
+                        props.appState.interaction_state.selection.card_id
+                    ]
+                }
                 allTags={props.appState.tags}
                 uiMode={props.uiMode}
                 bindKey={props.bindKey}
@@ -63,13 +78,13 @@ const Board = (props) => {
         ) : null;
 
     props.bindKey(["ViewBoard", "ViewCard"], "j", () => ({
-        "type": "SelectCardVerticalOffset",
-        "offset": 1,
+        type: "SelectCardVerticalOffset",
+        offset: 1,
     }));
 
     props.bindKey(["ViewBoard", "ViewCard"], "k", () => ({
-        "type": "SelectCardVerticalOffset",
-        "offset": -1,
+        type: "SelectCardVerticalOffset",
+        offset: -1,
     }));
 
     props.bindKey(["ViewBoard", "ViewCard"], "J", (appState, uiMode, e) => {
@@ -82,8 +97,8 @@ const Board = (props) => {
         }
 
         return {
-            "type": "MoveCurrentCardVerticalOffset",
-            "offset": offset,
+            type: "MoveCurrentCardVerticalOffset",
+            offset: offset,
         };
     });
 
@@ -97,53 +112,53 @@ const Board = (props) => {
         }
 
         return {
-            "type": "MoveCurrentCardVerticalOffset",
-            "offset": -offset,
+            type: "MoveCurrentCardVerticalOffset",
+            offset: -offset,
         };
     });
 
     props.bindKey(["ViewBoard", "ViewCard"], "h", (appState, uiMode, e) => {
         return {
-            "type": "SelectCardHorizontalOffset",
-            "offset": -1,
+            type: "SelectCardHorizontalOffset",
+            offset: -1,
         };
     });
 
     props.bindKey(["ViewBoard", "ViewCard"], "l", (appState, uiMode, e) => {
         return {
-            "type": "SelectCardHorizontalOffset",
-            "offset": 1,
+            type: "SelectCardHorizontalOffset",
+            offset: 1,
         };
     });
 
     props.bindKey(["ViewBoard", "ViewCard"], "H", (appState, uiMode, e) => {
         return {
-            "type": "MoveCurrentCardHorizontalInCategory",
-            "offset": -1,
+            type: "MoveCurrentCardHorizontalInCategory",
+            offset: -1,
         };
     });
 
     props.bindKey(["ViewBoard", "ViewCard"], "L", (appState, uiMode, e) => {
         return {
-            "type": "MoveCurrentCardHorizontalInCategory",
-            "offset": 1,
+            type: "MoveCurrentCardHorizontalInCategory",
+            offset: 1,
         };
     });
 
     props.bindKey(["ViewBoard"], "a", () => ({
-        "type": "NewCard",
+        type: "NewCard",
     }));
 
     props.bindKey(["ViewBoard"], "d", (appState, uiMode, e) => {
         if (e.ctrlKey) {
             e.preventDefault();
             return {
-                "type": "SelectCardVerticalOffset",
-                "offset": 5,
+                type: "SelectCardVerticalOffset",
+                offset: 5,
             };
         } else {
             return {
-                "type": "DeleteCurrentCard",
+                type: "DeleteCurrentCard",
             };
         }
     });
@@ -152,8 +167,8 @@ const Board = (props) => {
         if (e.ctrlKey) {
             e.preventDefault();
             return {
-                "type": "SelectCardVerticalOffset",
-                "offset": -5,
+                type: "SelectCardVerticalOffset",
+                offset: -5,
             };
         }
     });
@@ -170,7 +185,7 @@ const Board = (props) => {
 
     const isSelectingCategory = props.uiMode == "SelectCategory";
     const [categorySelectText, setCategorySelectText] = useState("");
-    const categorySelectorElement = useRef(null);
+    const categorySelectorElement = useRef<HTMLInputElement | null>(null);
 
     props.bindKey(["ViewBoard"], "c", (appState, uiMode, e) => {
         setCategorySelectText("");
@@ -179,15 +194,15 @@ const Board = (props) => {
         e.preventDefault();
 
         props.setUiMode("SelectCategory");
-        categorySelectorElement.current.focus();
+        categorySelectorElement.current?.focus();
     });
 
     props.bindKey(["SelectCategory"], "Enter", (appState, uiMode, e) => {
         props.setUiMode("ViewBoard");
 
         return {
-            "type": "ViewCategory",
-            "category": categorySelectText,
+            type: "ViewCategory",
+            category: categorySelectText,
         };
     });
 
@@ -198,7 +213,7 @@ const Board = (props) => {
 
     // While viewing category, press Escape to go back to default view.
     props.bindKey(["ViewBoard"], "Escape", () => ({
-        "type": "ViewDefault",
+        type: "ViewDefault",
     }));
 
     return (
@@ -219,7 +234,7 @@ const Board = (props) => {
                 value={categorySelectText}
                 suggestions={props.appState.categories}
                 onChange={(e) => setCategorySelectText(e.target.value)}
-                />
+            />
         </div>
     );
 };
