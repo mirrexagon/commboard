@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
-
+import React, { FC, useState, useEffect, useCallback } from "react";
 import { useGet, useMutate } from "restful-react";
 
+import * as ApiTypes from "./ApiTypes";
 import Board from "./Board";
 
-const App = () => {
+
+
+const App: FC = (props) => {
     // -- Getting app state --
     const base = "/api";
 
@@ -29,10 +31,10 @@ const App = () => {
         base
     });
 
-    const performAction = (action) => performActionBase(action).then(() => refetchAppState());
+    const performAction = (action: string) => performActionBase(action).then(() => refetchAppState());
 
     // -- Key bindings --
-    const bindKey = (modes, key, action) => {
+    const bindKey = (modes: string[], key: string, action: (appState: AppState, uiMode: string, e: Event) => any) => {
         const onKeyDown = useCallback((e) => {
             if (!e.repeat && e.key == key) {
                 for (let mode of modes) {

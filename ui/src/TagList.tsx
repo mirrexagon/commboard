@@ -1,11 +1,19 @@
-import React from "react";
+import React, { FC } from "react";
 import "./TagList.css";
 
-const Tag = (props) => {
-    return props.tagString;
+interface TagProps {
+    tagString: string;
 }
 
-const TagList = (props) => {
+const Tag: FC<TagProps> = (props) => {
+    return <p>props.tagString</p>;
+}
+
+interface TagListProps {
+    tags: string[];
+}
+
+const TagList: FC<TagListProps> = (props) => {
     const tagElements = props.tags.map((tagString) => (
         <li className="card-tag" key={tagString}>
             <Tag tagString={tagString} />

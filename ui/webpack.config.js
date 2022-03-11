@@ -24,14 +24,14 @@ module.exports = {
     },
 
     resolve: {
-        extensions: ['.ts', '.tsx', '...'],
+        extensions: [".ts", ".tsx", "..."],
     },
 
     devtool: "inline-source-map",
 
     devServer: {
         static: {
-          directory: path.join(__dirname, 'dist'),
+            directory: path.join(__dirname, "dist"),
         },
         proxy: {
             "/api": {

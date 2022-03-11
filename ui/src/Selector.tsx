@@ -1,7 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { FC, useState, useEffect, useRef } from "react";
 import "./Selector.css";
 
-const Selector = (props) => {
+interface SelectorProps {
+    suggestions: string[];
+    inputRef: RefObject<>;
+}
+
+const Selector: FC<SelectorProps> = (props) => {
     const filteredSuggestions = props.suggestions.filter(s => s.includes(props.value));
 
     return (
