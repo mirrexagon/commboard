@@ -17,6 +17,7 @@ pub use tag::Tag;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Action {
+    Save,
     SetBoardName { name: String },
     NewCard,
     DeleteCurrentCard,
@@ -220,6 +221,7 @@ impl Board {
 
     pub fn perform_action(&mut self, action: &Action) -> Result<(), BoardError> {
         let result = match action {
+            Action::Save => self.save(),
             Action::SetBoardName { name } => {
                 self.name = name.to_owned();
                 Ok(())
@@ -244,11 +246,7 @@ impl Board {
             Action::ViewCategory { category } => self.view_category(category),
         };
 
-        if result.is_ok() {
-            self.save()
-        } else {
-            Err(BoardError::NoSuchCategory)
-        }
+        result
     }
 
     pub fn add_card(&mut self) -> Result<CardId, BoardError> {

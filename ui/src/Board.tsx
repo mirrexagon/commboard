@@ -77,6 +77,10 @@ const Board: FC<BoardProps> = (props) => {
             />
         ) : null;
 
+    props.bindKey(["ViewBoard"], "w", () => ({
+        type: "Save",
+    }));
+
     props.bindKey(["ViewBoard", "ViewCard"], "j", () => ({
         type: "SelectCardVerticalOffset",
         offset: 1,

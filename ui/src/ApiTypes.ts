@@ -38,6 +38,7 @@ export interface CardSelection {
 
 export interface Action {
     type:
+        | "Save"
         | "SetBoardName"
         | "NewCard"
         | "DeleteCurrentCard"
