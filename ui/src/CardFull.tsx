@@ -113,7 +113,7 @@ const CardFull: FC<CardFullProps> = (props) => {
                     className="card-full-text-static"
                 >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        props.card.text
+                        {props.card.text}
                     </ReactMarkdown>
                 </div>
 
