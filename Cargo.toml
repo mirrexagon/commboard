@@ -2,7 +2,7 @@
 name = "commboard"
 version = "0.2.0"
 authors = ["Andrew Abbott <andrew@mirx.dev>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 log = "0.4.14"
