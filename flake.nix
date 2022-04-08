@@ -2,12 +2,14 @@
   description = "Commboard, a multi-dimensional Kanban board";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs = { url = "nixpkgs/nixos-unstable"; };
 
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils = { url = "github:numtide/flake-utils"; };
 
-    npmlock2nix.url = "github:nix-community/npmlock2nix";
-    npmlock2nix.flake = false;
+    npmlock2nix = {
+      url = "github:nix-community/npmlock2nix";
+      flake = false;
+    };
   };
 
   outputs = { self, nixpkgs, flake-utils, npmlock2nix }: {
