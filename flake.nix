@@ -79,7 +79,6 @@
               nodejs
             ];
 
-            RUST_LOG = "info";
             NODE_ENV = "development";
           };
     });
