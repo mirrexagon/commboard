@@ -46,6 +46,9 @@ Cards can have multiple tags with the same category and different values. This w
     - Tags when adding or removing
     - Categories when selecting for category view
 - Filtering/search
+    - May not be necessary, just use browser search?
 - Tag colors based on category
 - Fetch and render embeds for links in card bodies
 - Better appearance
+- Use external editor (configure via TOML config file) instead of web one
+- Select card that is clicked on
