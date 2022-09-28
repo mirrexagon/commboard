@@ -18,13 +18,13 @@ struct Args {
 }
 
 #[get("/")]
-fn index() -> content::Html<&'static str> {
-    content::Html(include_str!("../ui/dist/index.html"))
+fn index() -> content::RawHtml<&'static str> {
+    content::RawHtml(include_str!("../ui/dist/index.html"))
 }
 
 #[get("/bundle.js")]
-fn index_bundle() -> content::JavaScript<&'static str> {
-    content::JavaScript(include_str!("../ui/dist/bundle.js"))
+fn index_bundle() -> content::RawJavaScript<&'static str> {
+    content::RawJavaScript(include_str!("../ui/dist/bundle.js"))
 }
 
 #[launch]

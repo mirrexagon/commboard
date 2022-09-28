@@ -1,14 +1,9 @@
-use std::time::Instant;
 use std::sync::Mutex;
+use std::time::Instant;
 
 use log::info;
 
-use rocket::{
-    get, post,
-    response::{content, status},
-    serde::json::Json,
-    State,
-};
+use rocket::{get, post, response::status, serde::json::Json, State};
 
 use crate::board::{self, Tag};
 
@@ -21,11 +16,11 @@ pub fn validate_tag(tag: String) -> &'static str {
 }
 
 #[get("/state")]
-pub fn get_current_state(board: &State<Mutex<board::Board>>) -> content::Json<String> {
+pub fn get_current_state(board: &State<Mutex<board::Board>>) -> Json<serde_json::Value> {
     let start = Instant::now();
 
     let board = board.lock().unwrap();
-    let result = content::Json(board.get_state_as_json().to_string());
+    let result = Json(board.get_state_as_json());
 
     let duration = start.elapsed();
     info!("/state took {} ms", duration.as_millis());
