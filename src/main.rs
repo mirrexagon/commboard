@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -10,6 +11,7 @@ use board::Board;
 
 mod api;
 mod board;
+mod config;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -34,6 +36,17 @@ fn rocket() -> _ {
 
     let args = Args::parse();
 
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("commboard").unwrap();
+    let config_path = xdg_dirs
+        .place_config_file("config.toml")
+        .expect("Couldn't create configuration directory");
+
+    let config: config::Config = {
+        let contents = fs::read_to_string(&config_path)
+            .expect(&format!("Couldn't read config file {config_path:?}"));
+        toml::from_str(&contents).expect(&format!("Couldn't load config file {config_path:?}"))
+    };
+
     let board_file_path = Path::new(&args.file);
 
     let board;
@@ -57,4 +70,5 @@ fn rocket() -> _ {
             ],
         )
         .manage(board)
+        .manage(config)
 }
