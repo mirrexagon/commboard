@@ -9,7 +9,7 @@ impl Tag {
     /// Creates a new `Tag` from a string, taking ownership of the string.
     /// Returns ownership of the string if it does not contain a `:`.
     pub fn new<S: Into<String>>(tag: S) -> Result<Self, String> {
-        let tag = tag.into();
+        let tag = tag.into().to_lowercase();
 
         // Make sure the string has a colon.
         if let None = tag.find(':') {

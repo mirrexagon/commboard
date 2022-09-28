@@ -11,7 +11,7 @@ interface SelectorProps {
 
 const Selector: FC<SelectorProps> = (props) => {
     const filteredSuggestions = props.suggestions.filter((s) =>
-        s.includes(props.value)
+        s.toLowerCase().includes(props.value.toLowerCase())
     );
 
     return (
