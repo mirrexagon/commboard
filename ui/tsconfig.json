@@ -1,28 +1,15 @@
 {
-    "compilerOptions": {
-        "target": "es6",
-        "lib": [
-            "es2021",
-            "dom",
-            "dom.iterable",
-        ],
-        "sourceMap": true,
-        "allowJs": false,
-        "jsx": "react",
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "strict": true,
-        "esModuleInterop": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
-        "forceConsistentCasingInFileNames": true,
-        "exactOptionalPropertyTypes": true
-    },
-    "exclude": [
-        "node_modules",
-        "dist",
-    ],
-    "types": [
-        "typePatches"
-    ]
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": ["vite/client"],
+    "noEmit": true,
+    "isolatedModules": true
+  }
 }
