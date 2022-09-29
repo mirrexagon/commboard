@@ -3,7 +3,7 @@ use std::process::Command;
 use walkdir::WalkDir;
 
 const UI_DIR: &str = "ui";
-const UI_WATCH_DIRS: [&str; 2] = ["ui/src", "ui/public"];
+const UI_WATCH_DIRS: [&str; 1] = ["ui/src"];
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -17,13 +17,11 @@ fn main() {
     }
 
     println!("cargo:rerun-if-changed=ui/package.json");
-    println!("cargo:rerun-if-changed=ui/webpack.config.js");
-    println!("cargo:rerun-if-changed=ui/.swcrc");
 
     // Build the UI.
     let profile = std::env::var("PROFILE").unwrap();
     let npm_action = match profile.as_str() {
-        "debug" => "build-dev",
+        "debug" => "build",
         "release" => "build",
         _ => unimplemented!(),
     };

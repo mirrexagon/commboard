@@ -24,9 +24,14 @@ fn index() -> content::RawHtml<&'static str> {
     content::RawHtml(include_str!("../ui/dist/index.html"))
 }
 
-#[get("/bundle.js")]
+#[get("/index.js")]
 fn index_bundle() -> content::RawJavaScript<&'static str> {
-    content::RawJavaScript(include_str!("../ui/dist/bundle.js"))
+    content::RawJavaScript(include_str!("../ui/dist/index.js"))
+}
+
+#[get("/index.css")]
+fn index_css() -> content::RawCss<&'static str> {
+    content::RawCss(include_str!("../ui/dist/index.css"))
 }
 
 #[launch]
@@ -60,7 +65,7 @@ fn rocket() -> _ {
     let board = Mutex::new(board);
 
     rocket::build()
-        .mount("/", routes![index, index_bundle])
+        .mount("/", routes![index, index_bundle, index_css])
         .mount(
             "/api",
             routes![
