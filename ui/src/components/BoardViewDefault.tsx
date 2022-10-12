@@ -1,7 +1,8 @@
-import React, { FC } from "react";
-import "./BoardViewDefault.css";
+import type { Component } from "solid-js";
 
-import * as API from "./ApiTypes";
+import "./BoardViewDefault.module.css";
+
+import * as API from "../ApiTypes";
 
 import CardColumn from "./CardColumn";
 
@@ -11,7 +12,7 @@ interface BoardViewDefaultProps {
     selectedCardId: API.CardId;
 }
 
-const BoardViewDefault: FC<BoardViewDefaultProps> = (props) => {
+const BoardViewDefault: Component<BoardViewDefaultProps> = (props) => {
     const cards = props.cardOrder.map((cardId) => props.cards[cardId]);
 
     return <CardColumn cards={cards} selectedCardId={props.selectedCardId} />;

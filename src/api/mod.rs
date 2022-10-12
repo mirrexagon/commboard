@@ -36,6 +36,8 @@ pub fn perform_action(
     let start = Instant::now();
 
     let mut board = board.lock().unwrap();
+    
+    info!("Performing action: {:?}", &action.0);
 
     let result = board
         .perform_action(&action.0)
