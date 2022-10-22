@@ -31,8 +31,8 @@ const Card: Component<CardProps> = (props) => {
     let ref: HTMLDivElement;
 
     createEffect(() => {
-        if (ref && props.selected) {
-            ref.scrollIntoView({ block: "nearest" });
+        if (props.selected) {
+            ref?.scrollIntoView({ block: "nearest" });
         }
     });
 
