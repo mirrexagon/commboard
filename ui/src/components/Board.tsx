@@ -47,20 +47,32 @@ const Board: Component<BoardProps> = (props) => {
         type: "Save",
     }));
 
-    props.bindKey(["ViewBoard", "ViewCard"], ["j"], () => ({
-        type: "SelectCardVerticalOffset",
-        offset: 1,
-    }));
+    props.bindKey(
+        ["ViewBoard", "ViewCard"],
+        ["j"],
+        (appState, uiMode, preventDefault) => {
+            return {
+                type: "SelectCardVerticalOffset",
+                offset: 1,
+            };
+        }
+    );
 
-    props.bindKey(["ViewBoard", "ViewCard"], ["k"], () => ({
-        type: "SelectCardVerticalOffset",
-        offset: -1,
-    }));
+    props.bindKey(
+        ["ViewBoard", "ViewCard"],
+        ["k"],
+        (appState, uiMode, preventDefault) => {
+            return {
+                type: "SelectCardVerticalOffset",
+                offset: -1,
+            };
+        }
+    );
 
     props.bindKey(
         ["ViewBoard", "ViewCard"],
         ["Shift", "j"],
-        (appState, uiMode) => {
+        (appState, uiMode, preventDefault) => {
             let offset = 1;
 
             return {
@@ -73,7 +85,7 @@ const Board: Component<BoardProps> = (props) => {
     props.bindKey(
         ["ViewBoard", "ViewCard"],
         ["Shift", "k"],
-        (appState, uiMode) => {
+        (appState, uiMode, preventDefault) => {
             let offset = 1;
 
             return {
@@ -83,24 +95,32 @@ const Board: Component<BoardProps> = (props) => {
         }
     );
 
-    props.bindKey(["ViewBoard", "ViewCard"], ["h"], (appState, uiMode) => {
-        return {
-            type: "SelectCardHorizontalOffset",
-            offset: -1,
-        };
-    });
+    props.bindKey(
+        ["ViewBoard", "ViewCard"],
+        ["h"],
+        (appState, uiMode, preventDefault) => {
+            return {
+                type: "SelectCardHorizontalOffset",
+                offset: -1,
+            };
+        }
+    );
 
-    props.bindKey(["ViewBoard", "ViewCard"], ["l"], (appState, uiMode) => {
-        return {
-            type: "SelectCardHorizontalOffset",
-            offset: 1,
-        };
-    });
+    props.bindKey(
+        ["ViewBoard", "ViewCard"],
+        ["l"],
+        (appState, uiMode, preventDefault) => {
+            return {
+                type: "SelectCardHorizontalOffset",
+                offset: 1,
+            };
+        }
+    );
 
     props.bindKey(
         ["ViewBoard", "ViewCard"],
         ["Shift", "h"],
-        (appState, uiMode) => {
+        (appState, uiMode, preventDefault) => {
             return {
                 type: "MoveCurrentCardHorizontalInCategory",
                 offset: -1,
@@ -111,7 +131,7 @@ const Board: Component<BoardProps> = (props) => {
     props.bindKey(
         ["ViewBoard", "ViewCard"],
         ["Shift", "l"],
-        (appState, uiMode) => {
+        (appState, uiMode, preventDefault) => {
             return {
                 type: "MoveCurrentCardHorizontalInCategory",
                 offset: 1,
@@ -123,44 +143,62 @@ const Board: Component<BoardProps> = (props) => {
         type: "NewCard",
     }));
 
-    props.bindKey(["ViewBoard"], ["d"], (appState, uiMode) => {
+    props.bindKey(["ViewBoard"], ["d"], (appState, uiMode, preventDefault) => {
         return {
             type: "DeleteCurrentCard",
         };
     });
 
-    props.bindKey(["ViewBoard"], ["Enter"], (appState, uiMode) => {
-        if (appState.interaction_state.selection.card_id != null) {
-            props.setUiMode("ViewCard");
+    props.bindKey(
+        ["ViewBoard"],
+        ["Enter"],
+        (appState, uiMode, preventDefault) => {
+            if (appState.interaction_state.selection.card_id != null) {
+                props.setUiMode("ViewCard");
+            }
         }
-    });
+    );
 
-    props.bindKey(["ViewCard"], ["Escape"], (appState, uiMode) => {
-        props.setUiMode("ViewBoard");
-    });
+    props.bindKey(
+        ["ViewCard"],
+        ["Escape"],
+        (appState, uiMode, preventDefault) => {
+            props.setUiMode("ViewBoard");
+        }
+    );
 
     const [categorySelectText, setCategorySelectText] = createSignal("");
     let categorySelectorElement: HTMLInputElement;
 
-    props.bindKey(["ViewBoard"], ["c"], (appState, uiMode) => {
-        setCategorySelectText("");
+    props.bindKey(["ViewBoard"], ["c"], (appState, uiMode, preventDefault) => {
+        // Prevent from entering newline in the input we are about to focus.
+        preventDefault();
 
+        setCategorySelectText("");
         props.setUiMode("SelectCategory");
     });
 
-    props.bindKey(["SelectCategory"], ["Enter"], (appState, uiMode) => {
-        props.setUiMode("ViewBoard");
+    props.bindKey(
+        ["SelectCategory"],
+        ["Enter"],
+        (appState, uiMode, preventDefault) => {
+            props.setUiMode("ViewBoard");
 
-        return {
-            type: "ViewCategory",
-            category: categorySelectText(),
-        };
-    });
+            return {
+                type: "ViewCategory",
+                category: categorySelectText(),
+            };
+        }
+    );
 
-    props.bindKey(["SelectCategory"], ["Escape"], (appState, uiMode) => {
-        // Cancel selecting category.
-        props.setUiMode("ViewBoard");
-    });
+    props.bindKey(
+        ["SelectCategory"],
+        ["Escape"],
+        (appState, uiMode, preventDefault) => {
+            // Cancel selecting category.
+            props.setUiMode("ViewBoard");
+        }
+    );
 
     // While viewing category, press Escape to go back to default view.
     props.bindKey(["ViewBoard"], ["Escape"], () => ({

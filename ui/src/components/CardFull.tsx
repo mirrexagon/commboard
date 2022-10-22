@@ -30,64 +30,91 @@ const CardFull: Component<CardFullProps> = (props) => {
         }
     });
 
-    props.bindKey(["ViewCard"], ["Enter"], (appState, uiMode) => {
-        props.setUiMode("EditCardText");
-        inputElement?.focus();
-    });
+    props.bindKey(
+        ["ViewCard"],
+        ["Enter"],
+        (appState, uiMode, preventDefault) => {
+            // Prevent from entering newline in the textarea we are about to focus.
+            preventDefault();
 
-    props.bindKey(["EditCardText"], ["Escape"], (appState, uiMode) => {
-        props.setUiMode("ViewCard");
+            props.setUiMode("EditCardText");
+        }
+    );
 
-        return {
-            type: "SetCurrentCardText",
-            text: editedText(),
-        };
-    });
+    props.bindKey(
+        ["EditCardText"],
+        ["Escape"],
+        (appState, uiMode, preventDefault) => {
+            props.setUiMode("ViewCard");
+
+            return {
+                type: "SetCurrentCardText",
+                text: editedText(),
+            };
+        }
+    );
 
     const [tagSelectText, setTagSelectText] = createSignal("");
 
-    props.bindKey(["ViewCard"], ["a"], (appState, uiMode) => {
-        setTagSelectText("");
+    props.bindKey(["ViewCard"], ["a"], (appState, uiMode, preventDefault) => {
+        // Prevent from entering newline in the textarea we are about to focus.
+        preventDefault();
 
+        setTagSelectText("");
         props.setUiMode("AddTagFromViewCard");
     });
 
-    props.bindKey(["AddTagFromViewCard"], ["Enter"], (appState, uiMode) => {
-        props.setUiMode("ViewCard");
+    props.bindKey(
+        ["AddTagFromViewCard"],
+        ["Enter"],
+        (appState, uiMode, preventDefault) => {
+            props.setUiMode("ViewCard");
 
-        return {
-            type: "AddTagToCurrentCard",
-            tag: tagSelectText(),
-        };
-    });
+            return {
+                type: "AddTagToCurrentCard",
+                tag: tagSelectText(),
+            };
+        }
+    );
 
-    props.bindKey(["AddTagFromViewCard"], ["Escape"], (appState, uiMode) => {
-        // Cancel adding tag.
-        props.setUiMode("ViewCard");
-    });
+    props.bindKey(
+        ["AddTagFromViewCard"],
+        ["Escape"],
+        (appState, uiMode, preventDefault) => {
+            // Cancel adding tag.
+            props.setUiMode("ViewCard");
+        }
+    );
 
-    props.bindKey(["ViewCard"], ["d"], (appState, uiMode) => {
-        setTagSelectText("");
-
+    props.bindKey(["ViewCard"], ["d"], (appState, uiMode, preventDefault) => {
         // Prevent from entering newline in the input we are about to focus.
-        e.preventDefault();
+        preventDefault();
 
+        setTagSelectText("");
         props.setUiMode("DeleteTagFromViewCard");
     });
 
-    props.bindKey(["DeleteTagFromViewCard"], ["Enter"], (appState, uiMode) => {
-        props.setUiMode("ViewCard");
+    props.bindKey(
+        ["DeleteTagFromViewCard"],
+        ["Enter"],
+        (appState, uiMode, preventDefault) => {
+            props.setUiMode("ViewCard");
 
-        return {
-            type: "DeleteTagFromCurrentCard",
-            tag: tagSelectText(),
-        };
-    });
+            return {
+                type: "DeleteTagFromCurrentCard",
+                tag: tagSelectText(),
+            };
+        }
+    );
 
-    props.bindKey(["DeleteTagFromViewCard"], ["Escape"], (appState, uiMode) => {
-        // Cancel deleting tag.
-        props.setUiMode("ViewCard");
-    });
+    props.bindKey(
+        ["DeleteTagFromViewCard"],
+        ["Escape"],
+        (appState, uiMode, preventDefault) => {
+            // Cancel deleting tag.
+            props.setUiMode("ViewCard");
+        }
+    );
 
     return (
         <div class={styles.cardFull}>
