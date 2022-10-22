@@ -18,12 +18,14 @@ interface CardFullProps {
 }
 
 const CardFull: Component<CardFullProps> = (props) => {
-    const isEditingText = props.uiMode == "EditCardText";
-    let inputElement: HTMLTextAreaElement;
+    const isEditingText = () => props.uiMode == "EditCardText";
     const [editedText, setEditedText] = createSignal(props.card.text);
+    let inputElement: HTMLTextAreaElement;
 
     createEffect(() => {
-        if (!isEditingText) {
+        if (isEditingText()) {
+            inputElement?.focus();
+        } else {
             setEditedText(props.card.text);
         }
     });
@@ -42,16 +44,12 @@ const CardFull: Component<CardFullProps> = (props) => {
         };
     });
 
-    const isAddingTag = props.uiMode == "AddTagFromViewCard";
-    const isDeletingTag = props.uiMode == "DeleteTagFromViewCard";
     const [tagSelectText, setTagSelectText] = createSignal("");
-    let tagSelectorElement: HTMLInputElement;
 
     props.bindKey(["ViewCard"], ["a"], (appState, uiMode) => {
         setTagSelectText("");
 
         props.setUiMode("AddTagFromViewCard");
-        tagSelectorElement?.focus();
     });
 
     props.bindKey(["AddTagFromViewCard"], ["Enter"], (appState, uiMode) => {
@@ -75,7 +73,6 @@ const CardFull: Component<CardFullProps> = (props) => {
         e.preventDefault();
 
         props.setUiMode("DeleteTagFromViewCard");
-        tagSelectorElement?.focus();
     });
 
     props.bindKey(["DeleteTagFromViewCard"], ["Enter"], (appState, uiMode) => {
@@ -98,7 +95,9 @@ const CardFull: Component<CardFullProps> = (props) => {
                 <h3>{props.card.id}</h3>
 
                 <div
-                    style={{ visibility: isEditingText ? "hidden" : "visible" }}
+                    style={{
+                        visibility: isEditingText() ? "hidden" : "visible",
+                    }}
                     class={styles.cardFullTextStatic}
                 >
                     {props.card.text}
@@ -106,7 +105,9 @@ const CardFull: Component<CardFullProps> = (props) => {
 
                 <textarea
                     ref={inputElement}
-                    style={{ visibility: isEditingText ? "visible" : "hidden" }}
+                    style={{
+                        visibility: isEditingText() ? "visible" : "hidden",
+                    }}
                     class={styles.cardFullTextTextarea}
                     value={editedText()}
                     onInput={(e) => setEditedText(e.currentTarget.value)}
@@ -115,8 +116,10 @@ const CardFull: Component<CardFullProps> = (props) => {
                 <TagList tags={props.card.tags} />
 
                 <Selector
-                    inputRef={tagSelectorElement}
-                    visible={isAddingTag || isDeletingTag}
+                    visible={
+                        props.uiMode == "AddTagFromViewCard" ||
+                        props.uiMode == "DeleteTagFromViewCard"
+                    }
                     value={tagSelectText()}
                     suggestions={props.allTags}
                     onInput={(e) => setTagSelectText(e.currentTarget.value)}

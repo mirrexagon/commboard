@@ -28,17 +28,17 @@ interface CardProps {
 
 const Card: Component<CardProps> = (props) => {
     // Scroll this card into view if it is selected.
-    let scrollRef: HTMLDivElement;
+    let ref: HTMLDivElement;
 
     createEffect(() => {
-        if (scrollRef && props.selected) {
-            scrollRef.scrollIntoView({ block: "nearest" });
+        if (ref && props.selected) {
+            ref.scrollIntoView({ block: "nearest" });
         }
     });
 
     return (
         <div
-            ref={scrollRef}
+            ref={ref}
             classList={{
                 [styles.cardContainer]: true,
                 [styles.cardContainerSelected]: props.selected,

@@ -13,9 +13,12 @@ interface BoardViewDefaultProps {
 }
 
 const BoardViewDefault: Component<BoardViewDefaultProps> = (props) => {
-    const cards = props.cardOrder.map((cardId) => props.cards[cardId]);
-
-    return <CardColumn cards={cards} selectedCardId={props.selectedCardId} />;
+    return (
+        <CardColumn
+            cards={props.cardOrder.map((cardId) => props.cards[cardId])}
+            selectedCardId={props.selectedCardId}
+        />
+    );
 };
 
 export default BoardViewDefault;

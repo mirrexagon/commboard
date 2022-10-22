@@ -1,10 +1,9 @@
 import type { Component, JSX } from "solid-js";
-import { Show, For, createSignal } from "solid-js";
+import { Show, For, createSignal, createEffect } from "solid-js";
 
 import styles from "./Selector.module.css";
 
 interface SelectorProps {
-    inputRef: HTMLInputElement;
     visible: boolean;
     value: string;
     suggestions: string[];
@@ -12,9 +11,13 @@ interface SelectorProps {
 }
 
 const Selector: Component<SelectorProps> = (props) => {
-    const filteredSuggestions = props.suggestions.filter((s) =>
-        s.toLowerCase().includes(props.value.toLowerCase())
-    );
+    let inputRef: HTMLInputElement;
+
+    createEffect(() => {
+        if (props.visible) {
+            inputRef?.focus();
+        }
+    });
 
     return (
         <div
@@ -23,14 +26,18 @@ const Selector: Component<SelectorProps> = (props) => {
         >
             <div class={styles.selector}>
                 <input
-                    ref={props.inputRef}
+                    ref={inputRef}
                     class={styles.selectorText}
                     value={props.value}
                     onInput={props.onInput}
                 />
 
                 <ul class={styles.selectorSuggestions}>
-                    <For each={filteredSuggestions}>
+                    <For
+                        each={props.suggestions.filter((s) =>
+                            s.toLowerCase().includes(props.value.toLowerCase())
+                        )}
+                    >
                         {(s, i) => (
                             <li class={styles.selectorSuggestion}>{s}</li>
                         )}

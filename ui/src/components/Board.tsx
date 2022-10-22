@@ -43,21 +43,6 @@ interface BoardProps {
 }
 
 const Board: Component<BoardProps> = (props) => {
-    const boardView = props.appState.current_category_view ? (
-        <BoardViewCategory
-            cards={props.appState.cards}
-            selectedCardId={props.appState.interaction_state.selection.card_id!}
-            selectedTag={props.appState.interaction_state.selection.tag!}
-            categoryView={props.appState.current_category_view}
-        />
-    ) : (
-        <BoardViewDefault
-            cards={props.appState.cards}
-            cardOrder={props.appState.card_order}
-            selectedCardId={props.appState.interaction_state.selection.card_id!}
-        />
-    );
-
     props.bindKey(["ViewBoard"], ["w"], () => ({
         type: "Save",
     }));
@@ -154,7 +139,6 @@ const Board: Component<BoardProps> = (props) => {
         props.setUiMode("ViewBoard");
     });
 
-    const isSelectingCategory = props.uiMode == "SelectCategory";
     const [categorySelectText, setCategorySelectText] = createSignal("");
     let categorySelectorElement: HTMLInputElement;
 
@@ -162,7 +146,6 @@ const Board: Component<BoardProps> = (props) => {
         setCategorySelectText("");
 
         props.setUiMode("SelectCategory");
-        categorySelectorElement?.focus();
     });
 
     props.bindKey(["SelectCategory"], ["Enter"], (appState, uiMode) => {
@@ -191,9 +174,33 @@ const Board: Component<BoardProps> = (props) => {
                 categories={props.appState.categories}
                 uiMode={props.uiMode}
             />
-
-            <div class={styles.boardViewContainer}>{boardView}</div>
-
+            const boardView = props.appState.current_category_view ? ( ) : ( );
+            <div class={styles.boardViewContainer}>
+                <Show
+                    when={props.appState.current_category_view != null}
+                    fallback={
+                        <BoardViewDefault
+                            cards={props.appState.cards}
+                            cardOrder={props.appState.card_order}
+                            selectedCardId={
+                                props.appState.interaction_state.selection
+                                    .card_id!
+                            }
+                        />
+                    }
+                >
+                    <BoardViewCategory
+                        cards={props.appState.cards}
+                        selectedCardId={
+                            props.appState.interaction_state.selection.card_id!
+                        }
+                        selectedTag={
+                            props.appState.interaction_state.selection.tag!
+                        }
+                        categoryView={props.appState.current_category_view!}
+                    />
+                </Show>
+            </div>
             <Show
                 when={
                     props.appState.interaction_state.selection.card_id &&
@@ -215,10 +222,9 @@ const Board: Component<BoardProps> = (props) => {
                     setUiMode={props.setUiMode}
                 />
             </Show>
-
             <Selector
-                inputRef={categorySelectorElement}
-                visible={isSelectingCategory}
+                ref={categorySelectorElement}
+                visible={props.uiMode == "SelectCategory"}
                 value={categorySelectText()}
                 suggestions={props.appState.categories}
                 onInput={(e) => setCategorySelectText(e.currentTarget.value)}
