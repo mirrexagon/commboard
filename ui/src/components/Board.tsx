@@ -174,7 +174,6 @@ const Board: Component<BoardProps> = (props) => {
                 categories={props.appState.categories}
                 uiMode={props.uiMode}
             />
-            const boardView = props.appState.current_category_view ? ( ) : ( );
             <div class={styles.boardViewContainer}>
                 <Show
                     when={props.appState.current_category_view != null}
