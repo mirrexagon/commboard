@@ -1,5 +1,5 @@
 import type { Component } from "solid-js";
-import { createEffect } from "solid-js";
+import { createEffect, JSX } from "solid-js";
 
 import styles from "./Card.module.css";
 
@@ -24,6 +24,7 @@ interface CardProps {
     text: string;
     tags: API.Tag[];
     selected: boolean;
+    onMouseDown?: (e: MouseEvent, cardId: API.CardId) => void;
 }
 
 const Card: Component<CardProps> = (props) => {
@@ -43,6 +44,9 @@ const Card: Component<CardProps> = (props) => {
                 [styles.cardContainer]: true,
                 [styles.cardContainerSelected]: props.selected,
             }}
+            onMouseDown={(e) =>
+                props.onMouseDown && props.onMouseDown(e, props.id)
+            }
         >
             <p>{props.id}</p>
 

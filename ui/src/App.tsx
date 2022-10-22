@@ -35,6 +35,8 @@ export type BindKeyFunction = (
 
 export type SetUiModeFunction = (newMode: UiMode) => void;
 
+export type PerformActionFunction = (action: API.Action) => void;
+
 export interface UiState {
     appState: Resource<API.AppState>;
     refetchAppState: () => void;
@@ -62,7 +64,7 @@ const App: Component = () => {
             body: JSON.stringify(action),
         });
 
-    const performAction = (action: API.Action) =>
+    const performAction: PerformActionFunction = (action) =>
         performActionBase(action).then(() => refetchAppState());
 
     // -- Key bindings --
@@ -141,6 +143,7 @@ const App: Component = () => {
                 uiMode={uiMode()}
                 setUiMode={setUiMode}
                 bindKey={bindKey}
+                performAction={performAction}
             />
         </Show>
     );

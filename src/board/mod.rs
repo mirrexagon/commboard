@@ -21,6 +21,7 @@ pub enum Action {
     SetBoardName { name: String },
     NewCard,
     DeleteCurrentCard,
+    SelectCard { selection: CardSelection },
     SelectCardVerticalOffset { offset: isize },
     SelectCardHorizontalOffset { offset: isize },
     MoveCurrentCardVerticalOffset { offset: isize },
@@ -53,8 +54,8 @@ impl Default for InteractionState {
 /// - If only a card is selected, the default all card view is shown.
 /// - If both a card and a tag are selected, the category view for that tag is shown, with that card selected.
 /// - If no card is selected but a tag is selected, that is invalid.
-#[derive(Debug, Serialize)]
-struct CardSelection {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CardSelection {
     card_id: Option<CardId>,
     tag: Option<Tag>,
 }
@@ -229,6 +230,44 @@ impl Board {
 
             Action::NewCard => self.add_card().and(Ok(())),
             Action::DeleteCurrentCard => self.delete_current_card(),
+            Action::SelectCard {selection} => {
+                if selection.card_id.is_none()
+                {
+                    self.interaction_state.selection.card_id = None;
+                    self.interaction_state.selection.tag = None;
+                }
+
+                if self.interaction_state.selection.tag.is_none() && selection.tag.is_some()
+                {
+                    return Err(BoardError::NotInCategoryView);
+                }
+
+                if self.interaction_state.selection.tag.is_some() && selection.tag.is_none()
+                {
+                    return Err(BoardError::NoTagSelected);
+                }
+                
+                if !self.cards.contains_key(&selection.card_id.unwrap())
+                {
+                    return Err(BoardError::NoSuchCard);
+                }
+                
+                if let Some(ref tag_to_select) = selection.tag {
+                    if !self.get_all_tags().contains(tag_to_select)
+                    {
+                        return Err(BoardError::NoSuchTag);
+                    }
+                    
+                    if !self.cards.get(&selection.card_id.unwrap()).unwrap().has_tag(tag_to_select)
+                    {
+                        return Err(BoardError::CardDoesntHaveTag);
+                    }
+                }
+                
+
+                self.interaction_state.selection = selection.clone();
+                Ok(())
+            }
             Action::SelectCardVerticalOffset { offset } => self.move_selection_vertical(*offset),
             Action::SelectCardHorizontalOffset { offset } => {
                 self.move_selection_horizontal(*offset)
@@ -668,9 +707,15 @@ pub enum BoardError {
 
     #[error("I/O error")]
     IoError(#[from] io::Error),
+    
+    #[error("no such card")]
+    NoSuchCard,
 
     #[error("no such category")]
     NoSuchCategory,
+    
+    #[error("no such tag")]
+    NoSuchTag,
 
     #[error("card doesn't have the specified tag")]
     CardDoesntHaveTag,

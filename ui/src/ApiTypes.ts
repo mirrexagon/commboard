@@ -42,6 +42,7 @@ export interface Action {
         | "SetBoardName"
         | "NewCard"
         | "DeleteCurrentCard"
+        | "SelectCard"
         | "SelectCardVerticalOffset"
         | "SelectCardHorizontalOffset"
         | "MoveCurrentCardVerticalOffset"
@@ -57,4 +58,5 @@ export interface Action {
     text?: string;
     tag?: Tag;
     category?: CategoryName;
+    selection?: CardSelection;
 }

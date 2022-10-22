@@ -1,4 +1,5 @@
 import type { Component } from "solid-js";
+import type { PerformActionFunction } from "../App";
 
 import "./BoardViewDefault.module.css";
 
@@ -10,6 +11,7 @@ interface BoardViewDefaultProps {
     cards: API.Cards;
     cardOrder: API.CardId[];
     selectedCardId: API.CardId;
+    performAction: PerformActionFunction;
 }
 
 const BoardViewDefault: Component<BoardViewDefaultProps> = (props) => {
@@ -17,6 +19,8 @@ const BoardViewDefault: Component<BoardViewDefaultProps> = (props) => {
         <CardColumn
             cards={props.cardOrder.map((cardId) => props.cards[cardId])}
             selectedCardId={props.selectedCardId}
+            tag={null}
+            performAction={props.performAction}
         />
     );
 };

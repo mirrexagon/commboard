@@ -9,7 +9,9 @@ import Card from "./Card";
 
 interface CardColumnProps {
     cards: API.Card[];
-    selectedCardId: API.CardId | null;
+    tag: null | API.Tag;
+    selectedCardId: null | API.CardId;
+    performAction: PerformActionFunction;
 }
 
 const CardColumn: Component<CardColumnProps> = (props) => {
@@ -23,6 +25,15 @@ const CardColumn: Component<CardColumnProps> = (props) => {
                             text={card.text}
                             tags={card.tags}
                             selected={props.selectedCardId == card.id}
+                            onMouseDown={(e, cardId) => {
+                                props.performAction({
+                                    type: "SelectCard",
+                                    selection: {
+                                        card_id: cardId,
+                                        tag: props.tag,
+                                    },
+                                });
+                            }}
                         />
                     </li>
                 )}

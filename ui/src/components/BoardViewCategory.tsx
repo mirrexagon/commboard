@@ -3,14 +3,17 @@ import { For } from "solid-js";
 
 import styles from "./BoardViewCategory.module.css";
 
-import * as API from "../ApiTypes";
+import type * as API from "../ApiTypes";
+import type { PerformActionFunction } from "../App";
 
 import CardColumn from "./CardColumn";
 
 interface CategoryColumnProps {
     name: API.CategoryName;
+    tag: API.Tag;
     cards: API.Card[];
     selectedCardId: API.CardId | null;
+    performAction: PerformActionFunction;
 }
 
 const CategoryColumn: Component<CategoryColumnProps> = (props) => {
@@ -20,6 +23,8 @@ const CategoryColumn: Component<CategoryColumnProps> = (props) => {
             <CardColumn
                 cards={props.cards}
                 selectedCardId={props.selectedCardId}
+                tag={props.tag}
+                performAction={props.performAction}
             />
         </div>
     );
@@ -30,19 +35,23 @@ interface BoardViewCategoryProps {
     categoryView: API.CategoryView;
     selectedCardId: API.CardId;
     selectedTag: API.Tag;
+    performAction: PerformActionFunction;
 }
 
 const BoardViewCategory: Component<BoardViewCategoryProps> = (props) => {
-    const [selectedCategoryName, selectedColumnName] =
-        props.selectedTag.split(":");
+    const selectedCategoryName = () => props.selectedTag.split(":")[0];
+    const selectedColumnName = () => props.selectedTag.split(":")[1];
 
     // In alphabetical order for consistency.
-    const columnNames = Object.keys(props.categoryView);
-    columnNames.sort();
+    const columnNames = () => {
+        let columnNames = Object.keys(props.categoryView);
+        columnNames.sort();
+        return columnNames;
+    };
 
     return (
         <ul class={styles.categoryView}>
-            <For each={columnNames}>
+            <For each={columnNames()}>
                 {(columnName, i) => {
                     const column = props.categoryView[columnName];
                     const cards = column.map((cardId) => props.cards[cardId]);
@@ -51,12 +60,14 @@ const BoardViewCategory: Component<BoardViewCategoryProps> = (props) => {
                         <li class={styles.categoryViewColumn}>
                             <CategoryColumn
                                 name={columnName}
+                                tag={`${selectedCategoryName()}:${columnName}`}
                                 cards={cards}
                                 selectedCardId={
-                                    columnName == selectedColumnName
+                                    columnName == selectedColumnName()
                                         ? props.selectedCardId
                                         : null
                                 }
+                                performAction={props.performAction}
                             />
                         </li>
                     );

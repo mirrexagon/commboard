@@ -3,8 +3,13 @@ import { Show, For, createSignal } from "solid-js";
 
 import styles from "./Board.module.css";
 
-import * as API from "../ApiTypes";
-import { UiMode, SetUiModeFunction, BindKeyFunction } from "../App";
+import type * as API from "../ApiTypes";
+import type {
+    UiMode,
+    SetUiModeFunction,
+    BindKeyFunction,
+    PerformActionFunction,
+} from "../App";
 
 import BoardViewDefault from "./BoardViewDefault";
 import BoardViewCategory from "./BoardViewCategory";
@@ -40,6 +45,7 @@ interface BoardProps {
     uiMode: UiMode;
     setUiMode: SetUiModeFunction;
     bindKey: BindKeyFunction;
+    performAction: PerformActionFunction;
 }
 
 const Board: Component<BoardProps> = (props) => {
@@ -223,6 +229,7 @@ const Board: Component<BoardProps> = (props) => {
                                 props.appState.interaction_state.selection
                                     .card_id!
                             }
+                            performAction={props.performAction}
                         />
                     }
                 >
@@ -235,6 +242,7 @@ const Board: Component<BoardProps> = (props) => {
                             props.appState.interaction_state.selection.tag!
                         }
                         categoryView={props.appState.current_category_view!}
+                        performAction={props.performAction}
                     />
                 </Show>
             </div>
