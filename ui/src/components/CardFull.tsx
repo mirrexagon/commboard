@@ -1,5 +1,5 @@
 import type { Component } from "solid-js";
-import { createSignal, createEffect } from "solid-js";
+import { createSignal, createEffect, Show } from "solid-js";
 
 import styles from "./CardFull.module.css";
 
@@ -94,24 +94,24 @@ const CardFull: Component<CardFullProps> = (props) => {
             <div class={styles.cardFullContent}>
                 <h3>{props.card.id}</h3>
 
-                <div
-                    style={{
-                        visibility: isEditingText() ? "hidden" : "visible",
-                    }}
-                    class={styles.cardFullTextStatic}
+                <Show
+                    when={isEditingText()}
+                    fallback={
+                        <div class={styles.cardFullTextStatic}>
+                            {props.card.text}
+                        </div>
+                    }
                 >
-                    {props.card.text}
-                </div>
-
-                <textarea
-                    ref={inputElement}
-                    style={{
-                        visibility: isEditingText() ? "visible" : "hidden",
-                    }}
-                    class={styles.cardFullTextTextarea}
-                    value={editedText()}
-                    onInput={(e) => setEditedText(e.currentTarget.value)}
-                />
+                    <textarea
+                        ref={inputElement}
+                        style={{
+                            visibility: isEditingText() ? "visible" : "hidden",
+                        }}
+                        class={styles.cardFullTextTextarea}
+                        value={editedText()}
+                        onInput={(e) => setEditedText(e.currentTarget.value)}
+                    />
+                </Show>
 
                 <TagList tags={props.card.tags} />
 

@@ -20,31 +20,32 @@ const Selector: Component<SelectorProps> = (props) => {
     });
 
     return (
-        <div
-            class={styles.selectorFullscreenContainer}
-            style={{ visibility: props.visible ? "visible" : "hidden" }}
-        >
-            <div class={styles.selector}>
-                <input
-                    ref={inputRef}
-                    class={styles.selectorText}
-                    value={props.value}
-                    onInput={props.onInput}
-                />
+        <Show when={props.visible}>
+            <div class={styles.selectorFullscreenContainer}>
+                <div class={styles.selector}>
+                    <input
+                        ref={inputRef}
+                        class={styles.selectorText}
+                        value={props.value}
+                        onInput={props.onInput}
+                    />
 
-                <ul class={styles.selectorSuggestions}>
-                    <For
-                        each={props.suggestions.filter((s) =>
-                            s.toLowerCase().includes(props.value.toLowerCase())
-                        )}
-                    >
-                        {(s, i) => (
-                            <li class={styles.selectorSuggestion}>{s}</li>
-                        )}
-                    </For>
-                </ul>
+                    <ul class={styles.selectorSuggestions}>
+                        <For
+                            each={props.suggestions.filter((s) =>
+                                s
+                                    .toLowerCase()
+                                    .includes(props.value.toLowerCase())
+                            )}
+                        >
+                            {(s, i) => (
+                                <li class={styles.selectorSuggestion}>{s}</li>
+                            )}
+                        </For>
+                    </ul>
+                </div>
             </div>
-        </div>
+        </Show>
     );
 };
 
