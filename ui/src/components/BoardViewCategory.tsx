@@ -53,15 +53,16 @@ const BoardViewCategory: Component<BoardViewCategoryProps> = (props) => {
         <ul>
             <For each={columnNames()}>
                 {(columnName, i) => {
-                    const column = props.categoryView[columnName];
-                    const cards = column.map((cardId) => props.cards[cardId]);
+                    const column = () => props.categoryView[columnName];
+                    const cards = () =>
+                        column().map((cardId) => props.cards[cardId]);
 
                     return (
                         <li class={styles.categoryViewColumn}>
                             <CategoryColumn
                                 name={columnName}
                                 tag={`${selectedCategoryName()}:${columnName}`}
-                                cards={cards}
+                                cards={cards()}
                                 selectedCardId={
                                     columnName == selectedColumnName()
                                         ? props.selectedCardId
