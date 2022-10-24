@@ -174,7 +174,6 @@ const Board: Component<BoardProps> = (props) => {
     );
 
     const [categorySelectText, setCategorySelectText] = createSignal("");
-    let categorySelectorElement: HTMLInputElement;
 
     props.bindKey(["ViewBoard"], ["c"], (appState, uiMode, preventDefault) => {
         // Prevent from entering newline in the input we are about to focus.
@@ -268,7 +267,6 @@ const Board: Component<BoardProps> = (props) => {
                 />
             </Show>
             <Selector
-                ref={categorySelectorElement}
                 visible={props.uiMode == "SelectCategory"}
                 value={categorySelectText()}
                 suggestions={props.appState.categories}
