@@ -18,7 +18,7 @@ interface CategoryColumnProps {
 
 const CategoryColumn: Component<CategoryColumnProps> = (props) => {
     return (
-        <div>
+        <>
             <h2>{props.name}</h2>
             <CardColumn
                 cards={props.cards}
@@ -26,7 +26,7 @@ const CategoryColumn: Component<CategoryColumnProps> = (props) => {
                 tag={props.tag}
                 performAction={props.performAction}
             />
-        </div>
+        </>
     );
 };
 
@@ -50,7 +50,7 @@ const BoardViewCategory: Component<BoardViewCategoryProps> = (props) => {
     };
 
     return (
-        <ul class={styles.categoryView}>
+        <ul>
             <For each={columnNames()}>
                 {(columnName, i) => {
                     const column = props.categoryView[columnName];

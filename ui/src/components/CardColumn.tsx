@@ -3,7 +3,8 @@ import { For } from "solid-js";
 
 import styles from "./CardColumn.module.css";
 
-import * as API from "../ApiTypes";
+import type * as API from "../ApiTypes";
+import type { PerformActionFunction } from "../App";
 
 import Card from "./Card";
 

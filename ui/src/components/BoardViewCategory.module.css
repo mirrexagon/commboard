@@ -1,5 +1,11 @@
+.category-view {
+    overflow-x: scroll;
+    white-space: nowrap;
+}
+
 .category-view-column {
     display: inline-block;
     vertical-align: top;
     padding-right: 30px;
+    white-space: normal;
 }
