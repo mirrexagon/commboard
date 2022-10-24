@@ -212,7 +212,7 @@ const Board: Component<BoardProps> = (props) => {
     }));
 
     return (
-        <div>
+        <>
             <BoardPanel
                 boardName={props.appState.board_name}
                 categories={props.appState.categories}
@@ -274,7 +274,7 @@ const Board: Component<BoardProps> = (props) => {
                 suggestions={props.appState.categories}
                 onInput={(e) => setCategorySelectText(e.currentTarget.value)}
             />
-        </div>
+        </>
     );
 };
 
