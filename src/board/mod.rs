@@ -31,21 +31,18 @@ pub enum Action {
     DeleteTagFromCurrentCard { tag: Tag },
     ViewDefault,
     ViewCategory { category: String },
-    //SetFilter { filter: String },
 }
 
 /// The state of a session interacting with the board.
 #[derive(Debug, Serialize)]
 struct InteractionState {
     selection: CardSelection,
-    filter: String,
 }
 
 impl Default for InteractionState {
     fn default() -> Self {
         Self {
             selection: Default::default(),
-            filter: String::new(),
         }
     }
 }
@@ -230,40 +227,38 @@ impl Board {
 
             Action::NewCard => self.add_card().and(Ok(())),
             Action::DeleteCurrentCard => self.delete_current_card(),
-            Action::SelectCard {selection} => {
-                if selection.card_id.is_none()
-                {
+            Action::SelectCard { selection } => {
+                if selection.card_id.is_none() {
                     self.interaction_state.selection.card_id = None;
                     self.interaction_state.selection.tag = None;
                 }
 
-                if self.interaction_state.selection.tag.is_none() && selection.tag.is_some()
-                {
+                if self.interaction_state.selection.tag.is_none() && selection.tag.is_some() {
                     return Err(BoardError::NotInCategoryView);
                 }
 
-                if self.interaction_state.selection.tag.is_some() && selection.tag.is_none()
-                {
+                if self.interaction_state.selection.tag.is_some() && selection.tag.is_none() {
                     return Err(BoardError::NoTagSelected);
                 }
-                
-                if !self.cards.contains_key(&selection.card_id.unwrap())
-                {
+
+                if !self.cards.contains_key(&selection.card_id.unwrap()) {
                     return Err(BoardError::NoSuchCard);
                 }
-                
+
                 if let Some(ref tag_to_select) = selection.tag {
-                    if !self.get_all_tags().contains(tag_to_select)
-                    {
+                    if !self.get_all_tags().contains(tag_to_select) {
                         return Err(BoardError::NoSuchTag);
                     }
-                    
-                    if !self.cards.get(&selection.card_id.unwrap()).unwrap().has_tag(tag_to_select)
+
+                    if !self
+                        .cards
+                        .get(&selection.card_id.unwrap())
+                        .unwrap()
+                        .has_tag(tag_to_select)
                     {
                         return Err(BoardError::CardDoesntHaveTag);
                     }
                 }
-                
 
                 self.interaction_state.selection = selection.clone();
                 Ok(())
@@ -707,13 +702,13 @@ pub enum BoardError {
 
     #[error("I/O error")]
     IoError(#[from] io::Error),
-    
+
     #[error("no such card")]
     NoSuchCard,
 
     #[error("no such category")]
     NoSuchCategory,
-    
+
     #[error("no such tag")]
     NoSuchTag,
 

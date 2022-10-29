@@ -28,7 +28,6 @@ export interface Card {
 
 export interface InteractionState {
     selection: CardSelection;
-    filter: string;
 }
 
 export interface CardSelection {
