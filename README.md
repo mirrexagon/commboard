@@ -32,16 +32,16 @@ Cards can have multiple tags with the same category and different values. This w
 - Cards
     - Add, delete
     - Move up and down in both default and category view
-    - Body text
-        - Render as Markdown
     - Tags
-        - List displayed on card
         - Add and remove
+        - List displayed on card
 - All cards in default order view
 - Category view
     - Select category to view, or go back to default view
 
 ### Todo
+- Body text
+    - Render as Markdown
 - Proper autocomplete
     - Tags when adding or removing
     - Categories when selecting for category view
@@ -53,5 +53,4 @@ Cards can have multiple tags with the same category and different values. This w
 - Use external editor (configure via TOML config file) instead of web one
     - Requires server to notify UI when editing is done, so it can update state. Maybe rewrite to use bidirectional comms, eg. WebSockets
     - Server can also send smaller updates that way
-- Select card that is clicked on
-    - Maybe redo card selection to not use vim keys but use mouse select and browser scroll isntead - opportunity to redo in SolidJS with TypeScript from the start
+
