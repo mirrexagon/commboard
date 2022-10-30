@@ -45,6 +45,7 @@ Cards can have multiple tags with the same category and different values. This w
 - Proper autocomplete
     - Tags when adding or removing
     - Categories when selecting for category view
+    - https://www.w3schools.com/howto/howto_js_autocomplete.asp
 - Tag colors based on category
 - Fetch and render embeds for links in card bodies
 - Better appearance
