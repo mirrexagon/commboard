@@ -130,7 +130,7 @@ const CardFull: Component<CardFullProps> = (props) => {
                     }
                 >
                     <textarea
-                        ref={inputElement}
+                        ref={inputElement!}
                         style={{
                             visibility: isEditingText() ? "visible" : "hidden",
                         }}
@@ -148,7 +148,11 @@ const CardFull: Component<CardFullProps> = (props) => {
                         props.uiMode == "DeleteTagFromViewCard"
                     }
                     value={tagSelectText()}
-                    suggestions={props.allTags}
+                    suggestions={
+                        props.uiMode == "DeleteTagFromViewCard"
+                            ? props.card.tags
+                            : props.allTags
+                    }
                     onInput={(e) => setTagSelectText(e.currentTarget.value)}
                 />
             </div>
