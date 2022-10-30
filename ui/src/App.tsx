@@ -1,11 +1,7 @@
-import type { Component, Accessor, Setter, Resource } from "solid-js";
+import type { Component, Accessor, Resource } from "solid-js";
 import { Show, createSignal, createResource, createEffect, on } from "solid-js";
 
-import {
-    createShortcut,
-    useKeyDownList,
-    useKeyDownSequence,
-} from "@solid-primitives/keyboard";
+import { useKeyDownList, useKeyDownSequence } from "@solid-primitives/keyboard";
 
 import { arrayEquals } from "@solid-primitives/utils";
 
