@@ -52,4 +52,4 @@ Cards can have multiple tags with the same category and different values. This w
 - Use external editor (configure via TOML config file) instead of web one
     - Requires server to notify UI when editing is done, so it can update state. Maybe rewrite to use bidirectional comms, eg. WebSockets
     - Server can also send smaller updates that way
-
+- https://github.com/1Password/typeshare - sync TypeScript API types
