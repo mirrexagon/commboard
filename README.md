@@ -53,4 +53,5 @@ Cards can have multiple tags with the same category and different values. This w
     - Requires server to notify UI when editing is done, so it can update state. Maybe rewrite to use bidirectional comms, eg. WebSockets
     - Server can also send smaller updates that way
 - https://github.com/1Password/typeshare - sync TypeScript API types
+- https://cetra3.github.io/blog/sharing-types-with-the-frontend/
 - https://docs.rs/intuitive/latest/intuitive/ TUI?
