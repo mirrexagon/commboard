@@ -35,7 +35,7 @@
 
             cargoHash = "sha256-r0EAj0xTl3cSgUwFhEXuTthqEzy0YbeRe/mG0LnJQak=";
 
-            nodeDependencies = npmlock2nix.node_modules {
+            nodeDependencies = npmlock2nix.v1.node_modules {
               src = ./ui;
             };
 
