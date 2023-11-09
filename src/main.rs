@@ -9,7 +9,7 @@ use env_logger::Env;
 
 use board::Board;
 
-mod api;
+//mod api;
 mod board;
 mod config;
 
