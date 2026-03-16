@@ -45,11 +45,11 @@ Cards can have multiple tags with the same category and different values. This w
 - Proper autocomplete
     - Tags when adding or removing
     - Categories when selecting for category view
-    - https://www.w3schools.com/howto/howto_js_autocomplete.asp
 - Tag colors based on category
 - Fetch and render embeds for links in card bodies
+- Paste images into a card to add them as embedded images
 - Better appearance
-- Use external editor (configure via TOML config file) instead of web one
+- Use external editor (configure via TOML config file) instead of web one - maybe make Commboard a TUI
     - Requires server to notify UI when editing is done, so it can update state. Maybe rewrite to use bidirectional comms, eg. WebSockets
     - Server can also send smaller updates that way
 - https://github.com/1Password/typeshare - sync TypeScript API types
