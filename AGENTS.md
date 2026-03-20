@@ -1,5 +1,6 @@
 ## Development guidelines
 
+- DESIGN.md is the hub for design and development documentation.
 - After implementing a feature, if it is listed in DESIGN.md, check it off.
 
 ---
