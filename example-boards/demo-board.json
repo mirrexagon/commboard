@@ -33,20 +33,18 @@
         "type:book"
       ]
     },
-    "5": {
-      "id": 5,
-      "text": "# Weekend trip ideas\n\n> Where should we go next?\n\n- Lisbon\n- Porto\n- Seville",
-      "tags": [
-        "idea:travel"
-      ]
+    "6": {
+      "id": 6,
+      "text": "New card",
+      "tags": []
     }
   },
-  "next_card_id": 6,
+  "next_card_id": 7,
   "card_order": [
     3,
+    6,
     1,
-    4,
     2,
-    5
+    4
   ]
 }

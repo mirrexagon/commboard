@@ -4,11 +4,19 @@ interface Props {
   boardName: string;
   cardCount: number;
   onRename: (name: string) => void;
+  onAddCard: () => void;
   darkMode: boolean;
   onToggleDark: () => void;
 }
 
-export function Header({ boardName, cardCount, onRename, darkMode, onToggleDark }: Props) {
+export function Header({
+  boardName,
+  cardCount,
+  onRename,
+  onAddCard,
+  darkMode,
+  onToggleDark,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(boardName);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +52,10 @@ export function Header({ boardName, cardCount, onRename, darkMode, onToggleDark 
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === "Enter") { e.preventDefault(); commit(); }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
+    }
     if (e.key === "Escape") cancel();
   }
 
@@ -74,11 +85,22 @@ export function Header({ boardName, cardCount, onRename, darkMode, onToggleDark 
         {cardCount} {cardCount === 1 ? "card" : "cards"}
       </span>
 
+      {/* Add card button */}
+      <button
+        onClick={onAddCard}
+        title="Add card"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors duration-150 select-none self-center"
+        aria-label="Add card"
+      >
+        <span class="text-base leading-none">＋</span>
+        <span>Add card</span>
+      </button>
+
       {/* Dark mode toggle */}
       <button
         onClick={onToggleDark}
         title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-        class="ml-auto flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 select-none text-base"
+        class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-150 select-none text-base self-center"
         aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
       >
         {darkMode ? "☀️" : "🌙"}

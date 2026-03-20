@@ -2,7 +2,7 @@ import * as esbuild from "npm:esbuild";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
 import { fromFileUrl } from "jsr:@std/path";
 
-import { loadOrCreate, save } from "./board.ts";
+import { loadOrCreate, save, type Card } from "./board.ts";
 
 // --- CLI ---
 
@@ -148,6 +148,94 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
 
     board = { ...board, name };
+    await save(boardPath, board);
+
+    return new Response(JSON.stringify(board), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  // POST /api/cards — add a new card (optional body: { text?: string })
+  if (pathname === "/api/cards" && req.method === "POST") {
+    let body: Record<string, unknown> = {};
+    try { body = await req.json(); } catch { /* body is optional */ }
+
+    const text = typeof body.text === "string" ? body.text : "New card";
+    const id = board.next_card_id;
+    const newCard: Card = { id, text, tags: [] };
+
+    board = {
+      ...board,
+      cards: { ...board.cards, [String(id)]: newCard },
+      next_card_id: board.next_card_id + 1,
+      card_order: [...board.card_order, id],
+    };
+    await save(boardPath, board);
+
+    return new Response(JSON.stringify(board), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  // DELETE /api/cards/:id — remove a card
+  const deleteMatch = pathname.match(/^\/api\/cards\/(\d+)$/);
+  if (deleteMatch && req.method === "DELETE") {
+    const id = parseInt(deleteMatch[1]);
+
+    if (!board.cards[String(id)]) {
+      return new Response(JSON.stringify({ error: "Card not found" }), {
+        status: 404,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    const { [String(id)]: _removed, ...remainingCards } = board.cards;
+    board = {
+      ...board,
+      cards: remainingCards,
+      card_order: board.card_order.filter((cid) => cid !== id),
+    };
+    await save(boardPath, board);
+
+    return new Response(JSON.stringify(board), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  // PUT /api/card_order — reorder cards
+  if (pathname === "/api/card_order" && req.method === "PUT") {
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    if (!Array.isArray(body.card_order)) {
+      return new Response(JSON.stringify({ error: "card_order must be an array" }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    const newOrder = (body.card_order as unknown[]).map(Number);
+    const existingIds = new Set(board.card_order);
+    const newIds = new Set(newOrder);
+
+    if (
+      newOrder.length !== board.card_order.length ||
+      ![...existingIds].every((id) => newIds.has(id))
+    ) {
+      return new Response(
+        JSON.stringify({ error: "card_order must contain exactly the existing card IDs" }),
+        { status: 400, headers: { "content-type": "application/json; charset=utf-8" } },
+      );
+    }
+
+    board = { ...board, card_order: newOrder };
     await save(boardPath, board);
 
     return new Response(JSON.stringify(board), {

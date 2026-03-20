@@ -69,12 +69,12 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
 - [x] Default global order view
 
 - Cards
-    - [ ] Add, delete cards
+    - [x] Add, delete cards
     - Body text
         - [ ] Edit
         - [x] Render body text as Markdown
         - [ ] Fetch and render embeds for links inline in card bodies
-    - [ ] Move card up and down in both default and category view
+    - [x] Move card up and down in both default and category view (drag-and-drop in global order)
 
 - Tags
     - [ ] Add and remove
