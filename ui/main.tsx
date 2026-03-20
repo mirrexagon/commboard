@@ -25,13 +25,13 @@ function EmptyState() {
   return (
     <div class="flex flex-col items-center justify-center h-64 text-center select-none">
       <div class="text-5xl mb-4">📋</div>
-      <p class="text-gray-500 font-medium">No cards yet</p>
-      <p class="text-gray-400 text-sm mt-1">Cards you add will appear here.</p>
+      <p class="text-gray-500 dark:text-gray-400 font-medium">No cards yet</p>
+      <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">Cards you add will appear here.</p>
     </div>
   );
 }
 
-function CardGrid({ cards }: { cards: Card[] }) {
+function CardGrid({ cards, darkMode }: { cards: Card[]; darkMode: boolean }) {
   if (cards.length === 0) return <EmptyState />;
 
   return (
@@ -41,7 +41,7 @@ function CardGrid({ cards }: { cards: Card[] }) {
       style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))"
     >
       {cards.map((card) => (
-        <CardItem key={card.id} card={card} />
+        <CardItem key={card.id} card={card} darkMode={darkMode} />
       ))}
     </div>
   );
@@ -52,6 +52,15 @@ function CardGrid({ cards }: { cards: Card[] }) {
 function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState<boolean>(
+    () => localStorage.getItem("darkMode") === "true",
+  );
+
+  // Sync dark class on <html> whenever darkMode changes.
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+    localStorage.setItem("darkMode", String(darkMode));
+  }, [darkMode]);
 
   useEffect(() => {
     fetchBoard()
@@ -63,6 +72,10 @@ function App() {
   useEffect(() => {
     if (board) document.title = board.name;
   }, [board?.name]);
+
+  function toggleDark() {
+    setDarkMode((d) => !d);
+  }
 
   async function renameBoard(name: string) {
     const res = await fetch("/api/board", {
@@ -76,10 +89,10 @@ function App() {
 
   if (error) {
     return (
-      <div class="min-h-screen flex items-center justify-center bg-gray-100">
-        <div class="bg-white rounded-xl shadow p-8 text-center max-w-sm">
+      <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-8 text-center max-w-sm">
           <p class="text-red-500 font-semibold text-lg mb-1">Failed to load board</p>
-          <p class="text-gray-500 text-sm">{error}</p>
+          <p class="text-gray-500 dark:text-gray-400 text-sm">{error}</p>
         </div>
       </div>
     );
@@ -87,7 +100,7 @@ function App() {
 
   if (!board) {
     return (
-      <div class="min-h-screen flex items-center justify-center bg-gray-100">
+      <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
         <p class="text-gray-400 animate-pulse">Loading…</p>
       </div>
     );
@@ -98,10 +111,16 @@ function App() {
     .filter(Boolean);
 
   return (
-    <div class="min-h-screen bg-gray-100">
-      <Header boardName={board.name} cardCount={cards.length} onRename={renameBoard} />
+    <div class="min-h-screen bg-gray-100 dark:bg-gray-950">
+      <Header
+        boardName={board.name}
+        cardCount={cards.length}
+        onRename={renameBoard}
+        darkMode={darkMode}
+        onToggleDark={toggleDark}
+      />
       <main class="max-w-screen-2xl mx-auto p-6">
-        <CardGrid cards={cards} />
+        <CardGrid cards={cards} darkMode={darkMode} />
       </main>
     </div>
   );

@@ -21,9 +21,10 @@ function parseTag(raw: string): ParsedTag {
 
 interface Props {
   card: Card;
+  darkMode: boolean;
 }
 
-export function CardItem({ card }: Props) {
+export function CardItem({ card, darkMode }: Props) {
   // marked.parse() is synchronous when no async extensions are registered.
   const html = marked.parse(card.text) as string;
 
@@ -32,7 +33,7 @@ export function CardItem({ card }: Props) {
     .map(parseTag);
 
   return (
-    <div class="bg-white rounded-xl ring-1 ring-black/[0.07] shadow-sm hover:shadow-md transition-shadow duration-150 flex flex-col min-w-0">
+    <div class="bg-white dark:bg-gray-800 rounded-xl ring-1 ring-black/[0.07] dark:ring-white/[0.08] shadow-sm hover:shadow-md transition-shadow duration-150 flex flex-col min-w-0">
 
       {/* Card body */}
       <div
@@ -42,9 +43,9 @@ export function CardItem({ card }: Props) {
 
       {/* Tags — only rendered when present */}
       {tags.length > 0 && (
-        <div class="px-4 pb-3 pt-1 border-t border-gray-100 flex flex-wrap gap-1.5">
+        <div class="px-4 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-1.5">
           {tags.map(({ category, value, raw }) => {
-            const [bg, text, border] = tagPalette(category);
+            const [bg, text, border] = tagPalette(category, darkMode);
             return (
               <span
                 key={raw}

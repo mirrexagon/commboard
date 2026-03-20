@@ -55,6 +55,7 @@ const HTML = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Commboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
   <style>
     /* Prose styles for Markdown rendered inside cards.
        Tailwind CDN can't see innerHTML so we define these by hand. */
@@ -79,6 +80,21 @@ const HTML = `<!DOCTYPE html>
     .card-prose blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75rem;
                              color: #64748b; margin-bottom: 0.5rem; }
     .card-prose hr { border: none; border-top: 1px solid #e2e8f0; margin: 0.6rem 0; }
+
+    /* Dark-mode overrides for card prose */
+    .dark .card-prose { color: #cbd5e1; }
+    .dark .card-prose h1 { color: #f1f5f9; }
+    .dark .card-prose h2 { color: #e2e8f0; }
+    .dark .card-prose h3 { color: #cbd5e1; }
+    .dark .card-prose a  { color: #60a5fa; }
+    .dark .card-prose a:hover { color: #93c5fd; }
+    .dark .card-prose strong { color: #e2e8f0; }
+    .dark .card-prose em     { color: #94a3b8; }
+    .dark .card-prose code   { background: #1e293b; color: #f472b6; }
+    .dark .card-prose pre    { background: #0f172a; border-color: #334155; }
+    .dark .card-prose pre code { color: #cbd5e1; }
+    .dark .card-prose blockquote { border-left-color: #475569; color: #94a3b8; }
+    .dark .card-prose hr { border-top-color: #334155; }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
