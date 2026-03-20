@@ -59,6 +59,21 @@ function App() {
       .catch((err: Error) => setError(err.message));
   }, []);
 
+  // Keep the browser tab title in sync with the board name.
+  useEffect(() => {
+    if (board) document.title = board.name;
+  }, [board?.name]);
+
+  async function renameBoard(name: string) {
+    const res = await fetch("/api/board", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setBoard(await res.json() as Board);
+  }
+
   if (error) {
     return (
       <div class="min-h-screen flex items-center justify-center bg-gray-100">
@@ -84,7 +99,7 @@ function App() {
 
   return (
     <div class="min-h-screen bg-gray-100">
-      <Header boardName={board.name} cardCount={cards.length} />
+      <Header boardName={board.name} cardCount={cards.length} onRename={renameBoard} />
       <main class="max-w-screen-2xl mx-auto p-6">
         <CardGrid cards={cards} />
       </main>

@@ -2,7 +2,7 @@ import * as esbuild from "npm:esbuild";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
 import { fromFileUrl } from "jsr:@std/path";
 
-import { loadOrCreate } from "./board.ts";
+import { loadOrCreate, save } from "./board.ts";
 
 // --- CLI ---
 
@@ -13,7 +13,7 @@ if (!boardPath) {
   Deno.exit(1);
 }
 
-const board = await loadOrCreate(boardPath);
+let board = await loadOrCreate(boardPath);
 console.log(`Board: "${board.name}" — ${board.card_order.length} card(s)`);
 
 // --- Bundle UI ---
@@ -91,7 +91,7 @@ const PORT = 8080;
 
 console.log(`Listening at http://localhost:${PORT}`);
 
-Deno.serve({ port: PORT }, (req: Request): Response => {
+Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
   const { pathname } = new URL(req.url);
 
   if (pathname === "/") {
@@ -106,7 +106,34 @@ Deno.serve({ port: PORT }, (req: Request): Response => {
     });
   }
 
-  if (pathname === "/api/board") {
+  if (pathname === "/api/board" && req.method === "GET") {
+    return new Response(JSON.stringify(board), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  if (pathname === "/api/board" && req.method === "PATCH") {
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    const name = typeof body.name === "string" ? body.name.trim() : null;
+    if (!name) {
+      return new Response(JSON.stringify({ error: "name must be a non-empty string" }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    board = { ...board, name };
+    await save(boardPath, board);
+
     return new Response(JSON.stringify(board), {
       headers: { "content-type": "application/json; charset=utf-8" },
     });
