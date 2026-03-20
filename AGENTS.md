@@ -3,8 +3,6 @@
 - DESIGN.md is the hub for design and development documentation.
 - After implementing a feature, if it is listed in DESIGN.md, check it off.
 
----
-
 ## Tech stack
 
 | Layer | Technology | Notes |
@@ -61,6 +59,8 @@ Run this before end-to-end testing. It is much faster than starting the server
 and catches most mistakes immediately.
 
 ## End-to-end testing pattern
+
+There are example board files in `example-boards/`.
 
 Use a `trap` so the server process is always killed when the bash script exits,
 including on error or tool timeout. Poll for readiness instead of sleeping a

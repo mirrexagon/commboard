@@ -1,0 +1,52 @@
+{
+  "name": "Renamed Board",
+  "cards": {
+    "1": {
+      "id": 1,
+      "text": "# Clothing idea\n\nLook into linen shirts for summer. Light, breathable, and they look great.\n\n- White\n- Navy\n- Olive",
+      "tags": [
+        "idea:clothing",
+        "status:todo"
+      ]
+    },
+    "2": {
+      "id": 2,
+      "text": "# The types of cheese\n\nHere is a good link: https://en.wikipedia.org/wiki/Cheese\n\nFavourites so far: **Comté**, **Manchego**, *Brie*.",
+      "tags": [
+        "legacy:reference",
+        "topic:food"
+      ]
+    },
+    "3": {
+      "id": 3,
+      "text": "# Fix login bug\n\nUsers occasionally see a 403 on first load after a long session. Likely a token refresh race condition.\n\n```\nGET /api/user → 403\n```",
+      "tags": [
+        "status:in-progress",
+        "type:bug"
+      ]
+    },
+    "4": {
+      "id": 4,
+      "text": "# Read *Thinking, Fast and Slow*\n\nDaniel Kahneman. On the reading list for ages.",
+      "tags": [
+        "status:todo",
+        "type:book"
+      ]
+    },
+    "5": {
+      "id": 5,
+      "text": "# Weekend trip ideas\n\n> Where should we go next?\n\n- Lisbon\n- Porto\n- Seville",
+      "tags": [
+        "idea:travel"
+      ]
+    }
+  },
+  "next_card_id": 6,
+  "card_order": [
+    3,
+    1,
+    4,
+    2,
+    5
+  ]
+}
