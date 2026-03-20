@@ -155,6 +155,45 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     });
   }
 
+  // PATCH /api/cards/:id — update a card's text
+  const patchCardMatch = pathname.match(/^\/api\/cards\/(\d+)$/);
+  if (patchCardMatch && req.method === "PATCH") {
+    const id = parseInt(patchCardMatch[1]);
+
+    if (!board.cards[String(id)]) {
+      return new Response(JSON.stringify({ error: "Card not found" }), {
+        status: 404,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    const text = typeof body.text === "string" ? body.text : null;
+    if (text === null) {
+      return new Response(JSON.stringify({ error: "text must be a string" }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    const updatedCard: Card = { ...board.cards[String(id)], text };
+    board = { ...board, cards: { ...board.cards, [String(id)]: updatedCard } };
+    await save(boardPath, board);
+
+    return new Response(JSON.stringify(board), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
   // POST /api/cards — add a new card (optional body: { text?: string })
   if (pathname === "/api/cards" && req.method === "POST") {
     let body: Record<string, unknown> = {};

@@ -39,10 +39,11 @@ interface CardGridProps {
   cards: Card[];
   darkMode: boolean;
   onDelete: (id: number) => void;
+  onUpdate: (id: number, text: string) => void;
   onReorder: (newOrder: number[]) => void;
 }
 
-function CardGrid({ cards, darkMode, onDelete, onReorder }: CardGridProps) {
+function CardGrid({ cards, darkMode, onDelete, onUpdate, onReorder }: CardGridProps) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
@@ -151,6 +152,7 @@ function CardGrid({ cards, darkMode, onDelete, onReorder }: CardGridProps) {
             isDragging={draggedId === card.id}
             isDropTarget={dropTargetId === card.id}
             onDelete={() => onDelete(card.id)}
+            onUpdate={(text) => onUpdate(card.id, text)}
             onDragStart={(e) => handleDragStart(e, card.id)}
             onDragEnter={(e) => handleDragEnter(e, card.id)}
             onDragOver={handleDragOver}
@@ -236,6 +238,16 @@ function App() {
     setBoard((await res.json()) as Board);
   }
 
+  async function updateCard(id: number, text: string) {
+    const res = await fetch(`/api/cards/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setBoard((await res.json()) as Board);
+  }
+
   async function deleteCard(id: number) {
     const res = await fetch(`/api/cards/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -297,6 +309,7 @@ function App() {
           cards={cards}
           darkMode={darkMode}
           onDelete={deleteCard}
+          onUpdate={updateCard}
           onReorder={reorderCards}
         />
       </main>
