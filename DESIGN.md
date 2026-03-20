@@ -80,7 +80,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
     - [ ] Add and remove
         - [ ] Autocomplete existing tags
     - [x] Displayed on card
-    - [x] Tag colors based on category - autogenerate based on the category text?
+    - [x] Tag colors based on category - autogenerate based on the category text
 
 - [ ] Category view
 - [ ] Select category to view, or go back to default view
