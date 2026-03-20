@@ -64,7 +64,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
 
 ## Feature tracking
 
-- [ ] Application that can be run and creates or opens a board file
+- [x] Application that can be run and creates or opens a board file
 
 - [ ] Default global order view
 
