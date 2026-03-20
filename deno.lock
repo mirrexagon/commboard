@@ -8,6 +8,7 @@
     "jsr:@std/path@*": "1.1.1",
     "jsr:@std/path@^1.0.6": "1.1.1",
     "npm:esbuild@*": "0.27.4",
+    "npm:marked@15": "15.0.12",
     "npm:preact@10": "10.29.0"
   },
   "jsr": {
@@ -199,12 +200,17 @@
       "scripts": true,
       "bin": true
     },
+    "marked@15.0.12": {
+      "integrity": "sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==",
+      "bin": true
+    },
     "preact@10.29.0": {
       "integrity": "sha512-wSAGyk2bYR1c7t3SZ3jHcM6xy0lcBcDel6lODcs9ME6Th++Dx2KU+6D3HD8wMMKGA8Wpw7OMd3/4RGzYRpzwRg=="
     }
   },
   "workspace": {
     "dependencies": [
+      "npm:marked@15",
       "npm:preact@10"
     ]
   }

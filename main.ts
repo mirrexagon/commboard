@@ -54,8 +54,34 @@ const HTML = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Commboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Prose styles for Markdown rendered inside cards.
+       Tailwind CDN can't see innerHTML so we define these by hand. */
+    .card-prose { font-size: 0.875rem; line-height: 1.65; color: #374151; }
+    .card-prose h1 { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.4rem; line-height: 1.35; }
+    .card-prose h2 { font-size: 0.9375rem; font-weight: 600; color: #1e293b; margin-bottom: 0.3rem; line-height: 1.35; }
+    .card-prose h3 { font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; }
+    .card-prose p  { margin-bottom: 0.5rem; }
+    .card-prose p:last-child { margin-bottom: 0; }
+    .card-prose ul { list-style-type: disc;     padding-left: 1.25rem; margin-bottom: 0.5rem; }
+    .card-prose ol { list-style-type: decimal;  padding-left: 1.25rem; margin-bottom: 0.5rem; }
+    .card-prose li { margin-bottom: 0.1rem; }
+    .card-prose a  { color: #2563eb; text-decoration: underline; }
+    .card-prose a:hover { color: #1d4ed8; }
+    .card-prose strong { font-weight: 600; color: #1e293b; }
+    .card-prose em     { color: #475569; }
+    .card-prose code   { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 0.25rem;
+                         font-size: 0.8125rem; font-family: ui-monospace, monospace; color: #be185d; }
+    .card-prose pre    { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem;
+                         border-radius: 0.5rem; overflow-x: auto; margin-bottom: 0.5rem; }
+    .card-prose pre code { background: none; padding: 0; color: #334155; }
+    .card-prose blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75rem;
+                             color: #64748b; margin-bottom: 0.5rem; }
+    .card-prose hr { border: none; border-top: 1px solid #e2e8f0; margin: 0.6rem 0; }
+  </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen">
   <div id="root"></div>
   <script type="module" src="/app.js"></script>
 </body>
