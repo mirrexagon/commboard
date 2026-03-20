@@ -72,15 +72,15 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
     - [ ] Add, delete cards
     - Body text
         - [ ] Edit
-        - [ ] Render body text as Markdown
+        - [x] Render body text as Markdown
         - [ ] Fetch and render embeds for links inline in card bodies
     - [ ] Move card up and down in both default and category view
 
 - Tags
     - [ ] Add and remove
         - [ ] Autocomplete existing tags
-    - [ ] Displayed on card
-    - [ ] Tag colors based on category - autogenerate based on the category text?
+    - [x] Displayed on card
+    - [x] Tag colors based on category - autogenerate based on the category text?
 
 - [ ] Category view
 - [ ] Select category to view, or go back to default view
