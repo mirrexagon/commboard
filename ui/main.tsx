@@ -5,6 +5,17 @@ import { Header } from "./components/Header.tsx";
 import { CardItem, type Card } from "./components/CardItem.tsx";
 import { tagPalette } from "./lib/colors.ts";
 
+// ---- Filter helper ----
+
+function matchesFilter(card: Card, query: string): boolean {
+  if (!query.trim()) return true;
+  const q = query.toLowerCase().trim();
+  return (
+    card.text.toLowerCase().includes(q) ||
+    card.tags.some((t) => t.toLowerCase().includes(q))
+  );
+}
+
 interface Board {
   name: string;
   cards: Record<string, Card>;
@@ -70,6 +81,8 @@ interface CardGridProps {
   cards: Card[];
   allTags: string[];
   darkMode: boolean;
+  /** When set, cards are filtered to those matching this query and drag-and-drop is disabled. */
+  filterQuery: string;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => void;
   onReorder: (newOrder: number[]) => void;
@@ -77,12 +90,30 @@ interface CardGridProps {
   onRemoveTag: (id: number, tag: string) => void;
 }
 
-function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag }: CardGridProps) {
+function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag }: CardGridProps) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
 
-  if (cards.length === 0) return <EmptyState />;
+  const isFiltering = filterQuery.trim().length > 0;
+  const displayCards = isFiltering
+    ? cards.filter((c) => matchesFilter(c, filterQuery))
+    : cards;
+
+  if (displayCards.length === 0) {
+    if (isFiltering) {
+      return (
+        <div class="flex flex-col items-center justify-center h-64 text-center select-none">
+          <div class="text-5xl mb-4">🔍</div>
+          <p class="text-gray-500 dark:text-gray-400 font-medium">No cards match your search</p>
+          <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">
+            Try a different search term or clear the filter.
+          </p>
+        </div>
+      );
+    }
+    return <EmptyState />;
+  }
 
   function handleDragStart(e: DragEvent, id: number) {
     setDraggedId(id);
@@ -109,7 +140,7 @@ function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onA
     e.preventDefault();
     if (draggedId === null || draggedId === targetId) { reset(); return; }
 
-    const ids = cards.map((c) => c.id);
+    const ids = displayCards.map((c) => c.id);
     const withoutDragged = ids.filter((id) => id !== draggedId);
     const insertIndex = withoutDragged.indexOf(targetId);
     if (insertIndex === -1) { reset(); return; }
@@ -136,7 +167,7 @@ function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onA
   function handleEndZoneDrop(e: DragEvent) {
     e.preventDefault();
     if (draggedId === null) { reset(); return; }
-    const ids = cards.map((c) => c.id).filter((id) => id !== draggedId);
+    const ids = displayCards.map((c) => c.id).filter((id) => id !== draggedId);
     ids.push(draggedId);
     onReorder(ids);
     reset();
@@ -150,7 +181,7 @@ function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onA
         class="grid gap-4 items-start"
         style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))"
       >
-        {cards.map((card) => (
+        {displayCards.map((card) => (
           <CardItem
             key={card.id}
             card={card}
@@ -158,6 +189,7 @@ function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onA
             darkMode={darkMode}
             isDragging={draggedId === card.id}
             isDropTarget={dropTargetId === card.id}
+            isDragDisabled={isFiltering}
             onDelete={() => onDelete(card.id)}
             onUpdate={(text) => onUpdate(card.id, text)}
             onAddTag={(tag) => onAddTag(card.id, tag)}
@@ -171,7 +203,7 @@ function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onA
         ))}
       </div>
 
-      {draggedId !== null && (
+      {draggedId !== null && !isFiltering && (
         <div
           class={[
             "h-16 rounded-xl border-2 border-dashed transition-colors duration-150 flex items-center justify-center",
@@ -205,6 +237,8 @@ interface CategoryColumnProps {
   cards: Card[];
   allTags: string[];
   darkMode: boolean;
+  /** When true, drag-and-drop is disabled (filter is active). */
+  isDragDisabled: boolean;
 
   // ── Drag state provided by CategoryView ──
   /** ID of the card currently being dragged (dimmed wherever it appears). */
@@ -243,6 +277,7 @@ function CategoryColumn({
   cards,
   allTags,
   darkMode,
+  isDragDisabled,
   activeDragId,
   dropTargetCardId,
   dropAtEnd,
@@ -288,17 +323,19 @@ function CategoryColumn({
 
       {/* Cards or empty-column drop target */}
       {cards.length === 0 ? (
-        <div
-          class={`${endZoneClass} h-20`}
-          onDragEnter={(e) => { e.preventDefault(); onDragEnterEndZone(); }}
-          onDragLeave={onDragLeaveEndZone}
-          onDragOver={onDragOver}
-          onDrop={(e) => { e.preventDefault(); onDropOnEndZone(); }}
-        >
-          <span class="text-xs font-medium select-none pointer-events-none">
-            {isCrossColumnTarget && isDropDisabled ? "Already in column" : "Drop here"}
-          </span>
-        </div>
+        !isDragDisabled && (
+          <div
+            class={`${endZoneClass} h-20`}
+            onDragEnter={(e) => { e.preventDefault(); onDragEnterEndZone(); }}
+            onDragLeave={onDragLeaveEndZone}
+            onDragOver={onDragOver}
+            onDrop={(e) => { e.preventDefault(); onDropOnEndZone(); }}
+          >
+            <span class="text-xs font-medium select-none pointer-events-none">
+              {isCrossColumnTarget && isDropDisabled ? "Already in column" : "Drop here"}
+            </span>
+          </div>
+        )
       ) : (
         <div class="flex flex-col gap-3">
           {cards.map((card) => (
@@ -309,6 +346,7 @@ function CategoryColumn({
               darkMode={darkMode}
               isDragging={activeDragId === card.id}
               isDropTarget={dropTargetCardId === card.id}
+              isDragDisabled={isDragDisabled}
               onDelete={() => onDelete(card.id)}
               onUpdate={(text) => onUpdate(card.id, text)}
               onAddTag={(tag) => onAddTag(card.id, tag)}
@@ -324,7 +362,7 @@ function CategoryColumn({
       )}
 
       {/* End-zone (shown at the bottom whenever any drag is active) */}
-      {anyDragActive && cards.length > 0 && (
+      {anyDragActive && !isDragDisabled && cards.length > 0 && (
         <div
           class={`${endZoneClass} h-12`}
           onDragEnter={(e) => { e.preventDefault(); onDragEnterEndZone(); }}
@@ -361,6 +399,8 @@ interface CategoryViewProps {
   category: string;
   allTags: string[];
   darkMode: boolean;
+  /** When set, cards in each column are filtered and drag-and-drop is disabled. */
+  filterQuery: string;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => void;
   onReorder: (newOrder: number[]) => void;
@@ -380,6 +420,7 @@ function CategoryView({
   category,
   allTags,
   darkMode,
+  filterQuery,
   onDelete,
   onUpdate,
   onReorder,
@@ -469,11 +510,36 @@ function CategoryView({
     }
   }
 
+  const isFiltering = filterQuery.trim().length > 0;
+
+  // When filtering, check if any cards match at all in this category view.
+  if (isFiltering) {
+    const anyMatch = allCards.some(
+      (c) => c.tags.some((t) => t.startsWith(category + ":")) && matchesFilter(c, filterQuery),
+    );
+    if (!anyMatch) {
+      return (
+        <div class="flex flex-col items-center justify-center h-64 text-center select-none">
+          <div class="text-5xl mb-4">🔍</div>
+          <p class="text-gray-500 dark:text-gray-400 font-medium">No cards match your search</p>
+          <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">
+            Try a different search term or clear the filter.
+          </p>
+        </div>
+      );
+    }
+  }
+
   return (
     <div class="flex gap-4 overflow-x-auto items-start min-h-64 px-1 py-1 pb-4">
       {values.map((v) => {
         const tag = `${category}:${v}`;
         const columnCards = allCards.filter((c) => c.tags.includes(tag));
+        // When a filter is active, only show matching cards; skip the whole column if none match.
+        const displayColumnCards = isFiltering
+          ? columnCards.filter((c) => matchesFilter(c, filterQuery))
+          : columnCards;
+        if (isFiltering && displayColumnCards.length === 0) return null;
 
         // ── Per-column drag state ──
         const ds = dragState;
@@ -488,9 +554,10 @@ function CategoryView({
             key={v}
             category={category}
             value={v}
-            cards={columnCards}
+            cards={displayColumnCards}
             allTags={allTags}
             darkMode={darkMode}
+            isDragDisabled={isFiltering}
             activeDragId={ds?.draggedId ?? null}
             dropTargetCardId={isThisTarget && !isDropDisabled ? (ds?.targetCardId ?? null) : null}
             dropAtEnd={isThisTarget && !isDropDisabled ? (ds?.atEnd ?? false) : false}
@@ -564,6 +631,7 @@ function App() {
     () => localStorage.getItem("darkMode") === "true",
   );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -737,6 +805,8 @@ function App() {
         activeCategory={activeCategory}
         allCategories={allCategories}
         onSelectCategory={setActiveCategory}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
       <main class="max-w-screen-2xl mx-auto p-6">
         {activeCategory ? (
@@ -745,6 +815,7 @@ function App() {
             category={activeCategory}
             allTags={allTags}
             darkMode={darkMode}
+            filterQuery={searchQuery}
             onDelete={deleteCard}
             onUpdate={updateCard}
             onReorder={reorderCards}
@@ -757,6 +828,7 @@ function App() {
             cards={cards}
             allTags={allTags}
             darkMode={darkMode}
+            filterQuery={searchQuery}
             onDelete={deleteCard}
             onUpdate={updateCard}
             onReorder={reorderCards}

@@ -88,7 +88,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
     - [x] Autocomplete categories when selecting for category view
 - [x] Change the value (probably by removing and adding tags) of a card's tag of the shown category by dragging it to another column. If a card has multiple tags with the same category, remove the tag corresponding to the source column and add the one corresponding to the destination column, and don't allow dragging a card to a column for a tag it already has.
 
-- [ ] Search/filter - search box to filter displayed cards on tag or body content text
+- [x] Search/filter - search box to filter displayed cards on tag or body content text
 
 - Embedded files
     - [ ] Add embedded files, eg. in virtual filesystem served by main executable webserver alongside UI, linked by relative path with Markdown - could be saved as base64

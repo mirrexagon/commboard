@@ -123,6 +123,8 @@ interface Props {
   isDragging: boolean;
   /** True while the cursor is over this card as a drop target */
   isDropTarget: boolean;
+  /** When true, dragging is completely disabled (e.g. while a search filter is active). */
+  isDragDisabled?: boolean;
   onDelete: () => void;
   onUpdate: (text: string) => void;
   onAddTag: (tag: string) => void;
@@ -140,6 +142,7 @@ export function CardItem({
   darkMode,
   isDragging,
   isDropTarget,
+  isDragDisabled = false,
   onDelete,
   onUpdate,
   onAddTag,
@@ -239,16 +242,16 @@ export function CardItem({
             : "ring-1 ring-black/[0.07] dark:ring-white/[0.08] hover:shadow-md",
         // Dim while being dragged
         isDragging ? "opacity-40" : "",
-        // Only show grab cursor in view mode
-        editing ? "cursor-default" : "cursor-grab active:cursor-grabbing select-none",
+        // Only show grab cursor in view mode (not when drag is disabled)
+        editing || isDragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing select-none",
       ].join(" ")}
-      // Disable drag while editing or adding a tag so interaction works normally.
-      draggable={!editing && !addingTag}
-      onDragStart={editing || addingTag ? undefined : onDragStart}
-      onDragEnter={editing || addingTag ? undefined : onDragEnter}
-      onDragOver={editing || addingTag ? undefined : onDragOver}
-      onDrop={editing || addingTag ? undefined : onDrop}
-      onDragEnd={editing || addingTag ? undefined : onDragEnd}
+      // Disable drag while editing, adding a tag, or when drag is globally disabled (e.g. filter active).
+      draggable={!editing && !addingTag && !isDragDisabled}
+      onDragStart={editing || addingTag || isDragDisabled ? undefined : onDragStart}
+      onDragEnter={editing || addingTag || isDragDisabled ? undefined : onDragEnter}
+      onDragOver={editing || addingTag || isDragDisabled ? undefined : onDragOver}
+      onDrop={editing || addingTag || isDragDisabled ? undefined : onDrop}
+      onDragEnd={editing || addingTag || isDragDisabled ? undefined : onDragEnd}
     >
       {/* ── Accent bar ── */}
       <div class="h-1.5 rounded-t-xl flex overflow-hidden">
