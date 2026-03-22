@@ -325,6 +325,7 @@ export function CardItem({
             class={[
               "w-full resize-none overflow-hidden",
               "px-4 pt-2 pb-2",
+              "min-h-[4rem]",
               "bg-transparent outline-none",
               "font-mono text-sm leading-relaxed",
               "text-gray-800 dark:text-gray-200",
