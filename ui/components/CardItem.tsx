@@ -327,7 +327,7 @@ export function CardItem({
       ) : (
         /* View mode — clicking enters edit mode */
         <div
-          class="card-prose px-4 pt-6 pb-4 flex-1 min-w-0 break-words cursor-text"
+          class="card-prose px-4 pt-10 pb-2 flex-1 min-w-0 break-words cursor-text"
           title="Click to edit"
           onClick={startEditing}
           dangerouslySetInnerHTML={{ __html: html }}
@@ -337,7 +337,7 @@ export function CardItem({
       {/* ── Tags ── */}
       <div
         class={[
-          "px-4 pb-3 pt-1 flex flex-wrap gap-1.5 items-center",
+          "px-4 pb-3 pt-2 flex flex-wrap gap-1.5 items-center",
           tags.length > 0 || addingTag
             ? "border-t border-gray-100 dark:border-gray-700"
             : "",
