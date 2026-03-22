@@ -1,3 +1,12 @@
+// 18 buckets at 20° spacing covers the full wheel with only clearly-named hues:
+//   red, vermillion, orange, amber, yellow, yellow-green, chartreuse, green,
+//   emerald, teal, cyan, sky, cornflower, blue, indigo, violet, magenta, rose.
+// Stride 7 is coprime to 18, so adjacent bucket indices jump 7×20° = 140°,
+// keeping numerically nearby hashes far apart on the wheel.
+const N_HUES = 18;
+const HUE_STEP = 20; // degrees between buckets
+const HUE_STRIDE = 7;
+
 /** Deterministically map a tag category name to a hue in [0, 360). */
 function categoryHue(category: string): number {
   // djb2 hash — stable, fast, good distribution
@@ -6,7 +15,11 @@ function categoryHue(category: string): number {
     h = ((h << 5) + h) ^ category.charCodeAt(i);
     h = h >>> 0; // keep unsigned 32-bit
   }
-  return h % 360;
+  // Map to a bucket, then permute via stride so numerically nearby buckets
+  // land on hues that are far apart on the wheel.
+  const bucket = h % N_HUES;
+  const spread = (bucket * HUE_STRIDE) % N_HUES;
+  return spread * HUE_STEP;
 }
 
 export interface TagColors {
