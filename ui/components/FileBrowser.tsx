@@ -86,20 +86,35 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
   const [draftPath, setDraftPath] = useState(file.path);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState<"copied" | "inserted" | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const copyTimerRef = useRef<number | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
 
-  function handleCopyPath() {
-    const url = `/files/${file.path}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = setTimeout(() => {
-        setCopied(false);
-        copyTimerRef.current = null;
-      }, 1500) as unknown as number;
-    });
+  function showFeedback(type: "copied" | "inserted") {
+    setFeedback(type);
+    if (feedbackTimerRef.current !== null) clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = setTimeout(() => {
+      setFeedback(null);
+      feedbackTimerRef.current = null;
+    }, 1500) as unknown as number;
+  }
+
+  /**
+   * When a card textarea has focus, clicking the filename inserts a Markdown
+   * link at the cursor. Otherwise it falls back to copying the file URL.
+   *
+   * Clicking a non-focusable <p> element does not blur the textarea, so
+   * document.activeElement is still the textarea when this click handler fires.
+   */
+  function handleFilenameClick() {
+    if (document.activeElement instanceof HTMLTextAreaElement) {
+      insertLinkAtCursor(file.path, file.mime_type);
+      showFeedback("inserted");
+    } else {
+      navigator.clipboard.writeText(`/files/${file.path}`).then(() =>
+        showFeedback("copied")
+      );
+    }
   }
 
   // Keep draft in sync if the file prop changes from the outside (e.g. after
@@ -207,16 +222,22 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
           <>
             <p
               class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all leading-snug cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-100"
-              title="Click to copy file URL"
-              onClick={handleCopyPath}
+              title="Click to insert link at cursor (while editing a card), or copy URL"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleFilenameClick}
             >
               {file.path}
-              {copied && (
-                <span class="ml-1.5 text-green-500 dark:text-green-400 font-sans not-italic">
-                  ✓ Copied
-                </span>
-              )}
             </p>
+            {feedback === "copied" && (
+              <p class="text-xs text-green-500 dark:text-green-400 mt-0.5">
+                ✓ Copied
+              </p>
+            )}
+            {feedback === "inserted" && (
+              <p class="text-xs text-blue-500 dark:text-blue-400 mt-0.5">
+                ✓ Inserted
+              </p>
+            )}
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
               {file.mime_type} · {formatDate(file.uploaded_at)}
             </p>
@@ -227,24 +248,6 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
       {/* Action buttons — revealed on row hover */}
       {!renaming && (
         <div class="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-100">
-          {/* Insert link at cursor — mousedown preventDefault keeps textarea focused */}
-          <button
-            title="Insert link into card being edited"
-            class="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors cursor-pointer"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => insertLinkAtCursor(file.path, file.mime_type)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              class="w-3.5 h-3.5"
-            >
-              <path d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.75 3.75 0 0 1 0 5.304l-1.26 1.26a3.75 3.75 0 0 1-5.303-5.303l.611-.612a.75.75 0 0 1 1.063 1.06l-.611.613a2.25 2.25 0 0 0 3.182 3.182l1.259-1.26a2.25 2.25 0 0 0 0-3.182.75.75 0 0 1 0-1.062Z" />
-              <path d="M7.086 9.975a.75.75 0 0 1-1.06 0 3.75 3.75 0 0 1 0-5.304l1.26-1.26a3.75 3.75 0 0 1 5.303 5.303l-.611.612a.75.75 0 0 1-1.063-1.06l.611-.613a2.25 2.25 0 0 0-3.182-3.182l-1.259 1.26a2.25 2.25 0 0 0 0 3.182.75.75 0 0 1 0 1.062Z" />
-            </svg>
-          </button>
-
           {/* Open in new tab */}
           <a
             href={`/files/${encodePath(file.path)}`}

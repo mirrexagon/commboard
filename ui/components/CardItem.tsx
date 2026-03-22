@@ -518,8 +518,7 @@ export function CardItem({
 
   /**
    * Handle clicks inside the card-prose div via event delegation.
-   * Buttons injected as raw HTML (embed refetch / fetch) are caught here;
-   * all other clicks enter edit mode as before.
+   * Catches the embed refetch / fetch buttons injected as raw HTML.
    */
   function handleProseClick(e: MouseEvent) {
     const target = e.target as Element;
@@ -540,12 +539,6 @@ export function CardItem({
       onFetchEmbed(fetchBtn.getAttribute("data-fetch-url")!, false);
       return;
     }
-
-    // Clicking anywhere on the embed card itself opens the link (native <a>
-    // behaviour) — don't also enter edit mode.
-    if (target.closest(".card-embed")) return;
-
-    startEditing();
   }
 
   const rawHtml = marked.parse(card.text) as string;
@@ -650,7 +643,6 @@ export function CardItem({
             value={draft}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
-            onBlur={commit}
             placeholder="Card text (Markdown supported)…"
             rows={1}
             spellcheck={false}
@@ -660,12 +652,9 @@ export function CardItem({
           </p>
         </div>
       ) : (
-        /* View mode.
-           handleProseClick uses event delegation to distinguish clicks on
-           injected embed buttons from clicks that should enter edit mode. */
+        /* View mode — handleProseClick handles embed button clicks via delegation. */
         <div
-          class="card-prose px-4 pt-1 pb-2 flex-1 min-w-0 break-words cursor-text"
-          title="Click to edit"
+          class="card-prose px-4 pt-1 pb-2 flex-1 min-w-0 break-words"
           onClick={handleProseClick}
           dangerouslySetInnerHTML={{ __html: html }}
         />
