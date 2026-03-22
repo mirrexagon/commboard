@@ -208,6 +208,63 @@ export function Header({
       {/* Spacer */}
       <div class="flex-1" />
 
+      {/* Search / filter input */}
+      <div class="relative flex items-center">
+        {/* Magnifying-glass icon */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          class="absolute left-2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500 pointer-events-none"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <input
+          type="text"
+          value={searchQuery}
+          onInput={(e) => onSearchChange((e.target as HTMLInputElement).value)}
+          placeholder="Search cards…"
+          class={[
+            "text-xs pl-7 py-1.5 rounded-lg border outline-none transition-all duration-150",
+            "bg-gray-50 dark:bg-gray-800",
+            "text-gray-700 dark:text-gray-300",
+            "placeholder-gray-400 dark:placeholder-gray-500",
+            searchQuery
+              ? "border-blue-400 dark:border-blue-500 bg-white dark:bg-gray-900 w-48 pr-6"
+              : "border-gray-200 dark:border-gray-700 w-36 pr-2 focus:border-blue-400 focus:bg-white dark:focus:bg-gray-900 focus:w-48",
+          ].join(" ")}
+          spellcheck={false}
+        />
+        {/* Clear button — only shown when there is a query */}
+        {searchQuery && (
+          <button
+            class="absolute right-1.5 flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-100 cursor-pointer"
+            title="Clear search"
+            aria-label="Clear search"
+            onClick={() => onSearchChange("")}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3">
+              <path d="M3.22 3.22a.75.75 0 0 1 1.06 0L8 6.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L9.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L8 9.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L6.94 8 3.22 4.28a.75.75 0 0 1 0-1.06Z" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Add card button */}
+      <button
+        onClick={onAddCard}
+        title="Add card"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors duration-150 select-none"
+        aria-label="Add card"
+      >
+        <span class="text-base leading-none">＋</span>
+        <span>Add card</span>
+      </button>
+
       {/* ── View mode switcher ── */}
       <div class="flex items-center gap-1.5">
         {/* "All cards" button */}
@@ -264,73 +321,6 @@ export function Header({
         )}
       </div>
 
-      {/* ── Embed fetch controls ── */}
-      <div class="flex items-center gap-2">
-        {embedQueueSize > 0 && (
-          <span class="text-xs text-blue-500 dark:text-blue-400 animate-pulse select-none whitespace-nowrap">
-            Fetching embeds… {embedQueueSize} left
-          </span>
-        )}
-        <button
-          onClick={onFetchAllEmbeds}
-          title="Fetch embeds for all links in all cards that have not been fetched yet"
-          class={[
-            "text-xs px-2.5 py-1 rounded-lg border transition-colors duration-150 select-none whitespace-nowrap",
-            embedQueueSize > 0
-              ? "border-blue-300 dark:border-blue-700 text-blue-500 dark:text-blue-400"
-              : "border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-500",
-          ].join(" ")}
-        >
-          Fetch all embeds
-        </button>
-      </div>
-
-      {/* Search / filter input */}
-      <div class="relative flex items-center">
-        {/* Magnifying-glass icon */}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 16 16"
-          fill="currentColor"
-          class="absolute left-2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500 pointer-events-none"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        <input
-          type="text"
-          value={searchQuery}
-          onInput={(e) => onSearchChange((e.target as HTMLInputElement).value)}
-          placeholder="Search cards…"
-          class={[
-            "text-xs pl-7 py-1.5 rounded-lg border outline-none transition-all duration-150",
-            "bg-gray-50 dark:bg-gray-800",
-            "text-gray-700 dark:text-gray-300",
-            "placeholder-gray-400 dark:placeholder-gray-500",
-            searchQuery
-              ? "border-blue-400 dark:border-blue-500 bg-white dark:bg-gray-900 w-48 pr-6"
-              : "border-gray-200 dark:border-gray-700 w-36 pr-2 focus:border-blue-400 focus:bg-white dark:focus:bg-gray-900 focus:w-48",
-          ].join(" ")}
-          spellcheck={false}
-        />
-        {/* Clear button — only shown when there is a query */}
-        {searchQuery && (
-          <button
-            class="absolute right-1.5 flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-100 cursor-pointer"
-            title="Clear search"
-            aria-label="Clear search"
-            onClick={() => onSearchChange("")}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3">
-              <path d="M3.22 3.22a.75.75 0 0 1 1.06 0L8 6.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L9.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L8 9.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L6.94 8 3.22 4.28a.75.75 0 0 1 0-1.06Z" />
-            </svg>
-          </button>
-        )}
-      </div>
-
       {/* Files button — acts as a toggle, shows active state when panel is open */}
       <button
         onClick={onToggleFileBrowser}
@@ -358,16 +348,26 @@ export function Header({
         )}
       </button>
 
-      {/* Add card button */}
-      <button
-        onClick={onAddCard}
-        title="Add card"
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium transition-colors duration-150 select-none"
-        aria-label="Add card"
-      >
-        <span class="text-base leading-none">＋</span>
-        <span>Add card</span>
-      </button>
+      {/* ── Embed fetch controls ── */}
+      <div class="flex items-center gap-2">
+        {embedQueueSize > 0 && (
+          <span class="text-xs text-blue-500 dark:text-blue-400 animate-pulse select-none whitespace-nowrap">
+            Fetching embeds… {embedQueueSize} left
+          </span>
+        )}
+        <button
+          onClick={onFetchAllEmbeds}
+          title="Fetch embeds for all links in all cards that have not been fetched yet"
+          class={[
+            "text-xs px-2.5 py-1 rounded-lg border transition-colors duration-150 select-none whitespace-nowrap",
+            embedQueueSize > 0
+              ? "border-blue-300 dark:border-blue-700 text-blue-500 dark:text-blue-400"
+              : "border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-500",
+          ].join(" ")}
+        >
+          Fetch all missing embeds
+        </button>
+      </div>
 
       {/* Dark mode toggle */}
       <button
