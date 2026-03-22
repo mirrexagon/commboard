@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks"; // useEffect used in FileEntry
 import type { EmbeddedFile } from "../../board.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -340,15 +340,6 @@ export function FileBrowser({
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
 
-  // Close on Escape key.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   async function handleFiles(incoming: File[]) {
     setUploading(true);
     setUploadErrors([]);
@@ -371,17 +362,9 @@ export function FileBrowser({
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
 
   return (
-    <>
-      {/* Backdrop — click to close */}
-      <div
-        class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Drawer panel */}
-      <div class="fixed right-0 top-0 bottom-0 z-50 w-96 bg-white dark:bg-gray-900 shadow-2xl flex flex-col">
-        {/* Panel header */}
-        <div class="flex items-center gap-2.5 px-4 py-3.5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+    <div class="flex flex-col h-full">
+      {/* Panel header */}
+      <div class="flex items-center gap-2.5 px-4 py-3.5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <span class="text-base select-none">📁</span>
           <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200 flex-1">
             Embedded Files
@@ -453,7 +436,6 @@ export function FileBrowser({
             </div>
           )}
         </div>
-      </div>
-    </>
+    </div>
   );
 }

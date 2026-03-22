@@ -110,8 +110,10 @@ interface Props {
   onFetchAllEmbeds: () => void;
   /** Number of embedded files stored in the board, shown on the button badge. */
   embeddedFileCount: number;
-  /** Open the embedded-files browser panel. */
-  onOpenFileBrowser: () => void;
+  /** Whether the file browser panel is currently open. */
+  fileBrowserOpen: boolean;
+  /** Toggle the embedded-files browser panel open/closed. */
+  onToggleFileBrowser: () => void;
 }
 
 export function Header({
@@ -129,7 +131,8 @@ export function Header({
   embedQueueSize,
   onFetchAllEmbeds,
   embeddedFileCount,
-  onOpenFileBrowser,
+  fileBrowserOpen,
+  onToggleFileBrowser,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(boardName);
@@ -328,17 +331,28 @@ export function Header({
         )}
       </div>
 
-      {/* Files button */}
+      {/* Files button — acts as a toggle, shows active state when panel is open */}
       <button
-        onClick={onOpenFileBrowser}
-        title="Browse and manage embedded files"
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors duration-150 select-none"
-        aria-label="Open file browser"
+        onClick={onToggleFileBrowser}
+        title={fileBrowserOpen ? "Close file browser" : "Browse and manage embedded files"}
+        class={[
+          "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-sm transition-colors duration-150 select-none",
+          fileBrowserOpen
+            ? "bg-blue-600 border-blue-600 text-white"
+            : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400",
+        ].join(" ")}
+        aria-label={fileBrowserOpen ? "Close file browser" : "Open file browser"}
+        aria-pressed={fileBrowserOpen}
       >
         <span class="text-base leading-none">📁</span>
         <span class="text-xs font-medium">Files</span>
         {embeddedFileCount > 0 && (
-          <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full px-1.5 py-0.5 leading-none font-mono">
+          <span class={[
+            "text-xs rounded-full px-1.5 py-0.5 leading-none font-mono",
+            fileBrowserOpen
+              ? "bg-blue-500 text-blue-100"
+              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
+          ].join(" ")}>
             {embeddedFileCount}
           </span>
         )}

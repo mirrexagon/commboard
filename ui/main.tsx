@@ -1116,7 +1116,7 @@ function App() {
   );
 
   return (
-    <div class="min-h-screen bg-gray-100 dark:bg-gray-950">
+    <div class="h-screen flex flex-col bg-gray-100 dark:bg-gray-950">
       <Header
         boardName={board.name}
         cardCount={cards.length}
@@ -1132,52 +1132,59 @@ function App() {
         embedQueueSize={embedQueueSize}
         onFetchAllEmbeds={fetchAllMissingEmbeds}
         embeddedFileCount={embeddedFiles.length}
-        onOpenFileBrowser={() => setFileBrowserOpen(true)}
+        fileBrowserOpen={fileBrowserOpen}
+        onToggleFileBrowser={() => setFileBrowserOpen((v) => !v)}
       />
-      {fileBrowserOpen && (
-        <FileBrowser
-          files={embeddedFiles}
-          onClose={() => setFileBrowserOpen(false)}
-          onUpload={uploadFile}
-          onRename={renameFile}
-          onDelete={deleteFile}
-        />
-      )}
-      <main class="max-w-screen-2xl mx-auto p-6">
-        {activeCategory ? (
-          <CategoryView
-            board={board}
-            category={activeCategory}
-            allTags={allTags}
-            darkMode={darkMode}
-            filterQuery={searchQuery}
-            embedCache={embedCache}
-            embeddedFiles={embeddedFilesRecord}
-            onDelete={deleteCard}
-            onUpdate={updateCard}
-            onReorder={reorderCards}
-            onMoveToColumn={moveCardToColumn}
-            onAddTag={addTag}
-            onRemoveTag={removeTag}
-            onFetchEmbed={fetchEmbed}
-          />
-        ) : (
-          <CardGrid
-            cards={cards}
-            allTags={allTags}
-            darkMode={darkMode}
-            filterQuery={searchQuery}
-            embedCache={embedCache}
-            embeddedFiles={embeddedFilesRecord}
-            onDelete={deleteCard}
-            onUpdate={updateCard}
-            onReorder={reorderCards}
-            onAddTag={addTag}
-            onRemoveTag={removeTag}
-            onFetchEmbed={fetchEmbed}
-          />
+      <div class="flex flex-1 min-h-0">
+        <main class="flex-1 overflow-y-auto min-w-0">
+          <div class="max-w-screen-2xl mx-auto p-6">
+            {activeCategory ? (
+              <CategoryView
+                board={board}
+                category={activeCategory}
+                allTags={allTags}
+                darkMode={darkMode}
+                filterQuery={searchQuery}
+                embedCache={embedCache}
+                embeddedFiles={embeddedFilesRecord}
+                onDelete={deleteCard}
+                onUpdate={updateCard}
+                onReorder={reorderCards}
+                onMoveToColumn={moveCardToColumn}
+                onAddTag={addTag}
+                onRemoveTag={removeTag}
+                onFetchEmbed={fetchEmbed}
+              />
+            ) : (
+              <CardGrid
+                cards={cards}
+                allTags={allTags}
+                darkMode={darkMode}
+                filterQuery={searchQuery}
+                embedCache={embedCache}
+                embeddedFiles={embeddedFilesRecord}
+                onDelete={deleteCard}
+                onUpdate={updateCard}
+                onReorder={reorderCards}
+                onAddTag={addTag}
+                onRemoveTag={removeTag}
+                onFetchEmbed={fetchEmbed}
+              />
+            )}
+          </div>
+        </main>
+        {fileBrowserOpen && (
+          <aside class="w-80 flex-shrink-0 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto flex flex-col">
+            <FileBrowser
+              files={embeddedFiles}
+              onClose={() => setFileBrowserOpen(false)}
+              onUpload={uploadFile}
+              onRename={renameFile}
+              onDelete={deleteFile}
+            />
+          </aside>
         )}
-      </main>
+      </div>
     </div>
   );
 }
