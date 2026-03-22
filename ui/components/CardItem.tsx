@@ -2,7 +2,7 @@ import { marked } from "marked";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { tagAccentColor, tagPalette } from "../lib/colors.ts";
 import { extractUrls } from "../lib/urls.ts";
-import type { EmbedData } from "../../board.ts";
+import type { EmbedData, EmbeddedFile } from "../../board.ts";
 
 // ── Tag input with autocomplete ──────────────────────────────────────────────
 
@@ -111,11 +111,64 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/** Return an emoji icon for a MIME type. */
+function fileIcon(mimeType: string | undefined): string {
+  if (!mimeType) return "📎";
+  if (mimeType.startsWith("image/")) return "🖼️";
+  if (mimeType.startsWith("audio/")) return "🎵";
+  if (mimeType.startsWith("video/")) return "🎬";
+  if (mimeType === "application/pdf") return "📄";
+  if (mimeType.startsWith("text/")) return "📝";
+  return "📎";
+}
+
 /**
- * Produce the HTML string for a fully-fetched embed card.
+ * Produce the HTML string for a fully-fetched external embed card.
  * Uses Tailwind classes for styling (CDN MutationObserver picks them up).
+ *
+ * If `embed.content_type` is set and is not text/html, the resource is a
+ * direct file download and is rendered as a file card (labelled "File").
+ * Otherwise it is rendered as a rich link preview (labelled "Embed").
  */
 function generateEmbedHtml(embed: EmbedData): string {
+  const url = escapeHtml(embed.url);
+  const borderCls = embed.error
+    ? "border-red-200 dark:border-red-800"
+    : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600";
+
+  const fetchedDate = new Date(embed.fetched_at).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  // ── Direct file download (non-HTML content-type) ──────────────────────────
+  const isDirectFile =
+    !!embed.content_type && !embed.content_type.includes("text/html");
+
+  if (isDirectFile) {
+    const icon = fileIcon(embed.content_type);
+    const filename = escapeHtml(
+      embed.title ?? new URL(embed.url).pathname.split("/").filter(Boolean).pop() ?? embed.url,
+    );
+    return (
+      `<a href="${url}" target="_blank" rel="noopener noreferrer" ` +
+      `class="card-embed block rounded-lg border ${borderCls} overflow-hidden transition-colors duration-150 my-2">` +
+      `<div class="px-3 py-2 flex items-center gap-1.5 min-w-0">` +
+      `<span class="text-base leading-none select-none shrink-0">${icon}</span>` +
+      `<span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0">${filename}</span>` +
+      `<button data-refetch-url="${url}" ` +
+      `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1" ` +
+      `title="Refetch">↺</button>` +
+      `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">File</span>` +
+      `</div>` +
+      `<div class="px-3 pb-2 text-xs text-gray-400 dark:text-gray-500">` +
+      `${escapeHtml(embed.content_type ?? "")} · Fetched ${escapeHtml(fetchedDate)}` +
+      `</div>` +
+      `</a>`
+    );
+  }
+
+  // ── HTML page embed (rich preview) ───────────────────────────────────────
   const domain = (() => {
     try {
       return new URL(embed.url).hostname;
@@ -123,16 +176,6 @@ function generateEmbedHtml(embed: EmbedData): string {
       return embed.url;
     }
   })();
-
-  const fetchedDate = new Date(embed.fetched_at).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-
-  const url = escapeHtml(embed.url);
-  const borderCls = embed.error
-    ? "border-red-200 dark:border-red-800"
-    : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600";
 
   const imgHtml =
     !embed.error && embed.image_data
@@ -164,12 +207,75 @@ function generateEmbedHtml(embed: EmbedData): string {
     `<div class="flex items-center gap-1.5 min-w-0">` +
     faviconHtml +
     `<span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0">${siteLabel}</span>` +
+    `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">Embed</span>` +
     `<button data-refetch-url="${url}" ` +
-    `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1 ml-auto" ` +
+    `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1 ml-1" ` +
     `title="Refetch embed">↺</button>` +
     `</div>` +
     bodyHtml +
     `<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Fetched ${escapeHtml(fetchedDate)}</div>` +
+    `</div>` +
+    `</a>`
+  );
+}
+
+/**
+ * Produce the HTML string for an embedded-file card (a file stored in the
+ * board's virtual filesystem, served under /files/).
+ *
+ * - Images  → card wrapping an <img> thumbnail; clicking opens the file.
+ * - Audio   → card with a native <audio> player + separate open-in-tab link.
+ * - Others  → plain card showing the filename; clicking opens the file.
+ *
+ * All variants are labelled "File" and carry the `card-embed` class so that
+ * the prose click handler does not accidentally enter edit mode.
+ */
+function generateFileEmbedHtml(
+  href: string,
+  filePath: string,
+  mimeType: string | undefined,
+): string {
+  const escapedHref = escapeHtml(href);
+  const escapedPath = escapeHtml(filePath);
+  const filename = escapeHtml(filePath.split("/").pop() ?? filePath);
+  const icon = fileIcon(mimeType);
+  const isImage = mimeType?.startsWith("image/") ?? false;
+  const isAudio = mimeType?.startsWith("audio/") ?? false;
+  const borderCls =
+    "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600";
+
+  // Audio: use a <div> wrapper (not <a>) so the native controls don't fight
+  // with link-navigation. Include an explicit open-in-tab button.
+  if (isAudio) {
+    return (
+      `<div class="card-embed block rounded-lg border ${borderCls} overflow-hidden transition-colors duration-150 my-2">` +
+      `<audio controls src="${escapedHref}" class="w-full block px-3 pt-2 pb-1"></audio>` +
+      `<div class="px-3 py-2 flex items-center gap-1.5 min-w-0">` +
+      `<span class="text-base leading-none select-none shrink-0">${icon}</span>` +
+      `<span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0" title="${escapedPath}">${filename}</span>` +
+      `<a href="${escapedHref}" target="_blank" rel="noopener noreferrer" ` +
+      `class="shrink-0 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 text-xs px-1" ` +
+      `title="Open in new tab">↗</a>` +
+      `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">File</span>` +
+      `</div>` +
+      `</div>`
+    );
+  }
+
+  // Image: show a thumbnail banner at the top of the card.
+  const imageHtml = isImage
+    ? `<img src="${escapedHref}" alt="${filename}" loading="lazy" ` +
+      `class="w-full max-h-48 object-contain bg-gray-50 dark:bg-gray-900">`
+    : "";
+
+  return (
+    `<a href="${escapedHref}" target="_blank" rel="noopener noreferrer" ` +
+    `class="card-embed block rounded-lg border ${borderCls} overflow-hidden transition-colors duration-150 my-2">` +
+    imageHtml +
+    `<div class="px-3 py-2 flex items-center gap-1.5 min-w-0">` +
+    `<span class="text-base leading-none select-none shrink-0">${icon}</span>` +
+    `<span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0" title="${escapedPath}">${filename}</span>` +
+    `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">File</span>` +
     `</div>` +
     `</a>`
   );
@@ -190,28 +296,33 @@ function generateFetchButtonHtml(url: string): string {
 }
 
 /**
- * Post-process a block of marked HTML to inject embed previews and fetch
- * buttons inline.
+ * Post-process a block of marked HTML to inject embed previews, fetch
+ * buttons, and file embed cards inline.
  *
  * Pass 1 — for every `<a href="https://…">` whose URL is NOT yet cached,
  *           append a small inline "↓ embed" button right after the </a>.
  *
  * Pass 2 — for every block element (p, h1–h6, li, blockquote) that
- *           contains a link whose URL IS cached, append the full embed card
- *           immediately after the closing tag of that block element.
- *           Placing the embed after the block (rather than mid-paragraph)
- *           keeps the HTML valid and the surrounding text intact.
+ *           contains an external link whose URL IS cached, append the full
+ *           embed card immediately after the closing tag of that block.
  *
- * Both passes deduplicate: each unique URL gets at most one button / preview.
+ * Pass 3 — for every block element that contains a `/files/…` link, append
+ *           a file embed card immediately after the closing tag.
+ *
+ * All passes deduplicate: each unique URL/path gets at most one card.
+ * Cards are placed after the block element (not mid-paragraph) to keep the
+ * generated HTML valid.
  */
 function injectEmbedsIntoHtml(
   html: string,
   embedCache: Record<string, EmbedData>,
+  embeddedFiles: Record<string, EmbeddedFile>,
 ): string {
   const seenFetch = new Set<string>();
   const seenEmbed = new Set<string>();
+  const seenFile = new Set<string>();
 
-  // Pass 1: inline fetch buttons for uncached URLs.
+  // Pass 1: inline fetch buttons for uncached external URLs.
   let result = html.replace(
     /<a\b[^>]*\bhref="(https?:\/\/[^"]+)"[^>]*>[\s\S]*?<\/a>/g,
     (match, href) => {
@@ -221,8 +332,7 @@ function injectEmbedsIntoHtml(
     },
   );
 
-  // Pass 2: block embed cards after block elements containing cached URLs.
-  // The backreference \1 ensures the opening and closing tags match.
+  // Pass 2: external embed/file cards after block elements containing cached URLs.
   result = result.replace(
     /<(p|h[1-6]|li|blockquote)\b[^>]*>[\s\S]*?<\/\1>/g,
     (blockMatch) => {
@@ -236,6 +346,26 @@ function injectEmbedsIntoHtml(
         embeds.push(generateEmbedHtml(embedCache[href] as EmbedData));
       }
       return embeds.length ? blockMatch + embeds.join("") : blockMatch;
+    },
+  );
+
+  // Pass 3: file embed cards after block elements containing /files/… links.
+  result = result.replace(
+    /<(p|h[1-6]|li|blockquote)\b[^>]*>[\s\S]*?<\/\1>/g,
+    (blockMatch) => {
+      const fileEmbeds: string[] = [];
+      const linkRe = /\bhref="(\/files\/([^"]+))"/g;
+      let m: RegExpExecArray | null;
+      while ((m = linkRe.exec(blockMatch)) !== null) {
+        const href = m[1];
+        const encodedPath = m[2];
+        if (seenFile.has(href)) continue;
+        seenFile.add(href);
+        const filePath = decodeURIComponent(encodedPath);
+        const file = embeddedFiles[filePath];
+        fileEmbeds.push(generateFileEmbedHtml(href, filePath, file?.mime_type));
+      }
+      return fileEmbeds.length ? blockMatch + fileEmbeds.join("") : blockMatch;
     },
   );
 
@@ -271,6 +401,8 @@ interface Props {
   isDragDisabled?: boolean;
   /** Board-level embed cache, keyed by URL. */
   embedCache: Record<string, EmbedData>;
+  /** Board-level embedded files registry, keyed by file path. */
+  embeddedFiles: Record<string, EmbeddedFile>;
   onDelete: () => void;
   onUpdate: (text: string) => void;
   onAddTag: (tag: string) => void;
@@ -291,6 +423,7 @@ export function CardItem({
   isDropTarget,
   isDragDisabled = false,
   embedCache,
+  embeddedFiles,
   onDelete,
   onUpdate,
   onAddTag,
@@ -390,7 +523,7 @@ export function CardItem({
   }
 
   const rawHtml = marked.parse(card.text) as string;
-  const html = injectEmbedsIntoHtml(rawHtml, embedCache);
+  const html = injectEmbedsIntoHtml(rawHtml, embedCache, embeddedFiles);
 
   // Used for the per-card "Fetch N embeds" button.
   const uncachedUrls = extractUrls(card.text).filter((u) => !(u in embedCache));

@@ -97,7 +97,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
         - Renames should just be for editing the entire full file path, slashes included - one operation for renames and logically moving files
         - [x] Renames update all references to the file in cards
         - [ ] Drag a file from the browser into a card being edited to put a link to it at the text cursor
-    - [ ] Show linked files inline
+    - [x] Show linked files inline
         - show any embedded file linked as a embed card that has some indication it is an embedded file than a fetched embed
         - Images as images, audio as an audio player, other files as just a card with the path listed
         - Images linked with `![]()` should just show inline without an embed card, images and anything else linked by `[]()` should be in an embed card

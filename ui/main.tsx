@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { Header } from "./components/Header.tsx";
 import { CardItem, type Card } from "./components/CardItem.tsx";
 import { FileBrowser } from "./components/FileBrowser.tsx";
-import type { Board, EmbedData } from "../board.ts";
+import type { Board, EmbedData, EmbeddedFile } from "../board.ts";
 import { tagPalette } from "./lib/colors.ts";
 
 // ---- Filter helper ----
@@ -184,6 +184,7 @@ interface CardGridProps {
   /** When set, cards are filtered to those matching this query and drag-and-drop is disabled. */
   filterQuery: string;
   embedCache: Record<string, EmbedData>;
+  embeddedFiles: Record<string, EmbeddedFile>;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => void;
   onReorder: (newOrder: number[]) => void;
@@ -192,7 +193,7 @@ interface CardGridProps {
   onFetchEmbed: (url: string, refetch: boolean) => void;
 }
 
-function CardGrid({ cards, allTags, darkMode, filterQuery, embedCache, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag, onFetchEmbed }: CardGridProps) {
+function CardGrid({ cards, allTags, darkMode, filterQuery, embedCache, embeddedFiles, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag, onFetchEmbed }: CardGridProps) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
@@ -334,6 +335,7 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, embedCache, onDelete,
             isDragging={draggedId === card.id}
             isDropTarget={dropTargetId === card.id}
             embedCache={embedCache}
+            embeddedFiles={embeddedFiles}
             onDelete={() => onDelete(card.id)}
             onUpdate={(text) => onUpdate(card.id, text)}
             onAddTag={(tag) => onAddTag(card.id, tag)}
@@ -449,6 +451,7 @@ interface CategoryColumnProps {
   onAddTag: (id: number, tag: string) => void;
   onRemoveTag: (id: number, tag: string) => void;
   embedCache: Record<string, EmbedData>;
+  embeddedFiles: Record<string, EmbeddedFile>;
   onFetchEmbed: (url: string, refetch: boolean) => void;
 }
 
@@ -478,6 +481,7 @@ function CategoryColumn({
   onAddTag,
   onRemoveTag,
   embedCache,
+  embeddedFiles,
   onFetchEmbed,
 }: CategoryColumnProps) {
   const { bg: headerBg, text: headerText, border: headerBorder } = tagPalette(category, darkMode);
@@ -532,6 +536,7 @@ function CategoryColumn({
               isDropTarget={dropTargetCardId === card.id}
               isDragDisabled={isDragDisabled}
               embedCache={embedCache}
+              embeddedFiles={embeddedFiles}
               onDelete={() => onDelete(card.id)}
               onUpdate={(text) => onUpdate(card.id, text)}
               onAddTag={(tag) => onAddTag(card.id, tag)}
@@ -600,6 +605,7 @@ interface CategoryViewProps {
   onAddTag: (id: number, tag: string) => void;
   onRemoveTag: (id: number, tag: string) => void;
   embedCache: Record<string, EmbedData>;
+  embeddedFiles: Record<string, EmbeddedFile>;
   onFetchEmbed: (url: string, refetch: boolean) => void;
 }
 
@@ -610,6 +616,7 @@ function CategoryView({
   darkMode,
   filterQuery,
   embedCache,
+  embeddedFiles,
   onDelete,
   onUpdate,
   onReorder,
@@ -796,6 +803,7 @@ function CategoryView({
             onAddTag={onAddTag}
             onRemoveTag={onRemoveTag}
             embedCache={embedCache}
+            embeddedFiles={embeddedFiles}
             onFetchEmbed={onFetchEmbed}
           />
         );
@@ -1102,7 +1110,8 @@ function App() {
   const embedCache: Record<string, EmbedData> = board.embed_cache ?? {};
   const embedQueueSize =
     embedQueueStatus.pending + (embedQueueStatus.processing ? 1 : 0);
-  const embeddedFiles = Object.values(board.embedded_files ?? {}).sort(
+  const embeddedFilesRecord: Record<string, EmbeddedFile> = board.embedded_files ?? {};
+  const embeddedFiles = Object.values(embeddedFilesRecord).sort(
     (a, b) => a.path.localeCompare(b.path),
   );
 
@@ -1143,6 +1152,7 @@ function App() {
             darkMode={darkMode}
             filterQuery={searchQuery}
             embedCache={embedCache}
+            embeddedFiles={embeddedFilesRecord}
             onDelete={deleteCard}
             onUpdate={updateCard}
             onReorder={reorderCards}
@@ -1158,6 +1168,7 @@ function App() {
             darkMode={darkMode}
             filterQuery={searchQuery}
             embedCache={embedCache}
+            embeddedFiles={embeddedFilesRecord}
             onDelete={deleteCard}
             onUpdate={updateCard}
             onReorder={reorderCards}

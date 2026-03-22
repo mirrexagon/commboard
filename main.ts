@@ -178,13 +178,16 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
 
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.includes("text/html")) {
-        // Non-HTML resource: store minimal metadata without images.
+        // Non-HTML resource (direct file download): store the content-type so
+        // the frontend can render it as a file card rather than an embed card.
+        const mimeType = contentType.split(";")[0].trim() || "application/octet-stream";
         return {
             url,
             fetched_at,
             title:
                 new URL(url).pathname.split("/").filter(Boolean).pop() || url,
-            description: `${contentType} resource`,
+            description: `${mimeType} resource`,
+            content_type: mimeType,
         };
     }
 

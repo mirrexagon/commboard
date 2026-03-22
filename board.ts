@@ -38,6 +38,11 @@ export interface EmbedData {
   favicon_url?: string;
   /** Base-64 data URL for the favicon, cached for offline use. */
   favicon_data?: string;
+  /**
+   * MIME content-type of the fetched resource.  Only set for non-HTML
+   * resources (direct file downloads).  Absent for HTML page embeds.
+   */
+  content_type?: string;
 }
 
 export interface Board {
