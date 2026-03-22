@@ -263,13 +263,6 @@ function CategoryColumn({
 }: CategoryColumnProps) {
   const [headerBg, headerText, headerBorder] = tagPalette(category, darkMode);
 
-  // Column wrapper ring: blue when valid cross-column target, red when disabled.
-  const columnRing = isCrossColumnTarget
-    ? isDropDisabled
-      ? "ring-2 ring-red-400 dark:ring-red-500"
-      : "ring-2 ring-blue-400 dark:ring-blue-500"
-    : "";
-
   // End-zone / empty-column styling
   const endZoneActive = dropAtEnd || (isCrossColumnTarget && !isDropDisabled && cards.length === 0);
   const endZoneClass = [
@@ -282,7 +275,7 @@ function CategoryColumn({
   ].join(" ");
 
   return (
-    <div class={`flex flex-col gap-3 w-72 flex-shrink-0 rounded-xl transition-shadow duration-150 ${columnRing}`}>
+    <div class="flex flex-col gap-3 w-72 flex-shrink-0">
       {/* Column header */}
       <div
         class={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-semibold text-sm select-none ${headerBg} ${headerText} ${headerBorder}`}
@@ -433,15 +426,22 @@ function CategoryView({
 
     if (sourceValue === destValue) {
       // ── Within-column reorder (use reorderInCategory to minimise disruption) ──
+
+      // No real target means the card was dropped without hovering over a different
+      // card or end-zone (e.g. dropped back on itself). Nothing to do.
+      if (targetCardId === null && !atEnd) return;
+
       const tag = `${category}:${sourceValue}`;
       const colIds = allCards.filter((c) => c.tags.includes(tag)).map((c) => c.id);
 
       const withoutDragged = colIds.filter((id) => id !== draggedId);
-      if (atEnd || targetCardId === null) {
+      if (atEnd) {
         withoutDragged.push(draggedId);
       } else {
-        const i = withoutDragged.indexOf(targetCardId);
-        withoutDragged.splice(i === -1 ? withoutDragged.length : i, 0, draggedId);
+        // targetCardId is guaranteed non-null here (checked above)
+        const i = withoutDragged.indexOf(targetCardId!);
+        if (i === -1) return; // target not found (shouldn't happen) — no-op
+        withoutDragged.splice(i, 0, draggedId);
       }
       onReorder(reorderInCategory(board.card_order, colIds, withoutDragged));
     } else {
@@ -469,7 +469,7 @@ function CategoryView({
   }
 
   return (
-    <div class="flex gap-4 overflow-x-auto pb-4 items-start min-h-64">
+    <div class="flex gap-4 overflow-x-auto items-start min-h-64 px-1 py-1 pb-4">
       {values.map((v) => {
         const tag = `${category}:${v}`;
         const columnCards = allCards.filter((c) => c.tags.includes(tag));
@@ -505,8 +505,11 @@ function CategoryView({
               setDragState({ draggedId: cardId, sourceValue: v, targetValue: v, targetCardId: null, atEnd: false });
             }}
             onDragEnterCard={(cardId) => {
+              // Ignore entering the dragged card itself — it's a no-op position.
               setDragState((prev) =>
-                prev ? { ...prev, targetValue: v, targetCardId: cardId, atEnd: false } : prev,
+                prev && cardId !== prev.draggedId
+                  ? { ...prev, targetValue: v, targetCardId: cardId, atEnd: false }
+                  : prev,
               );
             }}
             onDragEnterEndZone={() => {
