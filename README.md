@@ -1,15 +1,23 @@
 # Commboard
 A multi-dimensional Kanban board.
 
-**Note:** This is a tool created for a specific personal use-case, and the code is almost-entirely LLM written. Use at your peril!
-
-## Building
-
-TODO
+**Note:** This is a tool created for a specific personal use-case, and **the code is almost entirely LLM-written**. Use at your peril!
 
 ## Usage
 
-TODO
+### Prerequisites
+
+Install [Deno](https://deno.com/).
+
+### Running
+
+```bash
+deno task start path/to/board.json
+```
+
+This builds and bundles the UI, then starts the server on [http://localhost:8080](http://localhost:8080). The board file will be created if it doesn't exist.
+
+There are example board files in the `example-boards/` directory to try out.
 
 ## Basics
 
