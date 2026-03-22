@@ -1107,6 +1107,13 @@ function App() {
     ...new Set(allTags.map((t) => t.slice(0, t.indexOf(":")))),
   ].sort();
 
+  // How many cards have at least one tag in each category.
+  const categoryCounts: Record<string, number> = {};
+  for (const cat of allCategories) {
+    const prefix = cat + ":";
+    categoryCounts[cat] = cards.filter((c) => c.tags.some((t) => t.startsWith(prefix))).length;
+  }
+
   const embedCache: Record<string, EmbedData> = board.embed_cache ?? {};
   const embedQueueSize =
     embedQueueStatus.pending + (embedQueueStatus.processing ? 1 : 0);
@@ -1126,6 +1133,7 @@ function App() {
         onToggleDark={toggleDark}
         activeCategory={activeCategory}
         allCategories={allCategories}
+        categoryCounts={categoryCounts}
         onSelectCategory={setActiveCategory}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

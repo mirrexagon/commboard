@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 interface CategorySelectorProps {
   allCategories: string[];
+  categoryCounts: Record<string, number>;
   onSelect: (category: string) => void;
   onCancel: () => void;
 }
 
-function CategorySelector({ allCategories, onSelect, onCancel }: CategorySelectorProps) {
+function CategorySelector({ allCategories, categoryCounts, onSelect, onCancel }: CategorySelectorProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,13 +69,16 @@ function CategorySelector({ allCategories, onSelect, onCancel }: CategorySelecto
           {suggestions.map((cat) => (
             <button
               key={cat}
-              class="block w-full text-left text-xs px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 cursor-pointer"
+              class="flex items-center gap-2 w-full text-left text-xs px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 cursor-pointer"
               onMouseDown={(e) => {
                 e.preventDefault();
                 submit(cat);
               }}
             >
-              {cat}
+              <span class="flex-1">{cat}</span>
+              <span class="text-gray-400 dark:text-gray-500 font-mono tabular-nums">
+                {categoryCounts[cat] ?? 0}
+              </span>
             </button>
           ))}
         </div>
@@ -96,6 +100,8 @@ interface Props {
   activeCategory: string | null;
   /** All category names present on any card, for autocomplete. */
   allCategories: string[];
+  /** Number of cards that have at least one tag in each category. */
+  categoryCounts: Record<string, number>;
   onSelectCategory: (category: string | null) => void;
   /** Current search/filter query string. */
   searchQuery: string;
@@ -125,6 +131,7 @@ export function Header({
   onToggleDark,
   activeCategory,
   allCategories,
+  categoryCounts,
   onSelectCategory,
   searchQuery,
   onSearchChange,
@@ -299,6 +306,7 @@ export function Header({
         {pickingCategory ? (
           <CategorySelector
             allCategories={allCategories}
+            categoryCounts={categoryCounts}
             onSelect={(cat) => {
               setPickingCategory(false);
               onSelectCategory(cat);
