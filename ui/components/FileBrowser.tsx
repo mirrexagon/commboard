@@ -54,7 +54,21 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
   const [draftPath, setDraftPath] = useState(file.path);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const copyTimerRef = useRef<number | null>(null);
+
+  function handleCopyPath() {
+    const url = `/files/${file.path}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      if (copyTimerRef.current !== null) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
+        setCopied(false);
+        copyTimerRef.current = null;
+      }, 1500) as unknown as number;
+    });
+  }
 
   // Keep draft in sync if the file prop changes from the outside (e.g. after
   // a successful rename the board state updates and the component is replaced).
@@ -140,6 +154,7 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
                 }
                 if (e.key === "Escape") {
                   e.preventDefault();
+                  e.stopPropagation();
                   cancelRename();
                 }
               }}
@@ -159,10 +174,16 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
         ) : (
           <>
             <p
-              class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all leading-snug"
-              title={file.path}
+              class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all leading-snug cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-100"
+              title="Click to copy file URL"
+              onClick={handleCopyPath}
             >
               {file.path}
+              {copied && (
+                <span class="ml-1.5 text-green-500 dark:text-green-400 font-sans not-italic">
+                  ✓ Copied
+                </span>
+              )}
             </p>
             <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
               {file.mime_type} · {formatDate(file.uploaded_at)}
