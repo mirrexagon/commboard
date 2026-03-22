@@ -91,11 +91,15 @@ curl -sf http://localhost:8080/api/board
 
 Important notes:
 - Do **not** wrap the `deno run` command in `timeout X`. Let the trap handle cleanup.
+- Do **not** use job-control syntax (`kill %1`, `fg`, `jobs`, etc.). Job control
+  is disabled in non-interactive shells, so `kill %1` silently does nothing and
+  the server process is left running. Always use the explicit `$SERVER_PID`
+  variable captured right after the `&`.
 - Use a fresh temp file for each test run (e.g. `/tmp/test-board-$$.json`) if
   there is any risk of a previous run having left a stale file.
-- The server listens on port 8080. If a previous test left a process running
-  (and the trap did not fire, which shouldn't happen), the next bind will fail.
-  Run `lsof -ti:8080 | xargs kill` to clear it.
+- The server listens on port 8080. If a previous test left a process running,
+  the next bind will fail. Run `kill $(pidof deno)` or
+  `lsof -ti:8080 | xargs kill` to clear it before retrying.
 
 ## Adding frontend dependencies
 
