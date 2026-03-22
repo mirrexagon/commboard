@@ -6,7 +6,10 @@
       "text": "# Clothing idea\n\nLook into linen shirts for summer. Light, breathable, and they look great.\n\n- White\n- Navy\n- Olive",
       "tags": [
         "idea:clothing",
-        "status:todo"
+        "status:todo",
+        "tre:345r",
+        "safd:4t",
+        "gvfcdv:34t"
       ]
     },
     "2": {
@@ -22,7 +25,8 @@
       "text": "# Fix login bug\n\nUsers occasionally see a 403 on first load after a long session. Likely a token refresh race condition.\n\n```\nGET /api/user → 403\n```",
       "tags": [
         "status:in-progress",
-        "type:bug"
+        "type:bug",
+        "git:2"
       ]
     },
     "4": {
