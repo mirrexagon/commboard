@@ -596,7 +596,7 @@ function App() {
     const res = await fetch("/api/cards", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text: "New card" }),
+      body: JSON.stringify({ text: "" }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     setBoard((await res.json()) as Board);

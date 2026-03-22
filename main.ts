@@ -9,8 +9,8 @@ import { loadOrCreate, save, type Card } from "./board.ts";
 const boardPath = Deno.args[0];
 
 if (!boardPath) {
-  console.error("Usage: commboard <path to board file>");
-  Deno.exit(1);
+    console.error("Usage: commboard <path to board file>");
+    Deno.exit(1);
 }
 
 let board = await loadOrCreate(boardPath);
@@ -21,26 +21,28 @@ console.log(`Board: "${board.name}" — ${board.card_order.length} card(s)`);
 console.log("Bundling UI...");
 
 const buildResult = await esbuild.build({
-  // Cast needed: @luca/esbuild-deno-loader ships its own esbuild type stubs
-  // which diverge slightly from the npm:esbuild types at the same version.
-  plugins: [
-    ...denoPlugins({
-      configPath: fromFileUrl(import.meta.resolve("./deno.json")),
-    }),
-  ] as unknown as esbuild.Plugin[],
-  entryPoints: [import.meta.resolve("./ui/main.tsx")],
-  bundle: true,
-  write: false,
-  format: "esm",
-  jsx: "automatic",
-  jsxImportSource: "preact",
+    // Cast needed: @luca/esbuild-deno-loader ships its own esbuild type stubs
+    // which diverge slightly from the npm:esbuild types at the same version.
+    plugins: [
+        ...denoPlugins({
+            configPath: fromFileUrl(import.meta.resolve("./deno.json")),
+        }),
+    ] as unknown as esbuild.Plugin[],
+    entryPoints: [import.meta.resolve("./ui/main.tsx")],
+    bundle: true,
+    write: false,
+    format: "esm",
+    jsx: "automatic",
+    jsxImportSource: "preact",
 });
 
 esbuild.stop();
 
 if (!buildResult.outputFiles?.length) {
-  console.error("UI bundle produced no output — check the build errors above.");
-  Deno.exit(1);
+    console.error(
+        "UI bundle produced no output — check the build errors above.",
+    );
+    Deno.exit(1);
 }
 
 const bundledJs = buildResult.outputFiles[0].text;
@@ -108,244 +110,296 @@ const PORT = 8080;
 console.log(`Listening at http://localhost:${PORT}`);
 
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
-  const { pathname } = new URL(req.url);
+    const { pathname } = new URL(req.url);
 
-  if (pathname === "/") {
-    return new Response(HTML, {
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
-  }
-
-  if (pathname === "/app.js") {
-    return new Response(bundledJs, {
-      headers: { "content-type": "application/javascript; charset=utf-8" },
-    });
-  }
-
-  if (pathname === "/api/board" && req.method === "GET") {
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
-
-  if (pathname === "/api/board" && req.method === "PATCH") {
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-        status: 400,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+    if (pathname === "/") {
+        return new Response(HTML, {
+            headers: { "content-type": "text/html; charset=utf-8" },
+        });
     }
 
-    const name = typeof body.name === "string" ? body.name.trim() : null;
-    if (!name) {
-      return new Response(JSON.stringify({ error: "name must be a non-empty string" }), {
-        status: 400,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+    if (pathname === "/app.js") {
+        return new Response(bundledJs, {
+            headers: {
+                "content-type": "application/javascript; charset=utf-8",
+            },
+        });
     }
 
-    board = { ...board, name };
-    await save(boardPath, board);
-
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
-
-  // PATCH /api/cards/:id — update a card's text
-  const patchCardMatch = pathname.match(/^\/api\/cards\/(\d+)$/);
-  if (patchCardMatch && req.method === "PATCH") {
-    const id = parseInt(patchCardMatch[1]);
-
-    if (!board.cards[String(id)]) {
-      return new Response(JSON.stringify({ error: "Card not found" }), {
-        status: 404,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+    if (pathname === "/api/board" && req.method === "GET") {
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-        status: 400,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+    if (pathname === "/api/board" && req.method === "PATCH") {
+        let body: Record<string, unknown>;
+        try {
+            body = await req.json();
+        } catch {
+            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+                status: 400,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
+
+        const name = typeof body.name === "string" ? body.name.trim() : null;
+        if (!name) {
+            return new Response(
+                JSON.stringify({ error: "name must be a non-empty string" }),
+                {
+                    status: 400,
+                    headers: {
+                        "content-type": "application/json; charset=utf-8",
+                    },
+                },
+            );
+        }
+
+        board = { ...board, name };
+        await save(boardPath, board);
+
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    const text = typeof body.text === "string" ? body.text : null;
-    if (text === null) {
-      return new Response(JSON.stringify({ error: "text must be a string" }), {
-        status: 400,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+    // PATCH /api/cards/:id — update a card's text
+    const patchCardMatch = pathname.match(/^\/api\/cards\/(\d+)$/);
+    if (patchCardMatch && req.method === "PATCH") {
+        const id = parseInt(patchCardMatch[1]);
+
+        if (!board.cards[String(id)]) {
+            return new Response(JSON.stringify({ error: "Card not found" }), {
+                status: 404,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
+
+        let body: Record<string, unknown>;
+        try {
+            body = await req.json();
+        } catch {
+            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+                status: 400,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
+
+        const text = typeof body.text === "string" ? body.text : null;
+        if (text === null) {
+            return new Response(
+                JSON.stringify({ error: "text must be a string" }),
+                {
+                    status: 400,
+                    headers: {
+                        "content-type": "application/json; charset=utf-8",
+                    },
+                },
+            );
+        }
+
+        const updatedCard: Card = { ...board.cards[String(id)], text };
+        board = {
+            ...board,
+            cards: { ...board.cards, [String(id)]: updatedCard },
+        };
+        await save(boardPath, board);
+
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    const updatedCard: Card = { ...board.cards[String(id)], text };
-    board = { ...board, cards: { ...board.cards, [String(id)]: updatedCard } };
-    await save(boardPath, board);
+    // POST /api/cards — add a new card (optional body: { text?: string })
+    if (pathname === "/api/cards" && req.method === "POST") {
+        let body: Record<string, unknown> = {};
+        try {
+            body = await req.json();
+        } catch {
+            /* body is optional */
+        }
 
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
+        const text = typeof body.text === "string" ? body.text : "";
+        const id = board.next_card_id;
+        const newCard: Card = { id, text, tags: [] };
 
-  // POST /api/cards — add a new card (optional body: { text?: string })
-  if (pathname === "/api/cards" && req.method === "POST") {
-    let body: Record<string, unknown> = {};
-    try { body = await req.json(); } catch { /* body is optional */ }
+        board = {
+            ...board,
+            cards: { ...board.cards, [String(id)]: newCard },
+            next_card_id: board.next_card_id + 1,
+            card_order: [...board.card_order, id],
+        };
+        await save(boardPath, board);
 
-    const text = typeof body.text === "string" ? body.text : "New card";
-    const id = board.next_card_id;
-    const newCard: Card = { id, text, tags: [] };
-
-    board = {
-      ...board,
-      cards: { ...board.cards, [String(id)]: newCard },
-      next_card_id: board.next_card_id + 1,
-      card_order: [...board.card_order, id],
-    };
-    await save(boardPath, board);
-
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
-
-  // POST /api/cards/:id/tags — add a tag to a card
-  const postTagMatch = pathname.match(/^\/api\/cards\/(\d+)\/tags$/);
-  if (postTagMatch && req.method === "POST") {
-    const id = parseInt(postTagMatch[1]);
-
-    if (!board.cards[String(id)]) {
-      return new Response(JSON.stringify({ error: "Card not found" }), {
-        status: 404,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-        status: 400,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+    // POST /api/cards/:id/tags — add a tag to a card
+    const postTagMatch = pathname.match(/^\/api\/cards\/(\d+)\/tags$/);
+    if (postTagMatch && req.method === "POST") {
+        const id = parseInt(postTagMatch[1]);
+
+        if (!board.cards[String(id)]) {
+            return new Response(JSON.stringify({ error: "Card not found" }), {
+                status: 404,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
+
+        let body: Record<string, unknown>;
+        try {
+            body = await req.json();
+        } catch {
+            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+                status: 400,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
+
+        const tag = typeof body.tag === "string" ? body.tag.trim() : null;
+        if (
+            !tag ||
+            !tag.includes(":") ||
+            tag.indexOf(":") === 0 ||
+            tag.indexOf(":") === tag.length - 1
+        ) {
+            return new Response(
+                JSON.stringify({
+                    error: "tag must be a non-empty string in 'category:value' format",
+                }),
+                {
+                    status: 400,
+                    headers: {
+                        "content-type": "application/json; charset=utf-8",
+                    },
+                },
+            );
+        }
+
+        const card = board.cards[String(id)];
+        if (!card.tags.includes(tag)) {
+            const updatedCard: Card = { ...card, tags: [...card.tags, tag] };
+            board = {
+                ...board,
+                cards: { ...board.cards, [String(id)]: updatedCard },
+            };
+            await save(boardPath, board);
+        }
+
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    const tag = typeof body.tag === "string" ? body.tag.trim() : null;
-    if (!tag || !tag.includes(":") || tag.indexOf(":") === 0 || tag.indexOf(":") === tag.length - 1) {
-      return new Response(
-        JSON.stringify({ error: "tag must be a non-empty string in 'category:value' format" }),
-        { status: 400, headers: { "content-type": "application/json; charset=utf-8" } },
-      );
+    // DELETE /api/cards/:id/tags/:tag — remove a tag from a card (:tag is URL-encoded)
+    const deleteTagMatch = pathname.match(/^\/api\/cards\/(\d+)\/tags\/(.+)$/);
+    if (deleteTagMatch && req.method === "DELETE") {
+        const id = parseInt(deleteTagMatch[1]);
+        const tag = decodeURIComponent(deleteTagMatch[2]);
+
+        if (!board.cards[String(id)]) {
+            return new Response(JSON.stringify({ error: "Card not found" }), {
+                status: 404,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
+
+        const card = board.cards[String(id)];
+        const updatedCard: Card = {
+            ...card,
+            tags: card.tags.filter((t) => t !== tag),
+        };
+        board = {
+            ...board,
+            cards: { ...board.cards, [String(id)]: updatedCard },
+        };
+        await save(boardPath, board);
+
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    const card = board.cards[String(id)];
-    if (!card.tags.includes(tag)) {
-      const updatedCard: Card = { ...card, tags: [...card.tags, tag] };
-      board = { ...board, cards: { ...board.cards, [String(id)]: updatedCard } };
-      await save(boardPath, board);
+    // DELETE /api/cards/:id — remove a card
+    const deleteMatch = pathname.match(/^\/api\/cards\/(\d+)$/);
+    if (deleteMatch && req.method === "DELETE") {
+        const id = parseInt(deleteMatch[1]);
+
+        if (!board.cards[String(id)]) {
+            return new Response(JSON.stringify({ error: "Card not found" }), {
+                status: 404,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
+
+        const { [String(id)]: _removed, ...remainingCards } = board.cards;
+        board = {
+            ...board,
+            cards: remainingCards,
+            card_order: board.card_order.filter((cid) => cid !== id),
+        };
+        await save(boardPath, board);
+
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
+    // PUT /api/card_order — reorder cards
+    if (pathname === "/api/card_order" && req.method === "PUT") {
+        let body: Record<string, unknown>;
+        try {
+            body = await req.json();
+        } catch {
+            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+                status: 400,
+                headers: { "content-type": "application/json; charset=utf-8" },
+            });
+        }
 
-  // DELETE /api/cards/:id/tags/:tag — remove a tag from a card (:tag is URL-encoded)
-  const deleteTagMatch = pathname.match(/^\/api\/cards\/(\d+)\/tags\/(.+)$/);
-  if (deleteTagMatch && req.method === "DELETE") {
-    const id = parseInt(deleteTagMatch[1]);
-    const tag = decodeURIComponent(deleteTagMatch[2]);
+        if (!Array.isArray(body.card_order)) {
+            return new Response(
+                JSON.stringify({ error: "card_order must be an array" }),
+                {
+                    status: 400,
+                    headers: {
+                        "content-type": "application/json; charset=utf-8",
+                    },
+                },
+            );
+        }
 
-    if (!board.cards[String(id)]) {
-      return new Response(JSON.stringify({ error: "Card not found" }), {
-        status: 404,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+        const newOrder = (body.card_order as unknown[]).map(Number);
+        const existingIds = new Set(board.card_order);
+        const newIds = new Set(newOrder);
+
+        if (
+            newOrder.length !== board.card_order.length ||
+            ![...existingIds].every((id) => newIds.has(id))
+        ) {
+            return new Response(
+                JSON.stringify({
+                    error: "card_order must contain exactly the existing card IDs",
+                }),
+                {
+                    status: 400,
+                    headers: {
+                        "content-type": "application/json; charset=utf-8",
+                    },
+                },
+            );
+        }
+
+        board = { ...board, card_order: newOrder };
+        await save(boardPath, board);
+
+        return new Response(JSON.stringify(board), {
+            headers: { "content-type": "application/json; charset=utf-8" },
+        });
     }
 
-    const card = board.cards[String(id)];
-    const updatedCard: Card = { ...card, tags: card.tags.filter((t) => t !== tag) };
-    board = { ...board, cards: { ...board.cards, [String(id)]: updatedCard } };
-    await save(boardPath, board);
-
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
-
-  // DELETE /api/cards/:id — remove a card
-  const deleteMatch = pathname.match(/^\/api\/cards\/(\d+)$/);
-  if (deleteMatch && req.method === "DELETE") {
-    const id = parseInt(deleteMatch[1]);
-
-    if (!board.cards[String(id)]) {
-      return new Response(JSON.stringify({ error: "Card not found" }), {
-        status: 404,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
-    }
-
-    const { [String(id)]: _removed, ...remainingCards } = board.cards;
-    board = {
-      ...board,
-      cards: remainingCards,
-      card_order: board.card_order.filter((cid) => cid !== id),
-    };
-    await save(boardPath, board);
-
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
-
-  // PUT /api/card_order — reorder cards
-  if (pathname === "/api/card_order" && req.method === "PUT") {
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-        status: 400,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
-    }
-
-    if (!Array.isArray(body.card_order)) {
-      return new Response(JSON.stringify({ error: "card_order must be an array" }), {
-        status: 400,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
-    }
-
-    const newOrder = (body.card_order as unknown[]).map(Number);
-    const existingIds = new Set(board.card_order);
-    const newIds = new Set(newOrder);
-
-    if (
-      newOrder.length !== board.card_order.length ||
-      ![...existingIds].every((id) => newIds.has(id))
-    ) {
-      return new Response(
-        JSON.stringify({ error: "card_order must contain exactly the existing card IDs" }),
-        { status: 400, headers: { "content-type": "application/json; charset=utf-8" } },
-      );
-    }
-
-    board = { ...board, card_order: newOrder };
-    await save(boardPath, board);
-
-    return new Response(JSON.stringify(board), {
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
-  }
-
-  return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", { status: 404 });
 });
