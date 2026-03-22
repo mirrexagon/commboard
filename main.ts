@@ -111,22 +111,26 @@ function extractFaviconUrl(html: string, pageUrl: string): string {
 const MAX_ASSET_BYTES = 5 * 1024 * 1024; // 5 MB
 
 /**
- * Fetch a URL and return it as a base-64 `data:…` string, or `undefined`
- * if the fetch fails, times out, or the resource is too large.
+ * Fetch a URL and return its content as a base-64 `data:…` string, or an
+ * error message if the fetch fails, times out, or the resource is too large.
  */
-async function fetchAsBase64(url: string): Promise<string | undefined> {
+async function fetchAsBase64(url: string): Promise<{ data?: string; error?: string }> {
     try {
         const res = await fetch(url, {
             signal: AbortSignal.timeout(15_000),
             headers: { "User-Agent": "Commboard/1.0 embed-bot" },
         });
-        if (!res.ok) return undefined;
+        if (!res.ok) return { error: `HTTP ${res.status}` };
 
         const cl = res.headers.get("content-length");
-        if (cl && parseInt(cl, 10) > MAX_ASSET_BYTES) return undefined;
+        if (cl && parseInt(cl, 10) > MAX_ASSET_BYTES) {
+            return { error: `Asset too large (> ${MAX_ASSET_BYTES / 1024 / 1024} MB)` };
+        }
 
         const buf = await res.arrayBuffer();
-        if (buf.byteLength > MAX_ASSET_BYTES) return undefined;
+        if (buf.byteLength > MAX_ASSET_BYTES) {
+            return { error: `Asset too large (> ${MAX_ASSET_BYTES / 1024 / 1024} MB)` };
+        }
 
         const mimeType = (
             res.headers.get("content-type") ?? "application/octet-stream"
@@ -143,9 +147,9 @@ async function fetchAsBase64(url: string): Promise<string | undefined> {
                 ...bytes.subarray(i, Math.min(i + CHUNK, bytes.length)),
             );
         }
-        return `data:${mimeType};base64,${btoa(binary)}`;
-    } catch {
-        return undefined;
+        return { data: `data:${mimeType};base64,${btoa(binary)}` };
+    } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err) };
     }
 }
 
@@ -219,10 +223,17 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
     console.log(
         `  Fetching assets for ${url} (image: ${imageUrl ?? "none"}, favicon: ${faviconUrl})`,
     );
-    const [imageData, faviconData] = await Promise.all([
-        imageUrl ? fetchAsBase64(imageUrl) : Promise.resolve(undefined),
+    const [imageResult, faviconResult] = await Promise.all([
+        imageUrl ? fetchAsBase64(imageUrl) : Promise.resolve<{ data?: string; error?: string }>({}),
         fetchAsBase64(faviconUrl),
     ]);
+
+    if (imageResult.error) {
+        console.warn(`  Image asset fetch failed for ${url}: ${imageResult.error}`);
+    }
+    if (faviconResult.error) {
+        console.warn(`  Favicon fetch failed for ${url}: ${faviconResult.error}`);
+    }
 
     return {
         url,
@@ -231,9 +242,11 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
         description,
         site_name: siteName,
         image_url: imageUrl,
-        image_data: imageData,
+        image_data: imageResult.data,
+        image_data_error: imageResult.error,
         favicon_url: faviconUrl,
-        favicon_data: faviconData,
+        favicon_data: faviconResult.data,
+        favicon_data_error: faviconResult.error,
     };
 }
 
@@ -496,19 +509,68 @@ function isValidFilePath(path: string): boolean {
 
 /**
  * Return a version of the board safe to send to the frontend:
- * the `data` field is stripped from every embedded file so that large
- * base64 blobs are not included in board API responses.  Files are
- * served directly via GET /files/:path.
+ *
+ * - `embedded_files[*].data` is stripped; files are served via GET /files/:path.
+ * - `embed_cache[*].image_data` and `.favicon_data` are stripped; the cached
+ *   assets are served via GET /api/embeds/image and /api/embeds/favicon.
+ *   Boolean `image_cached` / `favicon_cached` flags are injected so the
+ *   frontend knows whether the asset is available on the server.
  */
 function boardForClient(b: typeof board): object {
-    if (!b.embedded_files) return b;
-    const strippedFiles = Object.fromEntries(
-        Object.entries(b.embedded_files).map(([k, v]) => [
-            k,
-            { path: v.path, mime_type: v.mime_type, uploaded_at: v.uploaded_at },
-        ]),
-    );
-    return { ...b, embedded_files: strippedFiles };
+    const result: Record<string, unknown> = { ...b };
+
+    if (b.embedded_files) {
+        result.embedded_files = Object.fromEntries(
+            Object.entries(b.embedded_files).map(([k, v]) => [
+                k,
+                { path: v.path, mime_type: v.mime_type, uploaded_at: v.uploaded_at },
+            ]),
+        );
+    }
+
+    if (b.embed_cache) {
+        result.embed_cache = Object.fromEntries(
+            Object.entries(b.embed_cache).map(([url, entry]) => {
+                const { image_data, favicon_data, ...rest } = entry;
+                return [url, {
+                    ...rest,
+                    image_cached: !!image_data,
+                    favicon_cached: !!favicon_data,
+                }];
+            }),
+        );
+    }
+
+    return result;
+}
+
+/**
+ * Decode a `data:<mime>;base64,<b64>` string and return it as a binary
+ * HTTP response with the appropriate Content-Type.  Used to serve cached
+ * embed assets (OG images, favicons) via dedicated endpoints.
+ */
+function serveDataUrl(dataUrl: string, headOnly: boolean): Response {
+    const commaIdx = dataUrl.indexOf(",");
+    if (commaIdx === -1) return new Response("Internal Server Error", { status: 500 });
+    const meta = dataUrl.slice("data:".length, commaIdx); // e.g. "image/png;base64"
+    const mimeType = meta.split(";")[0] || "application/octet-stream";
+    const b64 = dataUrl.slice(commaIdx + 1);
+    let bytes: Uint8Array;
+    try {
+        const binary = atob(b64);
+        bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    } catch {
+        return new Response("Internal Server Error", { status: 500 });
+    }
+    return new Response(headOnly ? null : bytes.buffer as ArrayBuffer, {
+        headers: {
+            "content-type": mimeType,
+            "content-length": String(bytes.length),
+            // Embed assets are re-fetched on demand, so a modest browser cache is fine.
+            "cache-control": "public, max-age=3600",
+        },
+    });
 }
 
 const PORT = 8080;
@@ -865,6 +927,30 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         await save(boardPath, board);
 
         return jsonOk(boardForClient(board));
+    }
+
+    // GET /HEAD /api/embeds/image?url=<encoded> — serve a cached OG image
+    if (
+        pathname === "/api/embeds/image" &&
+        (req.method === "GET" || req.method === "HEAD")
+    ) {
+        const embedUrl = new URL(req.url).searchParams.get("url");
+        if (!embedUrl) return jsonError("url query parameter is required", 400);
+        const entry = (board.embed_cache ?? {})[embedUrl];
+        if (!entry?.image_data) return new Response("Not Found", { status: 404 });
+        return serveDataUrl(entry.image_data, req.method === "HEAD");
+    }
+
+    // GET /HEAD /api/embeds/favicon?url=<encoded> — serve a cached favicon
+    if (
+        pathname === "/api/embeds/favicon" &&
+        (req.method === "GET" || req.method === "HEAD")
+    ) {
+        const embedUrl = new URL(req.url).searchParams.get("url");
+        if (!embedUrl) return jsonError("url query parameter is required", 400);
+        const entry = (board.embed_cache ?? {})[embedUrl];
+        if (!entry?.favicon_data) return new Response("Not Found", { status: 404 });
+        return serveDataUrl(entry.favicon_data, req.method === "HEAD");
     }
 
     // POST /api/embeds/fetch — enqueue a single URL for fetching / refetching

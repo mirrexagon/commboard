@@ -208,13 +208,15 @@ function generateEmbedHtml(embed: EmbedData): string {
     }
   })();
 
+  const encodedEmbedUrl = encodeURIComponent(embed.url);
+
   const imgHtml =
-    !embed.error && embed.image_data
-      ? `<img src="${embed.image_data}" alt="" loading="lazy" class="w-full max-h-36 object-cover">`
+    !embed.error && embed.image_cached
+      ? `<img src="/api/embeds/image?url=${encodedEmbedUrl}" alt="" loading="lazy" class="w-full max-h-36 object-cover">`
       : "";
 
-  const faviconHtml = embed.favicon_data
-    ? `<img src="${embed.favicon_data}" alt="" loading="lazy" class="w-3.5 h-3.5 rounded-sm shrink-0">`
+  const faviconHtml = embed.favicon_cached
+    ? `<img src="/api/embeds/favicon?url=${encodedEmbedUrl}" alt="" loading="lazy" class="w-3.5 h-3.5 rounded-sm shrink-0">`
     : `<span class="shrink-0 text-gray-400 dark:text-gray-500 text-xs">🔗</span>`;
 
   const siteLabel = escapeHtml(embed.site_name || domain);

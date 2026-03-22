@@ -34,15 +34,29 @@ export interface EmbedData {
   image_url?: string;
   /** Base-64 data URL for the og:image, cached for offline use. */
   image_data?: string;
+  /** Reason the OG image asset could not be fetched/cached (e.g. "Asset too large"). */
+  image_data_error?: string;
   /** Original favicon URL. */
   favicon_url?: string;
   /** Base-64 data URL for the favicon, cached for offline use. */
   favicon_data?: string;
+  /** Reason the favicon asset could not be fetched/cached. */
+  favicon_data_error?: string;
   /**
    * MIME content-type of the fetched resource.  Only set for non-HTML
    * resources (direct file downloads).  Absent for HTML page embeds.
    */
   content_type?: string;
+  /**
+   * Set by boardForClient (not stored on disk): true when image_data is
+   * available server-side and can be fetched via GET /api/embeds/image.
+   */
+  image_cached?: boolean;
+  /**
+   * Set by boardForClient (not stored on disk): true when favicon_data is
+   * available server-side and can be fetched via GET /api/embeds/favicon.
+   */
+  favicon_cached?: boolean;
 }
 
 export interface Board {
