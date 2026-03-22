@@ -68,6 +68,9 @@ including on error or tool timeout. Poll for readiness instead of sleeping a
 fixed amount.
 
 ```bash
+# Kill any leftover deno process from a previous run first
+pkill deno 2>/dev/null; sleep 0.5
+
 # Start the server
 deno run --allow-read --allow-write --allow-net --allow-run --allow-env \
   main.ts /tmp/test-board.json &
@@ -89,17 +92,25 @@ curl -sf http://localhost:8080/api/board
 # Cleanup is automatic via the trap — no explicit kill needed at the end
 ```
 
+After the bash block finishes, verify cleanup succeeded:
+
+```bash
+pidof deno && echo "WARNING: deno still running" || echo "clean"
+```
+
 Important notes:
+- **Always `pkill deno` before starting** to clear any process left by a
+  previous run. The server binds port 8080; a stale process will cause the new
+  one to fail silently.
+- **Always verify with `pidof deno`** in a separate bash call after the test
+  block to confirm the process was actually cleaned up.
 - Do **not** wrap the `deno run` command in `timeout X`. Let the trap handle cleanup.
 - Do **not** use job-control syntax (`kill %1`, `fg`, `jobs`, etc.). Job control
   is disabled in non-interactive shells, so `kill %1` silently does nothing and
-  the server process is left running. Always use the explicit `$SERVER_PID`
+  the deno child process is left running. Always use the explicit `$SERVER_PID`
   variable captured right after the `&`.
 - Use a fresh temp file for each test run (e.g. `/tmp/test-board-$$.json`) if
   there is any risk of a previous run having left a stale file.
-- The server listens on port 8080. If a previous test left a process running,
-  the next bind will fail. Run `kill $(pidof deno)` or
-  `lsof -ti:8080 | xargs kill` to clear it before retrying.
 
 ## Adding frontend dependencies
 
