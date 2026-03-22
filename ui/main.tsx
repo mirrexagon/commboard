@@ -297,7 +297,7 @@ function CategoryColumn({
   onAddTag,
   onRemoveTag,
 }: CategoryColumnProps) {
-  const [headerBg, headerText, headerBorder] = tagPalette(category, darkMode);
+  const { bg: headerBg, text: headerText, border: headerBorder } = tagPalette(category, darkMode);
 
   // End-zone / empty-column styling
   const endZoneActive = dropAtEnd || (isCrossColumnTarget && !isDropDisabled && cards.length === 0);
@@ -314,7 +314,8 @@ function CategoryColumn({
     <div class="flex flex-col gap-3 w-72 flex-shrink-0">
       {/* Column header */}
       <div
-        class={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-semibold text-sm select-none ${headerBg} ${headerText} ${headerBorder}`}
+        class="flex items-center gap-2 px-3 py-1.5 rounded-lg border font-semibold text-sm select-none"
+        style={{ backgroundColor: headerBg, color: headerText, borderColor: headerBorder }}
       >
         <span class="opacity-60 font-normal text-xs">{category}</span>
         <span>{value}</span>
