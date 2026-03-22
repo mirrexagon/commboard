@@ -180,6 +180,7 @@ function MoveToPositionDialog({
 interface CardGridProps {
   cards: Card[];
   allTags: string[];
+  tagCounts: Record<string, number>;
   darkMode: boolean;
   /** When set, cards are filtered to those matching this query and drag-and-drop is disabled. */
   filterQuery: string;
@@ -193,7 +194,7 @@ interface CardGridProps {
   onFetchEmbed: (url: string, refetch: boolean) => void;
 }
 
-function CardGrid({ cards, allTags, darkMode, filterQuery, embedCache, embeddedFiles, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag, onFetchEmbed }: CardGridProps) {
+function CardGrid({ cards, allTags, tagCounts, darkMode, filterQuery, embedCache, embeddedFiles, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag, onFetchEmbed }: CardGridProps) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
@@ -331,6 +332,7 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, embedCache, embeddedF
             key={card.id}
             card={card}
             allTags={allTags}
+            tagCounts={tagCounts}
             darkMode={darkMode}
             isDragging={draggedId === card.id}
             isDropTarget={dropTargetId === card.id}
@@ -417,6 +419,7 @@ interface CategoryColumnProps {
   /** Cards belonging to this column, in global order. */
   cards: Card[];
   allTags: string[];
+  tagCounts: Record<string, number>;
   darkMode: boolean;
   /** When true, drag-and-drop is disabled (filter is active). */
   isDragDisabled: boolean;
@@ -460,6 +463,7 @@ function CategoryColumn({
   value,
   cards,
   allTags,
+  tagCounts,
   darkMode,
   isDragDisabled,
   activeDragId,
@@ -531,6 +535,7 @@ function CategoryColumn({
               key={card.id}
               card={card}
               allTags={allTags}
+              tagCounts={tagCounts}
               darkMode={darkMode}
               isDragging={activeDragId === card.id}
               isDropTarget={dropTargetCardId === card.id}
@@ -589,6 +594,7 @@ interface CategoryViewProps {
   board: Board;
   category: string;
   allTags: string[];
+  tagCounts: Record<string, number>;
   darkMode: boolean;
   /** When set, cards in each column are filtered and drag-and-drop is disabled. */
   filterQuery: string;
@@ -613,6 +619,7 @@ function CategoryView({
   board,
   category,
   allTags,
+  tagCounts,
   darkMode,
   filterQuery,
   embedCache,
@@ -743,6 +750,7 @@ function CategoryView({
             value={v}
             cards={displayColumnCards}
             allTags={allTags}
+            tagCounts={tagCounts}
             darkMode={darkMode}
             isDragDisabled={isFiltering}
             activeDragId={ds?.draggedId ?? null}
@@ -1107,6 +1115,12 @@ function App() {
     ...new Set(allTags.map((t) => t.slice(0, t.indexOf(":")))),
   ].sort();
 
+  // How many cards carry each exact tag.
+  const tagCounts: Record<string, number> = {};
+  for (const tag of allTags) {
+    tagCounts[tag] = cards.filter((c) => c.tags.includes(tag)).length;
+  }
+
   // How many cards have at least one tag in each category.
   const categoryCounts: Record<string, number> = {};
   for (const cat of allCategories) {
@@ -1151,6 +1165,7 @@ function App() {
                 board={board}
                 category={activeCategory}
                 allTags={allTags}
+                tagCounts={tagCounts}
                 darkMode={darkMode}
                 filterQuery={searchQuery}
                 embedCache={embedCache}
@@ -1167,6 +1182,7 @@ function App() {
               <CardGrid
                 cards={cards}
                 allTags={allTags}
+                tagCounts={tagCounts}
                 darkMode={darkMode}
                 filterQuery={searchQuery}
                 embedCache={embedCache}

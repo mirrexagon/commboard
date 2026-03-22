@@ -8,12 +8,13 @@ import type { EmbedData, EmbeddedFile } from "../../board.ts";
 
 interface TagInputProps {
   allTags: string[];
+  tagCounts: Record<string, number>;
   existingTags: string[];
   onAdd: (tag: string) => void;
   onCancel: () => void;
 }
 
-function TagInput({ allTags, existingTags, onAdd, onCancel }: TagInputProps) {
+function TagInput({ allTags, tagCounts, existingTags, onAdd, onCancel }: TagInputProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -80,13 +81,16 @@ function TagInput({ allTags, existingTags, onAdd, onCancel }: TagInputProps) {
           {suggestions.map((tag) => (
             <button
               key={tag}
-              class="block w-full text-left text-xs px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 cursor-pointer"
+              class="flex items-center gap-2 w-full text-left text-xs px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 cursor-pointer"
               onMouseDown={(e) => {
                 e.preventDefault();
                 submit(tag);
               }}
             >
-              {tag}
+              <span class="flex-1">{tag}</span>
+              <span class="text-gray-400 dark:text-gray-500 font-mono tabular-nums">
+                {tagCounts[tag] ?? 0}
+              </span>
             </button>
           ))}
         </div>
@@ -421,6 +425,7 @@ function parseTag(raw: string): ParsedTag {
 interface Props {
   card: Card;
   allTags: string[];
+  tagCounts: Record<string, number>;
   darkMode: boolean;
   isDragging: boolean;
   isDropTarget: boolean;
@@ -444,6 +449,7 @@ interface Props {
 export function CardItem({
   card,
   allTags,
+  tagCounts,
   darkMode,
   isDragging,
   isDropTarget,
@@ -740,6 +746,7 @@ export function CardItem({
           addingTag ? (
             <TagInput
               allTags={allTags}
+              tagCounts={tagCounts}
               existingTags={card.tags}
               onAdd={(tag) => { setAddingTag(false); onAddTag(tag); }}
               onCancel={() => setAddingTag(false)}
