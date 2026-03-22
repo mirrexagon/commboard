@@ -1,6 +1,6 @@
 import { marked } from "marked";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { tagPalette } from "../lib/colors.ts";
+import { tagAccentBg, tagPalette } from "../lib/colors.ts";
 
 // ── Tag input with autocomplete ──────────────────────────────────────────────
 
@@ -221,11 +221,19 @@ export function CardItem({
   const html = marked.parse(card.text) as string;
   const tags = [...card.tags].sort().map(parseTag);
 
+  // Accent bar: color driven by the first tag's category, or neutral if no tags.
+  const firstCategory = tags.length > 0 ? tags[0].category : null;
+  const accentBg = firstCategory
+    ? tagAccentBg(firstCategory, darkMode)
+    : darkMode
+      ? "bg-gray-700"
+      : "bg-gray-200";
+
   return (
     <div
       class={[
         "group bg-white dark:bg-gray-800 rounded-xl shadow-sm",
-        "flex flex-col min-w-0 relative",
+        "flex flex-col min-w-0",
         "transition-all duration-150",
         // Ring: blue when drop target or editing, default otherwise
         editing
@@ -246,57 +254,76 @@ export function CardItem({
       onDrop={editing || addingTag ? undefined : onDrop}
       onDragEnd={editing || addingTag ? undefined : onDragEnd}
     >
-      {/* ── Action buttons (top-right), visible on hover, hidden while editing ── */}
-      {!editing && (
-        <div
-          class={[
-            "absolute top-2 right-2 z-10 flex gap-1",
-            "opacity-0 group-hover:opacity-100 transition-opacity duration-100",
-            isDragging ? "!opacity-0" : "",
-          ].join(" ")}
-        >
-          {/* Edit (pencil) button */}
-          <button
-            class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-100 cursor-pointer"
-            onClick={(e) => { e.stopPropagation(); startEditing(); }}
-            title="Edit card (click body to edit too)"
-            aria-label="Edit card"
+      {/* ── Accent bar ── */}
+      <div class={`h-1.5 rounded-t-xl ${accentBg} transition-colors duration-200`} />
+
+      {/* ── Card header row: drag handle | #ID | spacer | edit + delete ── */}
+      <div class="flex items-center px-2 pt-1 pb-0.5 min-w-0">
+        {/* Drag-handle hint — same size as icon buttons, fades in on hover */}
+        {!editing ? (
+          <div
+            class={[
+              "w-6 h-6 flex items-center justify-center shrink-0",
+              "text-gray-300 dark:text-gray-600",
+              "opacity-0 group-hover:opacity-100",
+              isDragging ? "!opacity-0" : "",
+              "transition-opacity duration-100 pointer-events-none select-none",
+            ].join(" ")}
+            aria-hidden="true"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5">
-              <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.776a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.263-4.264a1.75 1.75 0 0 0 0-2.474Z" />
-              <path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9a.75.75 0 0 1 1.5 0v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z" />
+              <path d="M5.5 3.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5.5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5.5 12.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM12.5 3.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM12.5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM12.5 12.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
             </svg>
-          </button>
+          </div>
+        ) : (
+          /* Keep the same space so the #ID stays in the same position */
+          <div class="w-6 h-6 shrink-0" />
+        )}
 
-          {/* Delete (×) button */}
-          <button
-            class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-100 cursor-pointer"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            title="Delete card"
-            aria-label="Delete card"
+        {/* Card ID */}
+        <span class="ml-0.5 text-xs text-gray-400 dark:text-gray-500 font-mono select-none leading-none">
+          #{card.id}
+        </span>
+
+        {/* Spacer */}
+        <div class="flex-1" />
+
+        {/* Edit + Delete — visible on hover, hidden while editing */}
+        {!editing && (
+          <div
+            class={[
+              "flex gap-1",
+              "opacity-0 group-hover:opacity-100 transition-opacity duration-100",
+              isDragging ? "!opacity-0" : "",
+            ].join(" ")}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5">
-              <path d="M3.22 3.22a.75.75 0 0 1 1.06 0L8 6.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L9.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L8 9.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L6.94 8 3.22 4.28a.75.75 0 0 1 0-1.06Z" />
-            </svg>
-          </button>
-        </div>
-      )}
+            {/* Edit (pencil) button */}
+            <button
+              class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-100 cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); startEditing(); }}
+              title="Edit card (click body to edit too)"
+              aria-label="Edit card"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5">
+                <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L6.75 6.776a2.75 2.75 0 0 0-.596.892l-.848 2.047a.75.75 0 0 0 .98.98l2.047-.848a2.75 2.75 0 0 0 .892-.596l4.263-4.264a1.75 1.75 0 0 0 0-2.474Z" />
+                <path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9a.75.75 0 0 1 1.5 0v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z" />
+              </svg>
+            </button>
 
-      {/* ── Drag-handle hint (top-left), hidden while editing ── */}
-      {!editing && (
-        <div
-          class={[
-            "absolute top-2 left-2 z-10",
-            "text-gray-300 dark:text-gray-600",
-            "opacity-0 group-hover:opacity-100",
-            isDragging ? "!opacity-0" : "",
-            "transition-opacity duration-100 pointer-events-none select-none text-xs leading-none",
-          ].join(" ")}
-          aria-hidden="true"
-        >
-          ⠿
-        </div>
-      )}
+            {/* Delete (×) button */}
+            <button
+              class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-100 cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              title="Delete card"
+              aria-label="Delete card"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5">
+                <path d="M3.22 3.22a.75.75 0 0 1 1.06 0L8 6.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L9.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L8 9.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L6.94 8 3.22 4.28a.75.75 0 0 1 0-1.06Z" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ── Card body ── */}
       {editing ? (
@@ -306,7 +333,7 @@ export function CardItem({
             ref={textareaRef}
             class={[
               "w-full resize-none overflow-hidden",
-              "px-4 pt-4 pb-2",
+              "px-4 pt-2 pb-2",
               "bg-transparent outline-none",
               "font-mono text-sm leading-relaxed",
               "text-gray-800 dark:text-gray-200",
@@ -327,7 +354,7 @@ export function CardItem({
       ) : (
         /* View mode — clicking enters edit mode */
         <div
-          class="card-prose px-4 pt-10 pb-2 flex-1 min-w-0 break-words cursor-text"
+          class="card-prose px-4 pt-1 pb-2 flex-1 min-w-0 break-words cursor-text"
           title="Click to edit"
           onClick={startEditing}
           dangerouslySetInnerHTML={{ __html: html }}
