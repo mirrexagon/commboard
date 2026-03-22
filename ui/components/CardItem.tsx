@@ -1,6 +1,6 @@
 import { marked } from "marked";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { tagAccentBg, tagPalette } from "../lib/colors.ts";
+import { tagAccentColor, tagPalette } from "../lib/colors.ts";
 
 // ── Tag input with autocomplete ──────────────────────────────────────────────
 
@@ -223,7 +223,7 @@ export function CardItem({
 
   // Accent bar: one segment per unique tag category (alphabetical order).
   const accentCategories = [...new Set(tags.map((t) => t.category))];
-  const neutralAccent = darkMode ? "bg-gray-700" : "bg-gray-200";
+  const neutralAccentColor = darkMode ? "#374151" : "#e5e7eb"; // gray-700 / gray-200
 
   return (
     <div
@@ -256,11 +256,12 @@ export function CardItem({
           accentCategories.map((cat) => (
             <div
               key={cat}
-              class={`flex-1 ${tagAccentBg(cat, darkMode)} transition-colors duration-200`}
+              class="flex-1 transition-colors duration-200"
+              style={{ backgroundColor: tagAccentColor(cat, darkMode) }}
             />
           ))
         ) : (
-          <div class={`flex-1 ${neutralAccent}`} />
+          <div class="flex-1" style={{ backgroundColor: neutralAccentColor }} />
         )}
       </div>
 
@@ -357,11 +358,12 @@ export function CardItem({
         ].join(" ")}
       >
         {tags.map(({ category, value, raw }) => {
-          const [bg, text, border] = tagPalette(category, darkMode);
+          const { bg, text, border } = tagPalette(category, darkMode);
           return (
             <span
               key={raw}
-              class={`group/tag inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${bg} ${text} ${border}`}
+              class="group/tag inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium"
+              style={{ backgroundColor: bg, color: text, borderColor: border }}
             >
               <span class="opacity-50 font-normal">{category}</span>
               {value && <span>{value}</span>}
