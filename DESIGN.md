@@ -91,8 +91,19 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
 - [x] Search/filter - search box to filter displayed cards on tag or body content text
 
 - Embedded files
-    - [ ] Add embedded files, eg. in virtual filesystem served by main executable webserver alongside UI, linked by relative path with Markdown - could be saved as base64
-    - [ ] Paste images and other files into a card to add them as embedded files, show them inline
+    - [ ] Add embedded files in virtual filesystem global to the board served by main executable webserver alongside UI, linked by relative path with Markdown - saved as base64 like fetched embed images
+        - Directories don't need to really exist, just save full path of files including slashes in a top level list - files should just be referenced by full path
+    - [ ] File browser for all embedded files, allowing uploading, deleting, renaming files - should have link to direct file URL from the server
+        - Renames should just be for editing the entire full file path, slashes included - one operation for renames and logically moving files
+        - [ ] Renames update all references to the file in cards
+        - [ ] Drag a file from the browser into a card being edited to put a link to it at the text cursor
+    - [ ] Show linked files inline
+        - show any embedded file linked as a embed card that has some indication it is an embedded file than a fetched embed
+        - Images as images, audio as an audio player, other files as just a card with the path listed
+        - Images linked with `![]()` should just show inline without an embed card, images and anything else linked by `[]()` should be in an embed card
+        - Update fetched embeds to have a little subtle "Embed" text and file ones can have "File"
+        - This logic should also apply to links directly to files outside the embedded filesystem, eg. embedded links
+    - [ ] Paste images and possibly other files that can be put into a clipboard into a card to add them as embedded files
 
 - [ ] Use external editor (configure via config file) instead of web one
     - Requires server to notify UI when editing is done, so it can update state
