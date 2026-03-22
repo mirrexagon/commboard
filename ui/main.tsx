@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 import { Header } from "./components/Header.tsx";
 import { CardItem, type Card } from "./components/CardItem.tsx";
+import { FileBrowser } from "./components/FileBrowser.tsx";
 import type { Board, EmbedData } from "../board.ts";
 import { tagPalette } from "./lib/colors.ts";
 
@@ -813,6 +814,7 @@ interface EmbedQueueStatus {
 function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
   const [darkMode, setDarkMode] = useState<boolean>(
     () => localStorage.getItem("darkMode") === "true",
   );
@@ -967,6 +969,46 @@ function App() {
     }
   }
 
+  // ── Embedded file operations ──
+
+  /**
+   * Like apiFetch but parses the server's JSON error body so the message
+   * shown to the user is meaningful (e.g. "A file already exists at that path"
+   * rather than just "HTTP 409").
+   */
+  async function fileApiFetch(url: string, options?: RequestInit): Promise<void> {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        if (typeof body.error === "string") message = body.error;
+      } catch { /* ignore parse errors */ }
+      throw new Error(message);
+    }
+    setBoard((await res.json()) as Board);
+  }
+
+  async function uploadFile(path: string, mimeType: string, data: string): Promise<void> {
+    await fileApiFetch("/api/files", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ path, mime_type: mimeType, data }),
+    });
+  }
+
+  async function renameFile(oldPath: string, newPath: string): Promise<void> {
+    await fileApiFetch(`/api/files/${oldPath}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ new_path: newPath }),
+    });
+  }
+
+  async function deleteFile(path: string): Promise<void> {
+    await fileApiFetch(`/api/files/${path}`, { method: "DELETE" });
+  }
+
   async function reorderCards(newOrder: number[]) {
     // Optimistic update so drag-and-drop feels instant.
     setBoard((prev) => (prev ? { ...prev, card_order: newOrder } : prev));
@@ -1060,6 +1102,9 @@ function App() {
   const embedCache: Record<string, EmbedData> = board.embed_cache ?? {};
   const embedQueueSize =
     embedQueueStatus.pending + (embedQueueStatus.processing ? 1 : 0);
+  const embeddedFiles = Object.values(board.embedded_files ?? {}).sort(
+    (a, b) => a.path.localeCompare(b.path),
+  );
 
   return (
     <div class="min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -1077,7 +1122,18 @@ function App() {
         onSearchChange={setSearchQuery}
         embedQueueSize={embedQueueSize}
         onFetchAllEmbeds={fetchAllMissingEmbeds}
+        embeddedFileCount={embeddedFiles.length}
+        onOpenFileBrowser={() => setFileBrowserOpen(true)}
       />
+      {fileBrowserOpen && (
+        <FileBrowser
+          files={embeddedFiles}
+          onClose={() => setFileBrowserOpen(false)}
+          onUpload={uploadFile}
+          onRename={renameFile}
+          onDelete={deleteFile}
+        />
+      )}
       <main class="max-w-screen-2xl mx-auto p-6">
         {activeCategory ? (
           <CategoryView

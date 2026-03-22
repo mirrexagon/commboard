@@ -108,6 +108,10 @@ interface Props {
   embedQueueSize: number;
   /** Trigger a batch fetch of all links across all cards that have no cached embed. */
   onFetchAllEmbeds: () => void;
+  /** Number of embedded files stored in the board, shown on the button badge. */
+  embeddedFileCount: number;
+  /** Open the embedded-files browser panel. */
+  onOpenFileBrowser: () => void;
 }
 
 export function Header({
@@ -124,6 +128,8 @@ export function Header({
   onSearchChange,
   embedQueueSize,
   onFetchAllEmbeds,
+  embeddedFileCount,
+  onOpenFileBrowser,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(boardName);
@@ -321,6 +327,22 @@ export function Header({
           </button>
         )}
       </div>
+
+      {/* Files button */}
+      <button
+        onClick={onOpenFileBrowser}
+        title="Browse and manage embedded files"
+        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors duration-150 select-none"
+        aria-label="Open file browser"
+      >
+        <span class="text-base leading-none">📁</span>
+        <span class="text-xs font-medium">Files</span>
+        {embeddedFileCount > 0 && (
+          <span class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full px-1.5 py-0.5 leading-none font-mono">
+            {embeddedFileCount}
+          </span>
+        )}
+      </button>
 
       {/* Add card button */}
       <button

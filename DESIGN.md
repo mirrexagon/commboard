@@ -93,9 +93,9 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
 - Embedded files
     - [x] Add embedded files in virtual filesystem global to the board served by main executable webserver alongside UI, linked by relative path with Markdown - saved as base64 like fetched embed images
         - Directories don't need to really exist, just save full path of files including slashes in a top level list - files should just be referenced by full path
-    - [ ] File browser for all embedded files, allowing uploading, deleting, renaming files - should have link to direct file URL from the server
+    - [x] File browser for all embedded files, allowing uploading, deleting, renaming files - should have link to direct file URL from the server
         - Renames should just be for editing the entire full file path, slashes included - one operation for renames and logically moving files
-        - [ ] Renames update all references to the file in cards
+        - [x] Renames update all references to the file in cards
         - [ ] Drag a file from the browser into a card being edited to put a link to it at the text cursor
     - [ ] Show linked files inline
         - show any embedded file linked as a embed card that has some indication it is an embedded file than a fetched embed
