@@ -845,41 +845,65 @@ function App() {
     pending: 0,
     processing: null,
   });
-  /** Interval handle for polling the embed queue while it is active. */
-  const embedPollRef = useRef<number | null>(null);
+  /**
+   * Set to true to stop the polling loop on the next iteration.
+   * Using a ref (not state) so the loop closure always reads the latest value
+   * without needing to be recreated.
+   */
+  const embedPollCancelRef = useRef<boolean>(false);
+  /** True while the async polling loop is running. Guards against double-starts. */
+  const embedPollActiveRef = useRef<boolean>(false);
 
   function startEmbedPolling() {
-    if (embedPollRef.current !== null) return; // already running
-    embedPollRef.current = setInterval(async () => {
-      try {
-        const qRes = await fetch("/api/embeds/queue");
-        if (!qRes.ok) return;
-        const q = (await qRes.json()) as EmbedQueueStatus;
-        setEmbedQueueStatus(q);
+    if (embedPollActiveRef.current) return; // already running
+    embedPollCancelRef.current = false;
+    embedPollActiveRef.current = true;
 
-        const isActive = q.pending > 0 || q.processing !== null;
-        if (isActive) {
-          // Refresh board state to pick up newly cached embeds.
-          fetchBoard().then(setBoard).catch(console.error);
-        } else {
-          // Queue finished — do one final board refresh and stop polling.
-          stopEmbedPolling();
-          fetchBoard().then(setBoard).catch(console.error);
+    // Sequential async loop: each iteration awaits the previous one fully before
+    // the next 2-second sleep begins.  This prevents parallel /api/board requests
+    // that would pile up when using setInterval + fire-and-forget fetchBoard().
+    void (async () => {
+      // Treat as "infinity" so the very first tick always triggers a board fetch
+      // if the queue has already made progress before this loop started.
+      let lastTotal = Infinity;
+
+      while (!embedPollCancelRef.current) {
+        await new Promise<void>((r) => setTimeout(r, 2_000));
+        if (embedPollCancelRef.current) break;
+
+        try {
+          const qRes = await fetch("/api/embeds/queue");
+          if (!qRes.ok || embedPollCancelRef.current) break;
+          const q = (await qRes.json()) as EmbedQueueStatus;
+          if (embedPollCancelRef.current) break;
+          setEmbedQueueStatus(q);
+
+          const total = q.pending + (q.processing !== null ? 1 : 0);
+
+          // Only fetch the board when work has actually completed since the last
+          // tick (total decreased).  This avoids hammering /api/board every 2 s
+          // on large boards where nothing changed yet.
+          if (total < lastTotal) {
+            try { setBoard(await fetchBoard()); } catch (e) { console.error(e); }
+          }
+          lastTotal = total;
+
+          if (total === 0) break; // queue drained; board already refreshed above
+        } catch (err) {
+          console.error("Embed queue poll failed:", err);
         }
-      } catch (err) {
-        console.error("Embed queue poll failed:", err);
       }
-    }, 2_000) as unknown as number;
+
+      embedPollActiveRef.current = false;
+    })();
   }
 
   function stopEmbedPolling() {
-    if (embedPollRef.current !== null) {
-      clearInterval(embedPollRef.current);
-      embedPollRef.current = null;
-    }
+    embedPollCancelRef.current = true;
+    // embedPollActiveRef resets itself when the loop exits naturally.
   }
 
-  // Clean up the polling interval on unmount.
+  // Cancel the polling loop when the component unmounts.
   useEffect(() => () => stopEmbedPolling(), []);
 
   // ── Global clipboard-paste handler ──
