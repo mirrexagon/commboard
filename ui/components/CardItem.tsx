@@ -146,13 +146,43 @@ function generateEmbedHtml(embed: EmbedData): string {
     !!embed.content_type && !embed.content_type.includes("text/html");
 
   if (isDirectFile) {
+    const isImage = embed.content_type!.startsWith("image/");
+    const isAudio = embed.content_type!.startsWith("audio/");
     const icon = fileIcon(embed.content_type);
     const filename = escapeHtml(
       embed.title ?? new URL(embed.url).pathname.split("/").filter(Boolean).pop() ?? embed.url,
     );
+
+    // Audio: <div> wrapper so native controls don't fight link navigation.
+    if (isAudio) {
+      return (
+        `<div class="card-embed block rounded-lg border ${borderCls} overflow-hidden transition-colors duration-150 my-2">` +
+        `<audio controls src="${url}" class="w-full block px-3 pt-2 pb-1"></audio>` +
+        `<div class="px-3 py-2 flex items-center gap-1.5 min-w-0">` +
+        `<span class="text-base leading-none select-none shrink-0">${icon}</span>` +
+        `<span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0">${filename}</span>` +
+        `<a href="${url}" target="_blank" rel="noopener noreferrer" ` +
+        `class="shrink-0 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 text-xs px-1" ` +
+        `title="Open in new tab">↗</a>` +
+        `<button data-refetch-url="${url}" ` +
+        `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1" ` +
+        `title="Refetch">↺</button>` +
+        `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">File</span>` +
+        `</div>` +
+        `</div>`
+      );
+    }
+
+    // Image: thumbnail banner loaded directly from the URL.
+    const imageHtml = isImage
+      ? `<img src="${url}" alt="${filename}" loading="lazy" ` +
+        `class="w-full max-h-48 object-contain bg-gray-50 dark:bg-gray-900">`
+      : "";
+
     return (
       `<a href="${url}" target="_blank" rel="noopener noreferrer" ` +
       `class="card-embed block rounded-lg border ${borderCls} overflow-hidden transition-colors duration-150 my-2">` +
+      imageHtml +
       `<div class="px-3 py-2 flex items-center gap-1.5 min-w-0">` +
       `<span class="text-base leading-none select-none shrink-0">${icon}</span>` +
       `<span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0">${filename}</span>` +
@@ -160,9 +190,6 @@ function generateEmbedHtml(embed: EmbedData): string {
       `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1" ` +
       `title="Refetch">↺</button>` +
       `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">File</span>` +
-      `</div>` +
-      `<div class="px-3 pb-2 text-xs text-gray-400 dark:text-gray-500">` +
-      `${escapeHtml(embed.content_type ?? "")} · Fetched ${escapeHtml(fetchedDate)}` +
       `</div>` +
       `</a>`
     );
