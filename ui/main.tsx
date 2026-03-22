@@ -232,13 +232,19 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
     e.preventDefault();
     if (draggedId === null || draggedId === targetId) { reset(); return; }
 
-    const ids = displayCards.map((c) => c.id);
-    const withoutDragged = ids.filter((id) => id !== draggedId);
+    const filteredIds = displayCards.map((c) => c.id);
+    const withoutDragged = filteredIds.filter((id) => id !== draggedId);
     const insertIndex = withoutDragged.indexOf(targetId);
     if (insertIndex === -1) { reset(); return; }
 
     withoutDragged.splice(insertIndex, 0, draggedId);
-    onReorder(withoutDragged);
+    // When filtering, splice back into the full global order at the same slots the
+    // filtered cards occupy, leaving all non-matching cards exactly where they are.
+    onReorder(
+      isFiltering
+        ? reorderInCategory(cards.map((c) => c.id), filteredIds, withoutDragged)
+        : withoutDragged,
+    );
     reset();
   }
 
@@ -259,9 +265,14 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
   function handleEndZoneDrop(e: DragEvent) {
     e.preventDefault();
     if (draggedId === null) { reset(); return; }
-    const ids = displayCards.map((c) => c.id).filter((id) => id !== draggedId);
-    ids.push(draggedId);
-    onReorder(ids);
+    const filteredIds = displayCards.map((c) => c.id);
+    const newFilteredIds = filteredIds.filter((id) => id !== draggedId);
+    newFilteredIds.push(draggedId);
+    onReorder(
+      isFiltering
+        ? reorderInCategory(cards.map((c) => c.id), filteredIds, newFilteredIds)
+        : newFilteredIds,
+    );
     reset();
   }
 
@@ -305,7 +316,7 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
     <div
       class="flex flex-col gap-4"
       // Push content up so the last row of cards isn't hidden behind the fixed bar.
-      style={draggedId !== null && !isFiltering ? { paddingBottom: DROP_BAR_HEIGHT } : undefined}
+      style={draggedId !== null ? { paddingBottom: DROP_BAR_HEIGHT } : undefined}
     >
       <div
         class="grid gap-4 items-start"
@@ -319,7 +330,6 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
             darkMode={darkMode}
             isDragging={draggedId === card.id}
             isDropTarget={dropTargetId === card.id}
-            isDragDisabled={isFiltering}
             onDelete={() => onDelete(card.id)}
             onUpdate={(text) => onUpdate(card.id, text)}
             onAddTag={(tag) => onAddTag(card.id, tag)}
@@ -334,7 +344,7 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
       </div>
 
       {/* Fixed drop-zone bar — always visible at the bottom of the viewport during a drag. */}
-      {draggedId !== null && !isFiltering && (
+      {draggedId !== null && (
         <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-6 py-3">
           <div class="max-w-screen-2xl mx-auto flex gap-4">
             <div
