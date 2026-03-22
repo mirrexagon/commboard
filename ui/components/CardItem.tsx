@@ -2,6 +2,100 @@ import { marked } from "marked";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { tagPalette } from "../lib/colors.ts";
 
+// ── Tag input with autocomplete ──────────────────────────────────────────────
+
+interface TagInputProps {
+  allTags: string[];
+  existingTags: string[];
+  onAdd: (tag: string) => void;
+  onCancel: () => void;
+}
+
+function TagInput({ allTags, existingTags, onAdd, onCancel }: TagInputProps) {
+  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Show suggestions only when the user has typed something.
+  const suggestions =
+    value.trim().length > 0
+      ? allTags
+          .filter(
+            (t) =>
+              !existingTags.includes(t) &&
+              t.toLowerCase().includes(value.toLowerCase()),
+          )
+          .slice(0, 8)
+      : [];
+
+  function submit(tag: string) {
+    const trimmed = tag.trim();
+    const colon = trimmed.indexOf(":");
+    if (colon > 0 && colon < trimmed.length - 1) {
+      onAdd(trimmed);
+    }
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      submit(value);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  }
+
+  return (
+    <div class="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onInput={(e) => setValue((e.target as HTMLInputElement).value)}
+        onKeyDown={handleKeyDown}
+        onBlur={onCancel}
+        placeholder="category:value"
+        class={[
+          "text-xs px-2.5 py-0.5 rounded-full border border-blue-400 outline-none",
+          "w-36 bg-white dark:bg-gray-700",
+          "text-gray-800 dark:text-gray-200",
+          "placeholder-gray-400 dark:placeholder-gray-500",
+        ].join(" ")}
+        spellcheck={false}
+      />
+      {suggestions.length > 0 && (
+        <div
+          class={[
+            "absolute top-full left-0 mt-1 z-50",
+            "bg-white dark:bg-gray-800",
+            "border border-gray-200 dark:border-gray-700",
+            "rounded-lg shadow-lg overflow-hidden w-48",
+          ].join(" ")}
+        >
+          {suggestions.map((tag) => (
+            <button
+              key={tag}
+              class="block w-full text-left text-xs px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 cursor-pointer"
+              // onMouseDown with preventDefault keeps the input focused so onBlur
+              // doesn't fire before the suggestion click is processed.
+              onMouseDown={(e) => {
+                e.preventDefault();
+                submit(tag);
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export interface Card {
   id: number;
   text: string;
@@ -22,6 +116,8 @@ function parseTag(raw: string): ParsedTag {
 
 interface Props {
   card: Card;
+  /** All unique tags in the board, for autocomplete when adding a new tag. */
+  allTags: string[];
   darkMode: boolean;
   /** True while this card is the one being dragged */
   isDragging: boolean;
@@ -29,6 +125,8 @@ interface Props {
   isDropTarget: boolean;
   onDelete: () => void;
   onUpdate: (text: string) => void;
+  onAddTag: (tag: string) => void;
+  onRemoveTag: (tag: string) => void;
   onDragStart: (e: DragEvent) => void;
   onDragEnter: (e: DragEvent) => void;
   onDragOver: (e: DragEvent) => void;
@@ -38,11 +136,14 @@ interface Props {
 
 export function CardItem({
   card,
+  allTags,
   darkMode,
   isDragging,
   isDropTarget,
   onDelete,
   onUpdate,
+  onAddTag,
+  onRemoveTag,
   onDragStart,
   onDragEnter,
   onDragOver,
@@ -50,6 +151,7 @@ export function CardItem({
   onDragEnd,
 }: Props) {
   const [editing, setEditing] = useState(false);
+  const [addingTag, setAddingTag] = useState(false);
   const [draft, setDraft] = useState(card.text);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -136,13 +238,13 @@ export function CardItem({
         // Only show grab cursor in view mode
         editing ? "cursor-default" : "cursor-grab active:cursor-grabbing select-none",
       ].join(" ")}
-      // Disable drag while editing so text selection works normally.
-      draggable={!editing}
-      onDragStart={editing ? undefined : onDragStart}
-      onDragEnter={editing ? undefined : onDragEnter}
-      onDragOver={editing ? undefined : onDragOver}
-      onDrop={editing ? undefined : onDrop}
-      onDragEnd={editing ? undefined : onDragEnd}
+      // Disable drag while editing or adding a tag so interaction works normally.
+      draggable={!editing && !addingTag}
+      onDragStart={editing || addingTag ? undefined : onDragStart}
+      onDragEnter={editing || addingTag ? undefined : onDragEnter}
+      onDragOver={editing || addingTag ? undefined : onDragOver}
+      onDrop={editing || addingTag ? undefined : onDrop}
+      onDragEnd={editing || addingTag ? undefined : onDragEnd}
     >
       {/* ── Action buttons (top-right), visible on hover, hidden while editing ── */}
       {!editing && (
@@ -233,22 +335,78 @@ export function CardItem({
       )}
 
       {/* ── Tags ── */}
-      {tags.length > 0 && (
-        <div class="px-4 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-1.5">
-          {tags.map(({ category, value, raw }) => {
-            const [bg, text, border] = tagPalette(category, darkMode);
-            return (
-              <span
-                key={raw}
-                class={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${bg} ${text} ${border}`}
-              >
-                <span class="opacity-50 font-normal">{category}</span>
-                {value && <span>{value}</span>}
-              </span>
-            );
-          })}
-        </div>
-      )}
+      <div
+        class={[
+          "px-4 pb-3 pt-1 flex flex-wrap gap-1.5 items-center",
+          tags.length > 0 || addingTag
+            ? "border-t border-gray-100 dark:border-gray-700"
+            : "",
+        ].join(" ")}
+      >
+        {tags.map(({ category, value, raw }) => {
+          const [bg, text, border] = tagPalette(category, darkMode);
+          return (
+            <span
+              key={raw}
+              class={`group/tag inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${bg} ${text} ${border}`}
+            >
+              <span class="opacity-50 font-normal">{category}</span>
+              {value && <span>{value}</span>}
+              {/* Remove tag × — visible on hover of the tag pill */}
+              {!editing && (
+                <button
+                  class="ml-0.5 opacity-0 group-hover/tag:opacity-100 transition-opacity duration-100 hover:text-red-500 leading-none cursor-pointer"
+                  title={`Remove tag "${raw}"`}
+                  aria-label={`Remove tag ${raw}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveTag(raw);
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          );
+        })}
+
+        {/* Add-tag input or + button — hidden while editing body text */}
+        {!editing && (
+          addingTag ? (
+            <TagInput
+              allTags={allTags}
+              existingTags={card.tags}
+              onAdd={(tag) => {
+                setAddingTag(false);
+                onAddTag(tag);
+              }}
+              onCancel={() => setAddingTag(false)}
+            />
+          ) : (
+            <button
+              class={[
+                "text-xs px-2 py-0.5 rounded-full border border-dashed",
+                "border-gray-300 dark:border-gray-600",
+                "text-gray-400 dark:text-gray-500",
+                "hover:text-blue-500 hover:border-blue-400",
+                "transition-colors duration-100 cursor-pointer",
+                // Only show on hover unless the card already has no tags (always visible then)
+                tags.length > 0
+                  ? "opacity-0 group-hover:opacity-100"
+                  : "opacity-60 group-hover:opacity-100",
+              ].join(" ")}
+              title="Add tag"
+              aria-label="Add tag"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAddingTag(true);
+              }}
+            >
+              + tag
+            </button>
+          )
+        )}
+      </div>
     </div>
   );
 }

@@ -216,6 +216,71 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     });
   }
 
+  // POST /api/cards/:id/tags — add a tag to a card
+  const postTagMatch = pathname.match(/^\/api\/cards\/(\d+)\/tags$/);
+  if (postTagMatch && req.method === "POST") {
+    const id = parseInt(postTagMatch[1]);
+
+    if (!board.cards[String(id)]) {
+      return new Response(JSON.stringify({ error: "Card not found" }), {
+        status: 404,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    const tag = typeof body.tag === "string" ? body.tag.trim() : null;
+    if (!tag || !tag.includes(":") || tag.indexOf(":") === 0 || tag.indexOf(":") === tag.length - 1) {
+      return new Response(
+        JSON.stringify({ error: "tag must be a non-empty string in 'category:value' format" }),
+        { status: 400, headers: { "content-type": "application/json; charset=utf-8" } },
+      );
+    }
+
+    const card = board.cards[String(id)];
+    if (!card.tags.includes(tag)) {
+      const updatedCard: Card = { ...card, tags: [...card.tags, tag] };
+      board = { ...board, cards: { ...board.cards, [String(id)]: updatedCard } };
+      await save(boardPath, board);
+    }
+
+    return new Response(JSON.stringify(board), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
+  // DELETE /api/cards/:id/tags/:tag — remove a tag from a card (:tag is URL-encoded)
+  const deleteTagMatch = pathname.match(/^\/api\/cards\/(\d+)\/tags\/(.+)$/);
+  if (deleteTagMatch && req.method === "DELETE") {
+    const id = parseInt(deleteTagMatch[1]);
+    const tag = decodeURIComponent(deleteTagMatch[2]);
+
+    if (!board.cards[String(id)]) {
+      return new Response(JSON.stringify({ error: "Card not found" }), {
+        status: 404,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+
+    const card = board.cards[String(id)];
+    const updatedCard: Card = { ...card, tags: card.tags.filter((t) => t !== tag) };
+    board = { ...board, cards: { ...board.cards, [String(id)]: updatedCard } };
+    await save(boardPath, board);
+
+    return new Response(JSON.stringify(board), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+
   // DELETE /api/cards/:id — remove a card
   const deleteMatch = pathname.match(/^\/api\/cards\/(\d+)$/);
   if (deleteMatch && req.method === "DELETE") {

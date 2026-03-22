@@ -37,13 +37,16 @@ function EmptyState() {
 
 interface CardGridProps {
   cards: Card[];
+  allTags: string[];
   darkMode: boolean;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => void;
   onReorder: (newOrder: number[]) => void;
+  onAddTag: (id: number, tag: string) => void;
+  onRemoveTag: (id: number, tag: string) => void;
 }
 
-function CardGrid({ cards, darkMode, onDelete, onUpdate, onReorder }: CardGridProps) {
+function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag }: CardGridProps) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
@@ -148,11 +151,14 @@ function CardGrid({ cards, darkMode, onDelete, onUpdate, onReorder }: CardGridPr
           <CardItem
             key={card.id}
             card={card}
+            allTags={allTags}
             darkMode={darkMode}
             isDragging={draggedId === card.id}
             isDropTarget={dropTargetId === card.id}
             onDelete={() => onDelete(card.id)}
             onUpdate={(text) => onUpdate(card.id, text)}
+            onAddTag={(tag) => onAddTag(card.id, tag)}
+            onRemoveTag={(tag) => onRemoveTag(card.id, tag)}
             onDragStart={(e) => handleDragStart(e, card.id)}
             onDragEnter={(e) => handleDragEnter(e, card.id)}
             onDragOver={handleDragOver}
@@ -254,6 +260,24 @@ function App() {
     setBoard((await res.json()) as Board);
   }
 
+  async function addTag(id: number, tag: string) {
+    const res = await fetch(`/api/cards/${id}/tags`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tag }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setBoard((await res.json()) as Board);
+  }
+
+  async function removeTag(id: number, tag: string) {
+    const res = await fetch(`/api/cards/${id}/tags/${encodeURIComponent(tag)}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setBoard((await res.json()) as Board);
+  }
+
   async function reorderCards(newOrder: number[]) {
     // Optimistic update so drag-and-drop feels instant.
     setBoard((prev) => (prev ? { ...prev, card_order: newOrder } : prev));
@@ -294,6 +318,9 @@ function App() {
     .map((id) => board.cards[String(id)])
     .filter(Boolean);
 
+  // Collect all unique tags across the board, sorted, for autocomplete.
+  const allTags = [...new Set(Object.values(board.cards).flatMap((c) => c.tags))].sort();
+
   return (
     <div class="min-h-screen bg-gray-100 dark:bg-gray-950">
       <Header
@@ -307,10 +334,13 @@ function App() {
       <main class="max-w-screen-2xl mx-auto p-6">
         <CardGrid
           cards={cards}
+          allTags={allTags}
           darkMode={darkMode}
           onDelete={deleteCard}
           onUpdate={updateCard}
           onReorder={reorderCards}
+          onAddTag={addTag}
+          onRemoveTag={removeTag}
         />
       </main>
     </div>

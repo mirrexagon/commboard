@@ -77,8 +77,8 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
     - [x] Move card up and down in both default and category view (drag-and-drop in global order)
 
 - Tags
-    - [ ] Add and remove
-        - [ ] Autocomplete existing tags
+    - [x] Add and remove
+        - [x] Autocomplete existing tags
     - [x] Displayed on card
     - [x] Tag colors based on category - autogenerate based on the category text
 
