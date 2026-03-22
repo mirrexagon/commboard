@@ -357,7 +357,7 @@ const buildResult = await esbuild.build({
     // which diverge slightly from the npm:esbuild types at the same version.
     plugins: [
         ...denoPlugins({
-            importMapURL: import.meta.resolve("./deno.json"),
+            importMapURL: import.meta.resolve("./import_map.json"),
         }),
     ] as unknown as esbuild.Plugin[],
     entryPoints: [import.meta.resolve("./ui/main.tsx")],
