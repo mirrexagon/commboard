@@ -257,31 +257,10 @@ export function CardItem({
       {/* ── Accent bar ── */}
       <div class={`h-1.5 rounded-t-xl ${accentBg} transition-colors duration-200`} />
 
-      {/* ── Card header row: drag handle | #ID | spacer | edit + delete ── */}
+      {/* ── Card header row: #ID | spacer | edit + delete ── */}
       <div class="flex items-center px-2 pt-1 pb-0.5 min-w-0">
-        {/* Drag-handle hint — same size as icon buttons, fades in on hover */}
-        {!editing ? (
-          <div
-            class={[
-              "w-6 h-6 flex items-center justify-center shrink-0",
-              "text-gray-300 dark:text-gray-600",
-              "opacity-0 group-hover:opacity-100",
-              isDragging ? "!opacity-0" : "",
-              "transition-opacity duration-100 pointer-events-none select-none",
-            ].join(" ")}
-            aria-hidden="true"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3.5 h-3.5">
-              <path d="M5.5 3.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5.5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5.5 12.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM12.5 3.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM12.5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM12.5 12.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
-            </svg>
-          </div>
-        ) : (
-          /* Keep the same space so the #ID stays in the same position */
-          <div class="w-6 h-6 shrink-0" />
-        )}
-
         {/* Card ID */}
-        <span class="ml-0.5 text-xs text-gray-400 dark:text-gray-500 font-mono select-none leading-none">
+        <span class="w-6 h-6 flex items-center justify-center text-xs text-gray-400 dark:text-gray-500 font-mono select-none leading-none shrink-0">
           #{card.id}
         </span>
 
