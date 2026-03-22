@@ -21,7 +21,6 @@ function TagInput({ allTags, existingTags, onAdd, onCancel }: TagInputProps) {
     inputRef.current?.focus();
   }, []);
 
-  // Show suggestions only when the user has typed something.
   const suggestions =
     value.trim().length > 0
       ? allTags
@@ -82,8 +81,6 @@ function TagInput({ allTags, existingTags, onAdd, onCancel }: TagInputProps) {
             <button
               key={tag}
               class="block w-full text-left text-xs px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 cursor-pointer"
-              // onMouseDown with preventDefault keeps the input focused so onBlur
-              // doesn't fire before the suggestion click is processed.
               onMouseDown={(e) => {
                 e.preventDefault();
                 submit(tag);
@@ -98,14 +95,27 @@ function TagInput({ allTags, existingTags, onAdd, onCancel }: TagInputProps) {
   );
 }
 
-// ── EmbedPreview ─────────────────────────────────────────────────────────────
+// ── Inline embed HTML generation ─────────────────────────────────────────────
+//
+// Embeds are rendered as raw HTML strings injected via dangerouslySetInnerHTML
+// so that they live inside the card-prose div alongside the Markdown output.
+// Event handling (refetch / fetch buttons) is done via event delegation on the
+// parent div — see the onClick handler on .card-prose below.
 
-interface EmbedPreviewProps {
-  embed: EmbedData;
-  onRefetch: () => void;
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-function EmbedPreview({ embed, onRefetch }: EmbedPreviewProps) {
+/**
+ * Produce the HTML string for a fully-fetched embed card.
+ * Uses Tailwind classes for styling (CDN MutationObserver picks them up).
+ */
+function generateEmbedHtml(embed: EmbedData): string {
   const domain = (() => {
     try {
       return new URL(embed.url).hostname;
@@ -119,84 +129,117 @@ function EmbedPreview({ embed, onRefetch }: EmbedPreviewProps) {
     timeStyle: "short",
   });
 
+  const url = escapeHtml(embed.url);
+  const borderCls = embed.error
+    ? "border-red-200 dark:border-red-800"
+    : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600";
+
+  const imgHtml =
+    !embed.error && embed.image_data
+      ? `<img src="${embed.image_data}" alt="" loading="lazy" class="w-full max-h-36 object-cover">`
+      : "";
+
+  const faviconHtml = embed.favicon_data
+    ? `<img src="${embed.favicon_data}" alt="" loading="lazy" class="w-3.5 h-3.5 rounded-sm shrink-0">`
+    : `<span class="shrink-0 text-gray-400 dark:text-gray-500 text-xs">🔗</span>`;
+
+  const siteLabel = escapeHtml(embed.site_name || domain);
+
+  const bodyHtml = embed.error
+    ? `<div class="text-xs text-red-500 dark:text-red-400">${escapeHtml("Failed: " + embed.error)}</div>`
+    : [
+        embed.title
+          ? `<div class="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2">${escapeHtml(embed.title)}</div>`
+          : "",
+        embed.description
+          ? `<div class="text-xs text-gray-500 dark:text-gray-400 leading-snug line-clamp-3">${escapeHtml(embed.description)}</div>`
+          : "",
+      ].join("");
+
   return (
-    <a
-      href={embed.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      class={[
-        "block rounded-lg border overflow-hidden",
-        "transition-colors duration-150 no-underline",
-        embed.error
-          ? "border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700"
-          : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600",
-      ].join(" ")}
-    >
-      {/* og:image thumbnail — only shown when available and no error */}
-      {!embed.error && embed.image_data && (
-        <img
-          src={embed.image_data}
-          alt=""
-          loading="lazy"
-          class="w-full object-cover max-h-36"
-        />
-      )}
-
-      <div class="px-3 py-2 flex flex-col gap-0.5">
-        {/* Site row: favicon · domain/site_name · refetch button */}
-        <div class="flex items-center gap-1.5 min-w-0">
-          {embed.favicon_data ? (
-            <img
-              src={embed.favicon_data}
-              alt=""
-              loading="lazy"
-              class="w-3.5 h-3.5 rounded-sm flex-shrink-0"
-            />
-          ) : (
-            <span class="text-gray-400 text-xs flex-shrink-0">🔗</span>
-          )}
-          <span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0">
-            {embed.site_name || domain}
-          </span>
-          <button
-            class="flex-shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-100 cursor-pointer px-1 ml-auto"
-            title="Refetch embed"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onRefetch();
-            }}
-          >
-            ↺
-          </button>
-        </div>
-
-        {/* Content */}
-        {embed.error ? (
-          <p class="text-xs text-red-500 dark:text-red-400">
-            Failed: {embed.error}
-          </p>
-        ) : (
-          <>
-            {embed.title && (
-              <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2">
-                {embed.title}
-              </p>
-            )}
-            {embed.description && (
-              <p class="text-xs text-gray-500 dark:text-gray-400 leading-snug line-clamp-3">
-                {embed.description}
-              </p>
-            )}
-          </>
-        )}
-
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-          Fetched {fetchedDate}
-        </p>
-      </div>
-    </a>
+    `<a href="${url}" target="_blank" rel="noopener noreferrer" ` +
+    `class="card-embed block rounded-lg border ${borderCls} overflow-hidden transition-colors duration-150 my-2">` +
+    imgHtml +
+    `<div class="px-3 py-2 flex flex-col gap-0.5">` +
+    `<div class="flex items-center gap-1.5 min-w-0">` +
+    faviconHtml +
+    `<span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0">${siteLabel}</span>` +
+    `<button data-refetch-url="${url}" ` +
+    `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1 ml-auto" ` +
+    `title="Refetch embed">↺</button>` +
+    `</div>` +
+    bodyHtml +
+    `<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Fetched ${escapeHtml(fetchedDate)}</div>` +
+    `</div>` +
+    `</a>`
   );
+}
+
+/**
+ * Produce a small inline button that, when clicked, fetches the embed for
+ * a URL that has no cached data yet.
+ */
+function generateFetchButtonHtml(url: string): string {
+  const escaped = escapeHtml(url);
+  return (
+    `<button data-fetch-url="${escaped}" ` +
+    `class="text-xs text-blue-400 hover:text-blue-600 dark:text-blue-500 dark:hover:text-blue-300 ` +
+    `cursor-pointer align-baseline ml-1 transition-colors duration-100" ` +
+    `title="Fetch embed for ${escaped}">↓ embed</button>`
+  );
+}
+
+/**
+ * Post-process a block of marked HTML to inject embed previews and fetch
+ * buttons inline.
+ *
+ * Pass 1 — for every `<a href="https://…">` whose URL is NOT yet cached,
+ *           append a small inline "↓ embed" button right after the </a>.
+ *
+ * Pass 2 — for every block element (p, h1–h6, li, blockquote) that
+ *           contains a link whose URL IS cached, append the full embed card
+ *           immediately after the closing tag of that block element.
+ *           Placing the embed after the block (rather than mid-paragraph)
+ *           keeps the HTML valid and the surrounding text intact.
+ *
+ * Both passes deduplicate: each unique URL gets at most one button / preview.
+ */
+function injectEmbedsIntoHtml(
+  html: string,
+  embedCache: Record<string, EmbedData>,
+): string {
+  const seenFetch = new Set<string>();
+  const seenEmbed = new Set<string>();
+
+  // Pass 1: inline fetch buttons for uncached URLs.
+  let result = html.replace(
+    /<a\b[^>]*\bhref="(https?:\/\/[^"]+)"[^>]*>[\s\S]*?<\/a>/g,
+    (match, href) => {
+      if (href in embedCache || seenFetch.has(href)) return match;
+      seenFetch.add(href);
+      return match + generateFetchButtonHtml(href);
+    },
+  );
+
+  // Pass 2: block embed cards after block elements containing cached URLs.
+  // The backreference \1 ensures the opening and closing tags match.
+  result = result.replace(
+    /<(p|h[1-6]|li|blockquote)\b[^>]*>[\s\S]*?<\/\1>/g,
+    (blockMatch) => {
+      const embeds: string[] = [];
+      const linkRe = /\bhref="(https?:\/\/[^"]+)"/g;
+      let m: RegExpExecArray | null;
+      while ((m = linkRe.exec(blockMatch)) !== null) {
+        const href = m[1];
+        if (seenEmbed.has(href) || !(href in embedCache)) continue;
+        seenEmbed.add(href);
+        embeds.push(generateEmbedHtml(embedCache[href] as EmbedData));
+      }
+      return embeds.length ? blockMatch + embeds.join("") : blockMatch;
+    },
+  );
+
+  return result;
 }
 
 // ── CardItem ─────────────────────────────────────────────────────────────────
@@ -221,14 +264,10 @@ function parseTag(raw: string): ParsedTag {
 
 interface Props {
   card: Card;
-  /** All unique tags in the board, for autocomplete when adding a new tag. */
   allTags: string[];
   darkMode: boolean;
-  /** True while this card is the one being dragged */
   isDragging: boolean;
-  /** True while the cursor is over this card as a drop target */
   isDropTarget: boolean;
-  /** When true, dragging is completely disabled (e.g. while a search filter is active). */
   isDragDisabled?: boolean;
   /** Board-level embed cache, keyed by URL. */
   embedCache: Record<string, EmbedData>;
@@ -236,7 +275,6 @@ interface Props {
   onUpdate: (text: string) => void;
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
-  /** Called to enqueue a URL for fetching (new fetch or refetch). */
   onFetchEmbed: (url: string, refetch: boolean) => void;
   onDragStart: (e: DragEvent) => void;
   onDragEnter: (e: DragEvent) => void;
@@ -270,19 +308,15 @@ export function CardItem({
   const dragDisabled = editing || addingTag || isDragDisabled;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Keep draft in sync with external card.text changes (e.g. after a save
-  // round-trips through the server) but only when we're not editing.
   useEffect(() => {
     if (!editing) setDraft(card.text);
   }, [card.text, editing]);
 
-  // When entering edit mode: focus the textarea and auto-size it.
   useEffect(() => {
     if (editing && textareaRef.current) {
       const el = textareaRef.current;
       autoResize(el);
       el.focus();
-      // Place cursor at the end of the text.
       el.selectionStart = el.selectionEnd = el.value.length;
     }
   }, [editing]);
@@ -300,14 +334,11 @@ export function CardItem({
   function commit() {
     const trimmed = draft.trim();
     if (!trimmed) {
-      // Don't allow saving an empty card — revert silently.
       cancel();
       return;
     }
     setEditing(false);
-    if (trimmed !== card.text) {
-      onUpdate(trimmed);
-    }
+    if (trimmed !== card.text) onUpdate(trimmed);
   }
 
   function cancel() {
@@ -316,14 +347,8 @@ export function CardItem({
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      cancel();
-    }
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      commit();
-    }
+    if (e.key === "Escape") { e.preventDefault(); cancel(); }
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(); }
   }
 
   function handleInput(e: Event) {
@@ -332,21 +357,47 @@ export function CardItem({
     autoResize(el);
   }
 
-  // marked.parse() is synchronous when no async extensions are registered.
-  const html = marked.parse(card.text) as string;
+  /**
+   * Handle clicks inside the card-prose div via event delegation.
+   * Buttons injected as raw HTML (embed refetch / fetch) are caught here;
+   * all other clicks enter edit mode as before.
+   */
+  function handleProseClick(e: MouseEvent) {
+    const target = e.target as Element;
+
+    // ↺ Refetch button on an existing embed.
+    // preventDefault stops the parent <a> (the embed card) from navigating.
+    const refetchBtn = target.closest("[data-refetch-url]");
+    if (refetchBtn) {
+      e.preventDefault();
+      onFetchEmbed(refetchBtn.getAttribute("data-refetch-url")!, true);
+      return;
+    }
+
+    // "↓ embed" fetch button for an uncached URL.
+    const fetchBtn = target.closest("[data-fetch-url]");
+    if (fetchBtn) {
+      e.preventDefault();
+      onFetchEmbed(fetchBtn.getAttribute("data-fetch-url")!, false);
+      return;
+    }
+
+    // Clicking anywhere on the embed card itself opens the link (native <a>
+    // behaviour) — don't also enter edit mode.
+    if (target.closest(".card-embed")) return;
+
+    startEditing();
+  }
+
+  const rawHtml = marked.parse(card.text) as string;
+  const html = injectEmbedsIntoHtml(rawHtml, embedCache);
+
+  // Used for the per-card "Fetch N embeds" button.
+  const uncachedUrls = extractUrls(card.text).filter((u) => !(u in embedCache));
+
   const tags = [...card.tags].sort().map(parseTag);
-
-  // Accent bar: one segment per unique tag category (alphabetical order).
   const accentCategories = [...new Set(tags.map((t) => t.category))];
-  const neutralAccentColor = darkMode ? "#374151" : "#e5e7eb"; // gray-700 / gray-200
-
-  // ── Embed data derived from card text ──
-  const allUrls = extractUrls(card.text);
-  const cachedEmbeds = allUrls
-    .filter((u) => u in embedCache)
-    .map((u) => embedCache[u] as EmbedData);
-  const uncachedUrls = allUrls.filter((u) => !(u in embedCache));
-  const hasEmbedContent = cachedEmbeds.length > 0 || uncachedUrls.length > 0;
+  const neutralAccentColor = darkMode ? "#374151" : "#e5e7eb";
 
   return (
     <div
@@ -354,18 +405,14 @@ export function CardItem({
         "group bg-white dark:bg-gray-800 rounded-xl shadow-sm",
         "flex flex-col min-w-0",
         "transition-all duration-150",
-        // Ring: blue when drop target or editing, default otherwise
         editing
           ? "ring-2 ring-blue-400 ring-offset-1 shadow-md"
           : isDropTarget
             ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg"
             : "ring-1 ring-black/[0.07] dark:ring-white/[0.08] hover:shadow-md",
-        // Dim while being dragged
         isDragging ? "opacity-40" : "",
-        // Only show grab cursor in view mode (not when drag is disabled)
         editing || isDragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing select-none",
       ].join(" ")}
-      // Disable drag while editing, adding a tag, or when drag is globally disabled (e.g. filter active).
       draggable={!dragDisabled}
       onDragStart={dragDisabled ? undefined : onDragStart}
       onDragEnter={dragDisabled ? undefined : onDragEnter}
@@ -390,15 +437,10 @@ export function CardItem({
 
       {/* ── Card header row: #ID | spacer | edit + delete ── */}
       <div class="flex items-center px-2 pt-1 pb-0.5 min-w-0">
-        {/* Card ID */}
         <span class="w-6 h-6 flex items-center justify-center text-xs text-gray-400 dark:text-gray-500 font-mono select-none leading-none shrink-0">
           #{card.id}
         </span>
-
-        {/* Spacer */}
         <div class="flex-1" />
-
-        {/* Edit + Delete — visible on hover, hidden while editing */}
         {!editing && (
           <div
             class={[
@@ -407,7 +449,6 @@ export function CardItem({
               isDragging ? "!opacity-0" : "",
             ].join(" ")}
           >
-            {/* Edit (pencil) button */}
             <button
               class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-100 cursor-pointer"
               onClick={(e) => { e.stopPropagation(); startEditing(); }}
@@ -419,8 +460,6 @@ export function CardItem({
                 <path d="M4.75 3.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h6.5c.69 0 1.25-.56 1.25-1.25V9a.75.75 0 0 1 1.5 0v2.25A2.75 2.75 0 0 1 11.25 14h-6.5A2.75 2.75 0 0 1 2 11.25v-6.5A2.75 2.75 0 0 1 4.75 2H7a.75.75 0 0 1 0 1.5H4.75Z" />
               </svg>
             </button>
-
-            {/* Delete (×) button */}
             <button
               class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors duration-100 cursor-pointer"
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
@@ -437,7 +476,6 @@ export function CardItem({
 
       {/* ── Card body ── */}
       {editing ? (
-        /* Edit mode */
         <div class="flex flex-col flex-1 min-w-0">
           <textarea
             ref={textareaRef}
@@ -463,43 +501,30 @@ export function CardItem({
           </p>
         </div>
       ) : (
-        /* View mode — clicking enters edit mode */
+        /* View mode.
+           handleProseClick uses event delegation to distinguish clicks on
+           injected embed buttons from clicks that should enter edit mode. */
         <div
           class="card-prose px-4 pt-1 pb-2 flex-1 min-w-0 break-words cursor-text"
           title="Click to edit"
-          onClick={startEditing}
+          onClick={handleProseClick}
           dangerouslySetInnerHTML={{ __html: html }}
         />
       )}
 
-      {/* ── Embeds (view mode only) ── */}
-      {!editing && hasEmbedContent && (
-        <div
-          class="px-3 pb-3 pt-2 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700"
-          // Prevent clicks in the embed section from entering card-edit mode.
-          onClick={(e) => e.stopPropagation()}
-        >
-          {cachedEmbeds.map((embed) => (
-            <EmbedPreview
-              key={embed.url}
-              embed={embed}
-              onRefetch={() => onFetchEmbed(embed.url, true)}
-            />
-          ))}
-
-          {uncachedUrls.length > 0 && (
-            <button
-              class={[
-                "text-left text-xs text-blue-500 hover:text-blue-600",
-                "dark:text-blue-400 dark:hover:text-blue-300",
-                "transition-colors duration-100 cursor-pointer",
-              ].join(" ")}
-              title={uncachedUrls.join("\n")}
-              onClick={() => uncachedUrls.forEach((u) => onFetchEmbed(u, false))}
-            >
-              Fetch {uncachedUrls.length === 1 ? "1 embed" : `${uncachedUrls.length} embeds`}…
-            </button>
-          )}
+      {/* ── Per-card "Fetch all missing embeds" shortcut ── */}
+      {!editing && uncachedUrls.length > 0 && (
+        <div class="px-4 pb-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            class={[
+              "text-xs text-blue-400 hover:text-blue-600",
+              "dark:text-blue-500 dark:hover:text-blue-300",
+              "transition-colors duration-100 cursor-pointer",
+            ].join(" ")}
+            onClick={() => uncachedUrls.forEach((u) => onFetchEmbed(u, false))}
+          >
+            Fetch {uncachedUrls.length === 1 ? "1 embed" : `${uncachedUrls.length} embeds`}…
+          </button>
         </div>
       )}
 
@@ -522,16 +547,12 @@ export function CardItem({
             >
               <span class="opacity-50 font-normal">{category}</span>
               {value && <span>{value}</span>}
-              {/* Remove tag × — visible on hover of the tag pill */}
               {!editing && (
                 <button
                   class="ml-0.5 opacity-0 group-hover/tag:opacity-100 transition-opacity duration-100 hover:text-red-500 leading-none cursor-pointer"
                   title={`Remove tag "${raw}"`}
                   aria-label={`Remove tag ${raw}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveTag(raw);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); onRemoveTag(raw); }}
                 >
                   ×
                 </button>
@@ -540,16 +561,12 @@ export function CardItem({
           );
         })}
 
-        {/* Add-tag input or + button — hidden while editing body text */}
         {!editing && (
           addingTag ? (
             <TagInput
               allTags={allTags}
               existingTags={card.tags}
-              onAdd={(tag) => {
-                setAddingTag(false);
-                onAddTag(tag);
-              }}
+              onAdd={(tag) => { setAddingTag(false); onAddTag(tag); }}
               onCancel={() => setAddingTag(false)}
             />
           ) : (
@@ -560,17 +577,13 @@ export function CardItem({
                 "text-gray-400 dark:text-gray-500",
                 "hover:text-blue-500 hover:border-blue-400",
                 "transition-colors duration-100 cursor-pointer",
-                // Only show on hover unless the card already has no tags (always visible then)
                 tags.length > 0
                   ? "opacity-0 group-hover:opacity-100"
                   : "opacity-60 group-hover:opacity-100",
               ].join(" ")}
               title="Add tag"
               aria-label="Add tag"
-              onClick={(e) => {
-                e.stopPropagation();
-                setAddingTag(true);
-              }}
+              onClick={(e) => { e.stopPropagation(); setAddingTag(true); }}
             >
               + tag
             </button>

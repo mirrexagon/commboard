@@ -427,6 +427,12 @@ const HTML = `<!DOCTYPE html>
     .dark .card-prose pre code { color: #cbd5e1; }
     .dark .card-prose blockquote { border-left-color: #475569; color: #94a3b8; }
     .dark .card-prose hr { border-top-color: #334155; }
+
+    /* Embed preview cards injected inline into card prose.
+       Override the prose <a> colour/underline so embeds look like cards. */
+    .card-embed { text-decoration: none !important; color: #374151; }
+    .dark .card-embed { color: #cbd5e1; }
+    .card-embed:hover { text-decoration: none !important; }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
