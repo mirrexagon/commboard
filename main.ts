@@ -363,13 +363,55 @@ if (noSave) {
     console.warn("WARNING: --no-save is active. No changes will be written to disk.");
 }
 
-// Single wrapper — all call sites use this. When --no-save is active it is a no-op.
-const save = noSave
-    ? (_path: string, _board: Parameters<typeof saveBoard>[1]): Promise<void> => Promise.resolve()
-    : saveBoard;
-
 let board = await loadOrCreate(boardPath);
 console.log(`Board: "${board.name}" — ${board.card_order.length} card(s)`);
+
+// --- Debounced save ---
+//
+// Mutations update `board` in memory and call save() immediately, but the
+// actual disk write is deferred: the timer resets on every call and the
+// write only happens once things go quiet for SAVE_DEBOUNCE_MS.  A flush
+// is also forced on SIGINT / SIGTERM so Ctrl-C never loses data.
+
+const SAVE_DEBOUNCE_MS = 10_000; // 10 s
+let _saveTimer: number | null = null;
+let _pendingSave = false;
+
+async function flushSave(): Promise<void> {
+    if (!_pendingSave) return;
+    if (_saveTimer !== null) { clearTimeout(_saveTimer); _saveTimer = null; }
+    _pendingSave = false;
+    await saveBoard(boardPath, board);
+    console.log("Board saved.");
+}
+
+/**
+ * Schedule a debounced disk write.  Resolves immediately; the actual write
+ * happens in the background SAVE_DEBOUNCE_MS after the last call.
+ * When --no-save is active this is always a no-op.
+ */
+function save(_path: string, _b: Parameters<typeof saveBoard>[1]): Promise<void> {
+    if (noSave) return Promise.resolve();
+    _pendingSave = true;
+    if (_saveTimer !== null) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => {
+        _saveTimer = null;
+        flushSave().catch((err) => console.error("Scheduled save failed:", err));
+    }, SAVE_DEBOUNCE_MS);
+    return Promise.resolve();
+}
+
+async function shutdown(): Promise<void> {
+    console.log("\nFlushing pending save…");
+    await flushSave();
+    Deno.exit(0);
+}
+
+Deno.addSignalListener("SIGINT",  () => { void shutdown(); });
+try {
+    // SIGTERM is not available on Windows.
+    Deno.addSignalListener("SIGTERM", () => { void shutdown(); });
+} catch { /* ignore on unsupported platforms */ }
 
 // --- Bundle UI ---
 
