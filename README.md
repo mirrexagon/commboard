@@ -1,7 +1,7 @@
 # Commboard
 A multi-dimensional Kanban board.
 
-**Note:** This is a tool created for a specific personal use-case, and as a learning experience. The code is messy, and the program is buggy and non-intuitive to use. I only work on this when I feel like it, so I am not actively maintaining it (only as much as needed for my use-case).
+**Note:** This is a tool created for a specific personal use-case, and the code is almost-entirely LLM written. Use at your peril!
 
 ## Building
 
@@ -25,5 +25,4 @@ By default, all cards are displayed without any grouping.
 
 Cards can be arranged grouped by a single category. This is like treating the category as a Kanban board and the values as columns. While grouping is active, any cards without the selected category are hidden.
 
-Cards can have multiple tags with the same category and different values. This will make a card show in two different columns when cards are grouped by that category. They are the same card, so updates to one will be reflected in the other.
-
+Cards can have multiple tags with the same category and different values. This will make a card show in two different columns when cards are grouped by that category. They are the same card, so updates to one will be reflected in the other
