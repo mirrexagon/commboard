@@ -41,6 +41,38 @@ function encodePath(path: string): string {
   return path.split("/").map(encodeURIComponent).join("/");
 }
 
+/**
+ * Insert a Markdown link (or image link) to an embedded file at the cursor
+ * position in whichever <textarea> currently has focus.
+ *
+ * Uses `onMouseDown` + `e.preventDefault()` on the trigger button to prevent
+ * the textarea from blurring before the click fires, so `document.activeElement`
+ * is still the textarea when this runs.
+ *
+ * Dispatches a synthetic `input` event after mutating `el.value` so that
+ * Preact's controlled component (CardItem's `draft` state) stays in sync via
+ * its existing `handleInput` → `setDraft(el.value)` path.
+ */
+function insertLinkAtCursor(path: string, mimeType: string): void {
+  const el = document.activeElement;
+  if (!(el instanceof HTMLTextAreaElement)) return;
+
+  const isImage = mimeType.startsWith("image/");
+  const filename = path.split("/").pop() ?? path;
+  const href = `/files/${encodePath(path)}`;
+  // Use image syntax for images so they render inline; plain link for everything else.
+  const linkText = isImage ? `![${filename}](${href})` : `[${filename}](${href})`;
+
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const newValue = el.value.slice(0, start) + linkText + el.value.slice(end);
+
+  el.value = newValue;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  // Place cursor after the inserted text.
+  el.selectionStart = el.selectionEnd = start + linkText.length;
+}
+
 // ── FileEntry ─────────────────────────────────────────────────────────────────
 
 interface FileEntryProps {
@@ -195,6 +227,24 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
       {/* Action buttons — revealed on row hover */}
       {!renaming && (
         <div class="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-100">
+          {/* Insert link at cursor — mousedown preventDefault keeps textarea focused */}
+          <button
+            title="Insert link into card being edited"
+            class="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors cursor-pointer"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => insertLinkAtCursor(file.path, file.mime_type)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              class="w-3.5 h-3.5"
+            >
+              <path d="M8.914 6.025a.75.75 0 0 1 1.06 0 3.75 3.75 0 0 1 0 5.304l-1.26 1.26a3.75 3.75 0 0 1-5.303-5.303l.611-.612a.75.75 0 0 1 1.063 1.06l-.611.613a2.25 2.25 0 0 0 3.182 3.182l1.259-1.26a2.25 2.25 0 0 0 0-3.182.75.75 0 0 1 0-1.062Z" />
+              <path d="M7.086 9.975a.75.75 0 0 1-1.06 0 3.75 3.75 0 0 1 0-5.304l1.26-1.26a3.75 3.75 0 0 1 5.303 5.303l-.611.612a.75.75 0 0 1-1.063-1.06l.611-.613a2.25 2.25 0 0 0-3.182-3.182l-1.259 1.26a2.25 2.25 0 0 0 0 3.182.75.75 0 0 1 0 1.062Z" />
+            </svg>
+          </button>
+
           {/* Open in new tab */}
           <a
             href={`/files/${encodePath(file.path)}`}
