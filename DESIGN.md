@@ -103,7 +103,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
         - Images linked with `![]()` should just show inline without an embed card, images and anything else linked by `[]()` should be in an embed card
         - Update fetched embeds to have a little subtle "Embed" text and file ones can have "File"
         - This logic should also apply to links directly to files outside the embedded filesystem, eg. embedded links
-    - [ ] Paste images and possibly other files that can be put into a clipboard into a card to add them as embedded files
+    - [x] Paste images and possibly other files that can be put into a clipboard into a card to add them as embedded files
 
 - [ ] Use external editor (configure via config file) instead of web one
     - Requires server to notify UI when editing is done, so it can update state

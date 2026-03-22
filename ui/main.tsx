@@ -6,6 +6,7 @@ import { CardItem, type Card } from "./components/CardItem.tsx";
 import { FileBrowser } from "./components/FileBrowser.tsx";
 import type { Board, EmbedData, EmbeddedFile } from "../board.ts";
 import { tagPalette } from "./lib/colors.ts";
+import { insertLinkInTextarea, mimeToExt, readFileAsBase64 } from "./lib/files.ts";
 
 // ---- Filter helper ----
 
@@ -831,6 +832,8 @@ function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileBrowserOpen, setFileBrowserOpen] = useState(false);
+  /** Path of the most recently paste-uploaded file; passed to FileBrowser to scroll/highlight it. */
+  const [highlightPath, setHighlightPath] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(
     () => localStorage.getItem("darkMode") === "true",
   );
@@ -878,6 +881,73 @@ function App() {
 
   // Clean up the polling interval on unmount.
   useEffect(() => () => stopEmbedPolling(), []);
+
+  // ── Global clipboard-paste handler ──
+  //
+  // Uses a stable ref so the document listener is registered only once while
+  // the closure always sees the latest `uploadFile`, `setFileBrowserOpen`, etc.
+
+  const pasteHandlerRef = useRef<(e: ClipboardEvent) => void>(() => {});
+
+  // Update the ref on every render (no deps needed — intentionally runs every render).
+  useEffect(() => {
+    pasteHandlerRef.current = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // Find the first clipboard item that is a File (image or otherwise).
+      const fileItem = Array.from(items).find((item) => item.kind === "file");
+      if (!fileItem) return;
+
+      const file = fileItem.getAsFile();
+      if (!file) return;
+
+      // Prevent default so any accompanying text in the clipboard isn't pasted.
+      e.preventDefault();
+
+      // Capture the focused textarea NOW, before any async gap.  By the time
+      // the upload resolves the user may have clicked elsewhere.
+      const targetTextarea =
+        document.activeElement instanceof HTMLTextAreaElement
+          ? document.activeElement
+          : null;
+
+      const mimeType = fileItem.type || file.type || "application/octet-stream";
+      const ext = mimeToExt(mimeType);
+      const d = new Date();
+      const date = d.toISOString().slice(0, 10); // "2026-03-22"
+      const time = d.toISOString().slice(11, 19).replace(/:/g, ""); // "123456"
+      const filename = `paste-${date}-${time}.${ext}`;
+
+      try {
+        const base64 = await readFileAsBase64(file);
+        await uploadFile(filename, mimeType, base64);
+
+        // Open file browser (no-op if already open) and scroll to the new file.
+        setFileBrowserOpen(true);
+        setHighlightPath(filename);
+
+        // Insert a Markdown link at the cursor in the previously-focused card.
+        if (targetTextarea) {
+          insertLinkInTextarea(targetTextarea, filename, mimeType);
+        }
+
+        // Clear the highlight after a short while.
+        setTimeout(() => setHighlightPath(null), 3_000);
+      } catch (err) {
+        console.error("Clipboard paste upload failed:", err);
+      }
+    };
+  });
+
+  // Register the paste listener once; delegate to the always-current ref.
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      pasteHandlerRef.current(e);
+    }
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -1201,6 +1271,7 @@ function App() {
           <aside class="w-80 flex-shrink-0 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto flex flex-col">
             <FileBrowser
               files={embeddedFiles}
+              highlightPath={highlightPath}
               onClose={() => setFileBrowserOpen(false)}
               onUpload={uploadFile}
               onRename={renameFile}

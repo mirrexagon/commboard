@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState } from "preact/hooks"; // useEffect used in FileEntry
+import { useEffect, useRef, useState } from "preact/hooks";
 import type { EmbeddedFile } from "../../board.ts";
+import {
+  encodePath,
+  insertLinkAtActiveElement,
+  readFileAsBase64,
+} from "../lib/files.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -19,69 +24,16 @@ function formatDate(iso: string): string {
   });
 }
 
-/** Read a browser File as raw base64 (no data: URI prefix). */
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const comma = dataUrl.indexOf(",");
-      resolve(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl);
-    };
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * Encode a virtual filesystem path for use in a URL:
- * each component is percent-encoded but `/` separators are preserved.
- */
-function encodePath(path: string): string {
-  return path.split("/").map(encodeURIComponent).join("/");
-}
-
-/**
- * Insert a Markdown link (or image link) to an embedded file at the cursor
- * position in whichever <textarea> currently has focus.
- *
- * Uses `onMouseDown` + `e.preventDefault()` on the trigger button to prevent
- * the textarea from blurring before the click fires, so `document.activeElement`
- * is still the textarea when this runs.
- *
- * Dispatches a synthetic `input` event after mutating `el.value` so that
- * Preact's controlled component (CardItem's `draft` state) stays in sync via
- * its existing `handleInput` → `setDraft(el.value)` path.
- */
-function insertLinkAtCursor(path: string, mimeType: string): void {
-  const el = document.activeElement;
-  if (!(el instanceof HTMLTextAreaElement)) return;
-
-  const isImage = mimeType.startsWith("image/");
-  const filename = path.split("/").pop() ?? path;
-  const href = `/files/${encodePath(path)}`;
-  // Use image syntax for images so they render inline; plain link for everything else.
-  const linkText = isImage ? `![${filename}](${href})` : `[${filename}](${href})`;
-
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
-  const newValue = el.value.slice(0, start) + linkText + el.value.slice(end);
-
-  el.value = newValue;
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  // Place cursor after the inserted text.
-  el.selectionStart = el.selectionEnd = start + linkText.length;
-}
-
 // ── FileEntry ─────────────────────────────────────────────────────────────────
 
 interface FileEntryProps {
   file: EmbeddedFile;
+  highlighted?: boolean;
   onRename: (oldPath: string, newPath: string) => Promise<void>;
   onDelete: (path: string) => Promise<void>;
 }
 
-function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
+function FileEntry({ file, highlighted = false, onRename, onDelete }: FileEntryProps) {
   const [renaming, setRenaming] = useState(false);
   const [draftPath, setDraftPath] = useState(file.path);
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -89,6 +41,15 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
   const [feedback, setFeedback] = useState<"copied" | "inserted" | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const feedbackTimerRef = useRef<number | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // Scroll this entry into view whenever it becomes the highlighted file
+  // (e.g. immediately after a clipboard paste upload).
+  useEffect(() => {
+    if (highlighted) {
+      rowRef.current?.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlighted]);
 
   function showFeedback(type: "copied" | "inserted") {
     setFeedback(type);
@@ -108,7 +69,7 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
    */
   function handleFilenameClick() {
     if (document.activeElement instanceof HTMLTextAreaElement) {
-      insertLinkAtCursor(file.path, file.mime_type);
+      insertLinkAtActiveElement(file.path, file.mime_type);
       showFeedback("inserted");
     } else {
       navigator.clipboard.writeText(`/files/${file.path}`).then(() =>
@@ -162,11 +123,13 @@ function FileEntry({ file, onRename, onDelete }: FileEntryProps) {
 
   return (
     <div
+      ref={rowRef}
       class={[
         "flex items-start gap-3 px-4 py-3",
         "border-b border-gray-100 dark:border-gray-700 last:border-b-0",
         "hover:bg-gray-50 dark:hover:bg-gray-800/60",
-        "group",
+        "group transition-colors duration-300",
+        highlighted ? "bg-blue-50 dark:bg-blue-900/20" : "",
         deleting ? "opacity-50 pointer-events-none" : "",
       ].join(" ")}
     >
@@ -377,6 +340,8 @@ function UploadZone({ uploading, onFiles }: UploadZoneProps) {
 
 export interface FileBrowserProps {
   files: EmbeddedFile[];
+  /** Path of the file to scroll to and briefly highlight (e.g. after a paste upload). */
+  highlightPath?: string | null;
   onClose: () => void;
   onUpload: (path: string, mimeType: string, data: string) => Promise<void>;
   onRename: (oldPath: string, newPath: string) => Promise<void>;
@@ -385,6 +350,7 @@ export interface FileBrowserProps {
 
 export function FileBrowser({
   files,
+  highlightPath,
   onClose,
   onUpload,
   onRename,
@@ -482,6 +448,7 @@ export function FileBrowser({
                 <FileEntry
                   key={file.path}
                   file={file}
+                  highlighted={file.path === highlightPath}
                   onRename={onRename}
                   onDelete={onDelete}
                 />
