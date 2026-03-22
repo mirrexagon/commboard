@@ -1,7 +1,7 @@
 import * as esbuild from "npm:esbuild";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
 
-import { loadOrCreate, save, type Card, type EmbedData, type EmbeddedFile } from "./board.ts";
+import { loadOrCreate, save as saveBoard, type Card, type EmbedData, type EmbeddedFile } from "./board.ts";
 
 // --- URL extraction ---
 
@@ -352,11 +352,21 @@ function sleep(ms: number): Promise<void> {
 // --- CLI ---
 
 const boardPath = Deno.args[0];
+const noSave = Deno.args.includes("--no-save");
 
 if (!boardPath) {
     console.error("Usage: commboard <path to board file>");
     Deno.exit(1);
 }
+
+if (noSave) {
+    console.warn("WARNING: --no-save is active. No changes will be written to disk.");
+}
+
+// Single wrapper — all call sites use this. When --no-save is active it is a no-op.
+const save = noSave
+    ? (_path: string, _board: Parameters<typeof saveBoard>[1]): Promise<void> => Promise.resolve()
+    : saveBoard;
 
 let board = await loadOrCreate(boardPath);
 console.log(`Board: "${board.name}" — ${board.card_order.length} card(s)`);
