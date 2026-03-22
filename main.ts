@@ -1,6 +1,5 @@
 import * as esbuild from "npm:esbuild";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
-import { fromFileUrl } from "jsr:@std/path";
 
 import { loadOrCreate, save, type Card, type EmbedData, type EmbeddedFile } from "./board.ts";
 
@@ -358,7 +357,7 @@ const buildResult = await esbuild.build({
     // which diverge slightly from the npm:esbuild types at the same version.
     plugins: [
         ...denoPlugins({
-            configPath: fromFileUrl(import.meta.resolve("./deno.json")),
+            importMapURL: import.meta.resolve("./deno.json"),
         }),
     ] as unknown as esbuild.Plugin[],
     entryPoints: [import.meta.resolve("./ui/main.tsx")],

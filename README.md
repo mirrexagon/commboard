@@ -9,15 +9,35 @@ A multi-dimensional Kanban board.
 
 Install [Deno](https://deno.com/).
 
-### Running
+### Installing
+
+To install Commboard as a command available anywhere on your system:
+
+```bash
+deno install -g -n commboard \
+  --allow-read --allow-write --allow-net --allow-run --allow-env \
+  https://raw.githubusercontent.com/mirrexagon/commboard/main/main.ts
+```
+
+Then run it with:
+
+```bash
+commboard path/to/board.json
+```
+
+### Running from source
+
+If you have the repository cloned locally:
 
 ```bash
 deno task start path/to/board.json
 ```
 
-This builds and bundles the UI, then starts the server on [http://localhost:8080](http://localhost:8080). The board file will be created if it doesn't exist.
+### Usage notes
 
-There are example board files in the `example-boards/` directory to try out.
+- The board file will be created if it doesn't exist.
+- The server starts on http://localhost:8080 - navigate there in a web browser to see the UI.
+- There are example board files in the `example-boards/` directory to try out.
 
 ## Basics
 
