@@ -1,5 +1,5 @@
 import { render } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 import { Header } from "./components/Header.tsx";
 import { CardItem, type Card } from "./components/CardItem.tsx";
@@ -81,6 +81,99 @@ function NoSearchResults() {
   );
 }
 
+// ---- MoveToPositionDialog ----
+
+interface MoveToPositionDialogProps {
+  /** 1-based current position of the card being moved. */
+  currentPosition: number;
+  totalCards: number;
+  onConfirm: (newPosition: number) => void;
+  onCancel: () => void;
+}
+
+function MoveToPositionDialog({
+  currentPosition,
+  totalCards,
+  onConfirm,
+  onCancel,
+}: MoveToPositionDialogProps) {
+  const [value, setValue] = useState(String(currentPosition));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.select();
+    inputRef.current?.focus();
+  }, []);
+
+  const n = parseInt(value, 10);
+  const isValid = !isNaN(n) && n >= 1 && n <= totalCards;
+
+  function handleConfirm() {
+    if (isValid) onConfirm(n);
+  }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "Enter") { e.preventDefault(); handleConfirm(); }
+    if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+  }
+
+  return (
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onCancel}
+    >
+      <div
+        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-72 flex flex-col gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+          Move card to position
+        </h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Enter a position from 1 to {totalCards}. Current position: {currentPosition}.
+        </p>
+        <input
+          ref={inputRef}
+          type="number"
+          min={1}
+          max={totalCards}
+          value={value}
+          onInput={(e) => setValue((e.target as HTMLInputElement).value)}
+          onKeyDown={handleKeyDown}
+          class={[
+            "w-full px-3 py-2 rounded-lg border text-sm",
+            "bg-white dark:bg-gray-700",
+            "text-gray-800 dark:text-gray-200",
+            isValid
+              ? "border-gray-300 dark:border-gray-600 focus:border-blue-400 outline-none"
+              : "border-red-400 outline-none",
+          ].join(" ")}
+        />
+        <div class="flex gap-2 justify-end">
+          <button
+            class="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            class={[
+              "px-3 py-1.5 text-xs rounded-lg font-medium transition-colors",
+              isValid
+                ? "bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
+                : "bg-blue-200 dark:bg-blue-900/30 text-blue-300 dark:text-blue-700 cursor-not-allowed",
+            ].join(" ")}
+            disabled={!isValid}
+            onClick={handleConfirm}
+          >
+            Move
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---- CardGrid with drag-and-drop (default / all-cards view) ----
 
 interface CardGridProps {
@@ -100,6 +193,9 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
+  const [dropAtPosition, setDropAtPosition] = useState(false);
+  /** When non-null, the "move to position" dialog is shown for this card id. */
+  const [moveToPositionCardId, setMoveToPositionCardId] = useState<number | null>(null);
 
   const isFiltering = filterQuery.trim().length > 0;
   const displayCards = isFiltering
@@ -150,7 +246,7 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
 
   function handleEndZoneDragEnter(e: DragEvent) {
     e.preventDefault();
-    if (draggedId !== null) { setDropAtEnd(true); setDropTargetId(null); }
+    if (draggedId !== null) { setDropAtEnd(true); setDropAtPosition(false); setDropTargetId(null); }
   }
 
   function handleEndZoneDragLeave() { setDropAtEnd(false); }
@@ -169,10 +265,48 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
     reset();
   }
 
-  function reset() { setDraggedId(null); setDropTargetId(null); setDropAtEnd(false); }
+  function handlePositionZoneDragEnter(e: DragEvent) {
+    e.preventDefault();
+    if (draggedId !== null) { setDropAtPosition(true); setDropAtEnd(false); setDropTargetId(null); }
+  }
+
+  function handlePositionZoneDragLeave() { setDropAtPosition(false); }
+
+  function handlePositionZoneDragOver(e: DragEvent) {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  }
+
+  function handlePositionZoneDrop(e: DragEvent) {
+    e.preventDefault();
+    if (draggedId === null) { reset(); return; }
+    // Save the id before reset clears it, then open the dialog.
+    const id = draggedId;
+    reset();
+    setMoveToPositionCardId(id);
+  }
+
+  function handleMoveToPositionConfirm(newPosition: number) {
+    if (moveToPositionCardId === null) return;
+    const id = moveToPositionCardId;
+    setMoveToPositionCardId(null);
+    // Build the new order: remove card from current position, insert at newPosition (1-based).
+    const ids = cards.map((c) => c.id).filter((cid) => cid !== id);
+    ids.splice(newPosition - 1, 0, id);
+    onReorder(ids);
+  }
+
+  function reset() { setDraggedId(null); setDropTargetId(null); setDropAtEnd(false); setDropAtPosition(false); }
+
+  // Height of the fixed drop-zone bar (also used as bottom padding while dragging).
+  const DROP_BAR_HEIGHT = "5rem"; // h-20
 
   return (
-    <div class="flex flex-col gap-4">
+    <div
+      class="flex flex-col gap-4"
+      // Push content up so the last row of cards isn't hidden behind the fixed bar.
+      style={draggedId !== null && !isFiltering ? { paddingBottom: DROP_BAR_HEIGHT } : undefined}
+    >
       <div
         class="grid gap-4 items-start"
         style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))"
@@ -199,24 +333,58 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
         ))}
       </div>
 
+      {/* Fixed drop-zone bar — always visible at the bottom of the viewport during a drag. */}
       {draggedId !== null && !isFiltering && (
-        <div
-          class={[
-            "h-16 rounded-xl border-2 border-dashed transition-colors duration-150 flex items-center justify-center",
-            dropAtEnd
-              ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400"
-              : "border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500",
-          ].join(" ")}
-          onDragEnter={handleEndZoneDragEnter}
-          onDragLeave={handleEndZoneDragLeave}
-          onDragOver={handleEndZoneDragOver}
-          onDrop={handleEndZoneDrop}
-        >
-          <span class="text-xs font-medium select-none pointer-events-none">
-            Drop here to move to end
-          </span>
+        <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 px-6 py-3">
+          <div class="max-w-screen-2xl mx-auto flex gap-4">
+            <div
+              class={[
+                "flex-1 h-12 rounded-xl border-2 border-dashed transition-colors duration-150 flex items-center justify-center",
+                dropAtEnd
+                  ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400"
+                  : "border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500",
+              ].join(" ")}
+              onDragEnter={handleEndZoneDragEnter}
+              onDragLeave={handleEndZoneDragLeave}
+              onDragOver={handleEndZoneDragOver}
+              onDrop={handleEndZoneDrop}
+            >
+              <span class="text-xs font-medium select-none pointer-events-none">
+                Drop here to move to end
+              </span>
+            </div>
+
+            <div
+              class={[
+                "flex-1 h-12 rounded-xl border-2 border-dashed transition-colors duration-150 flex items-center justify-center",
+                dropAtPosition
+                  ? "border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-500 dark:text-purple-400"
+                  : "border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500",
+              ].join(" ")}
+              onDragEnter={handlePositionZoneDragEnter}
+              onDragLeave={handlePositionZoneDragLeave}
+              onDragOver={handlePositionZoneDragOver}
+              onDrop={handlePositionZoneDrop}
+            >
+              <span class="text-xs font-medium select-none pointer-events-none">
+                Drop here to move to position…
+              </span>
+            </div>
+          </div>
         </div>
       )}
+
+      {moveToPositionCardId !== null && (() => {
+        const currentPos = cards.findIndex((c) => c.id === moveToPositionCardId) + 1;
+        return (
+          <MoveToPositionDialog
+            currentPosition={currentPos > 0 ? currentPos : 1}
+            totalCards={cards.length}
+            onConfirm={handleMoveToPositionConfirm}
+            onCancel={() => setMoveToPositionCardId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
