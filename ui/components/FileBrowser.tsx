@@ -358,6 +358,7 @@ export function FileBrowser({
 }: FileBrowserProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  const [fileFilter, setFileFilter] = useState("");
 
   async function handleFiles(incoming: File[]) {
     setUploading(true);
@@ -380,6 +381,11 @@ export function FileBrowser({
 
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
 
+  const filterTrimmed = fileFilter.trim().toLowerCase();
+  const visible = filterTrimmed
+    ? sorted.filter((f) => f.path.toLowerCase().includes(filterTrimmed))
+    : sorted;
+
   return (
     <div class="flex flex-col h-full">
       {/* Panel header */}
@@ -389,7 +395,10 @@ export function FileBrowser({
             Embedded Files
           </h2>
           <span class="text-xs text-gray-400 dark:text-gray-500 select-none">
-            {files.length} {files.length === 1 ? "file" : "files"}
+            {filterTrimmed
+              ? `${visible.length} / ${files.length}`
+              : `${files.length}`}{" "}
+            {files.length === 1 ? "file" : "files"}
           </span>
           <button
             class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
@@ -422,6 +431,56 @@ export function FileBrowser({
           )}
         </div>
 
+        {/* Filename filter input */}
+        {sorted.length > 0 && (
+          <div class="px-4 pb-2 flex-shrink-0">
+            <div class="relative flex items-center">
+              {/* Magnifying-glass icon */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                class="absolute left-2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500 pointer-events-none"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <input
+                type="text"
+                value={fileFilter}
+                onInput={(e) => setFileFilter((e.target as HTMLInputElement).value)}
+                placeholder="Filter by filename…"
+                class={[
+                  "w-full text-xs pl-7 py-1.5 rounded-lg border outline-none transition-all duration-150",
+                  "bg-gray-50 dark:bg-gray-800",
+                  "text-gray-700 dark:text-gray-300",
+                  "placeholder-gray-400 dark:placeholder-gray-500",
+                  fileFilter
+                    ? "border-blue-400 dark:border-blue-500 bg-white dark:bg-gray-900 pr-6"
+                    : "border-gray-200 dark:border-gray-700 pr-2 focus:border-blue-400 focus:bg-white dark:focus:bg-gray-900",
+                ].join(" ")}
+                spellcheck={false}
+              />
+              {/* Clear button — only shown when there is a query */}
+              {fileFilter && (
+                <button
+                  class="absolute right-1.5 flex items-center justify-center w-4 h-4 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-100 cursor-pointer"
+                  title="Clear filter"
+                  aria-label="Clear filename filter"
+                  onClick={() => setFileFilter("")}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3">
+                    <path d="M3.22 3.22a.75.75 0 0 1 1.06 0L8 6.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L9.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L8 9.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L6.94 8 3.22 4.28a.75.75 0 0 1 0-1.06Z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Divider with label */}
         {sorted.length > 0 && (
           <div class="px-4 pb-1 flex-shrink-0">
@@ -442,9 +501,21 @@ export function FileBrowser({
                 Upload files using the area above.
               </p>
             </div>
+          ) : visible.length === 0 ? (
+            <div class="flex flex-col items-center justify-center h-40 text-center px-6 select-none">
+              <p class="text-sm text-gray-400 dark:text-gray-500">
+                No files match "{fileFilter.trim()}"
+              </p>
+              <button
+                class="text-xs text-blue-500 dark:text-blue-400 mt-1 hover:underline cursor-pointer"
+                onClick={() => setFileFilter("")}
+              >
+                Clear filter
+              </button>
+            </div>
           ) : (
             <div class="border-t border-gray-100 dark:border-gray-700">
-              {sorted.map((file) => (
+              {visible.map((file) => (
                 <FileEntry
                   key={file.path}
                   file={file}
