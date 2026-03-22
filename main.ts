@@ -105,6 +105,37 @@ const HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
+// --- HTTP helpers ---
+
+function isValidTag(tag: string): boolean {
+    const colon = tag.indexOf(":");
+    return colon > 0 && colon < tag.length - 1;
+}
+
+function jsonOk(data: unknown): Response {
+    return new Response(JSON.stringify(data), {
+        headers: { "content-type": "application/json; charset=utf-8" },
+    });
+}
+
+function jsonError(message: string, status: number): Response {
+    return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: { "content-type": "application/json; charset=utf-8" },
+    });
+}
+
+/** Parse the request body as JSON. Returns the parsed object, or a 400 error Response on failure. */
+async function parseJson(
+    req: Request,
+): Promise<Record<string, unknown> | Response> {
+    try {
+        return await req.json();
+    } catch {
+        return jsonError("Invalid JSON", 400);
+    }
+}
+
 const PORT = 8080;
 
 console.log(`Listening at http://localhost:${PORT}`);
@@ -127,41 +158,22 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     }
 
     if (pathname === "/api/board" && req.method === "GET") {
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     if (pathname === "/api/board" && req.method === "PATCH") {
-        let body: Record<string, unknown>;
-        try {
-            body = await req.json();
-        } catch {
-            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-                status: 400,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
-        }
+        const body = await parseJson(req);
+        if (body instanceof Response) return body;
 
         const name = typeof body.name === "string" ? body.name.trim() : null;
         if (!name) {
-            return new Response(
-                JSON.stringify({ error: "name must be a non-empty string" }),
-                {
-                    status: 400,
-                    headers: {
-                        "content-type": "application/json; charset=utf-8",
-                    },
-                },
-            );
+            return jsonError("name must be a non-empty string", 400);
         }
 
         board = { ...board, name };
         await save(boardPath, board);
 
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     // PATCH /api/cards/:id — update a card's text
@@ -170,33 +182,15 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const id = parseInt(patchCardMatch[1]);
 
         if (!board.cards[String(id)]) {
-            return new Response(JSON.stringify({ error: "Card not found" }), {
-                status: 404,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
+            return jsonError("Card not found", 404);
         }
 
-        let body: Record<string, unknown>;
-        try {
-            body = await req.json();
-        } catch {
-            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-                status: 400,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
-        }
+        const body = await parseJson(req);
+        if (body instanceof Response) return body;
 
         const text = typeof body.text === "string" ? body.text : null;
         if (text === null) {
-            return new Response(
-                JSON.stringify({ error: "text must be a string" }),
-                {
-                    status: 400,
-                    headers: {
-                        "content-type": "application/json; charset=utf-8",
-                    },
-                },
-            );
+            return jsonError("text must be a string", 400);
         }
 
         const updatedCard: Card = { ...board.cards[String(id)], text };
@@ -206,9 +200,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     // POST /api/cards — add a new card (optional body: { text?: string })
@@ -232,9 +224,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     // POST /api/cards/:id/tags — add a tag to a card
@@ -243,39 +233,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const id = parseInt(postTagMatch[1]);
 
         if (!board.cards[String(id)]) {
-            return new Response(JSON.stringify({ error: "Card not found" }), {
-                status: 404,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
+            return jsonError("Card not found", 404);
         }
 
-        let body: Record<string, unknown>;
-        try {
-            body = await req.json();
-        } catch {
-            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-                status: 400,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
-        }
+        const body = await parseJson(req);
+        if (body instanceof Response) return body;
 
         const tag = typeof body.tag === "string" ? body.tag.trim() : null;
-        if (
-            !tag ||
-            !tag.includes(":") ||
-            tag.indexOf(":") === 0 ||
-            tag.indexOf(":") === tag.length - 1
-        ) {
-            return new Response(
-                JSON.stringify({
-                    error: "tag must be a non-empty string in 'category:value' format",
-                }),
-                {
-                    status: 400,
-                    headers: {
-                        "content-type": "application/json; charset=utf-8",
-                    },
-                },
+        if (!tag || !isValidTag(tag)) {
+            return jsonError(
+                "tag must be a non-empty string in 'category:value' format",
+                400,
             );
         }
 
@@ -289,9 +257,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             await save(boardPath, board);
         }
 
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     // DELETE /api/cards/:id/tags/:tag — remove a tag from a card (:tag is URL-encoded)
@@ -301,10 +267,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const tag = decodeURIComponent(deleteTagMatch[2]);
 
         if (!board.cards[String(id)]) {
-            return new Response(JSON.stringify({ error: "Card not found" }), {
-                status: 404,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
+            return jsonError("Card not found", 404);
         }
 
         const card = board.cards[String(id)];
@@ -318,9 +281,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     // DELETE /api/cards/:id — remove a card
@@ -329,10 +290,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const id = parseInt(deleteMatch[1]);
 
         if (!board.cards[String(id)]) {
-            return new Response(JSON.stringify({ error: "Card not found" }), {
-                status: 404,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
+            return jsonError("Card not found", 404);
         }
 
         const { [String(id)]: _removed, ...remainingCards } = board.cards;
@@ -343,33 +301,16 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     // PUT /api/card_order — reorder cards
     if (pathname === "/api/card_order" && req.method === "PUT") {
-        let body: Record<string, unknown>;
-        try {
-            body = await req.json();
-        } catch {
-            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-                status: 400,
-                headers: { "content-type": "application/json; charset=utf-8" },
-            });
-        }
+        const body = await parseJson(req);
+        if (body instanceof Response) return body;
 
         if (!Array.isArray(body.card_order)) {
-            return new Response(
-                JSON.stringify({ error: "card_order must be an array" }),
-                {
-                    status: 400,
-                    headers: {
-                        "content-type": "application/json; charset=utf-8",
-                    },
-                },
-            );
+            return jsonError("card_order must be an array", 400);
         }
 
         const newOrder = (body.card_order as unknown[]).map(Number);
@@ -380,25 +321,16 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             newOrder.length !== board.card_order.length ||
             ![...existingIds].every((id) => newIds.has(id))
         ) {
-            return new Response(
-                JSON.stringify({
-                    error: "card_order must contain exactly the existing card IDs",
-                }),
-                {
-                    status: 400,
-                    headers: {
-                        "content-type": "application/json; charset=utf-8",
-                    },
-                },
+            return jsonError(
+                "card_order must contain exactly the existing card IDs",
+                400,
             );
         }
 
         board = { ...board, card_order: newOrder };
         await save(boardPath, board);
 
-        return new Response(JSON.stringify(board), {
-            headers: { "content-type": "application/json; charset=utf-8" },
-        });
+        return jsonOk(board);
     }
 
     return new Response("Not Found", { status: 404 });

@@ -156,6 +156,7 @@ export function CardItem({
   const [editing, setEditing] = useState(false);
   const [addingTag, setAddingTag] = useState(false);
   const [draft, setDraft] = useState(card.text);
+  const dragDisabled = editing || addingTag || isDragDisabled;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Keep draft in sync with external card.text changes (e.g. after a save
@@ -246,12 +247,12 @@ export function CardItem({
         editing || isDragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing select-none",
       ].join(" ")}
       // Disable drag while editing, adding a tag, or when drag is globally disabled (e.g. filter active).
-      draggable={!editing && !addingTag && !isDragDisabled}
-      onDragStart={editing || addingTag || isDragDisabled ? undefined : onDragStart}
-      onDragEnter={editing || addingTag || isDragDisabled ? undefined : onDragEnter}
-      onDragOver={editing || addingTag || isDragDisabled ? undefined : onDragOver}
-      onDrop={editing || addingTag || isDragDisabled ? undefined : onDrop}
-      onDragEnd={editing || addingTag || isDragDisabled ? undefined : onDragEnd}
+      draggable={!dragDisabled}
+      onDragStart={dragDisabled ? undefined : onDragStart}
+      onDragEnter={dragDisabled ? undefined : onDragEnter}
+      onDragOver={dragDisabled ? undefined : onDragOver}
+      onDrop={dragDisabled ? undefined : onDrop}
+      onDragEnd={dragDisabled ? undefined : onDragEnd}
     >
       {/* ── Accent bar ── */}
       <div class="h-1.5 rounded-t-xl flex overflow-hidden">

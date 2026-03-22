@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 
 import { Header } from "./components/Header.tsx";
 import { CardItem, type Card } from "./components/CardItem.tsx";
+import type { Board } from "../board.ts";
 import { tagPalette } from "./lib/colors.ts";
 
 // ---- Filter helper ----
@@ -14,13 +15,6 @@ function matchesFilter(card: Card, query: string): boolean {
     card.text.toLowerCase().includes(q) ||
     card.tags.some((t) => t.toLowerCase().includes(q))
   );
-}
-
-interface Board {
-  name: string;
-  cards: Record<string, Card>;
-  next_card_id: number;
-  card_order: number[];
 }
 
 // ---- Data fetching ----
@@ -75,6 +69,18 @@ function EmptyState() {
   );
 }
 
+function NoSearchResults() {
+  return (
+    <div class="flex flex-col items-center justify-center h-64 text-center select-none">
+      <div class="text-5xl mb-4">🔍</div>
+      <p class="text-gray-500 dark:text-gray-400 font-medium">No cards match your search</p>
+      <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">
+        Try a different search term or clear the filter.
+      </p>
+    </div>
+  );
+}
+
 // ---- CardGrid with drag-and-drop (default / all-cards view) ----
 
 interface CardGridProps {
@@ -101,17 +107,7 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
     : cards;
 
   if (displayCards.length === 0) {
-    if (isFiltering) {
-      return (
-        <div class="flex flex-col items-center justify-center h-64 text-center select-none">
-          <div class="text-5xl mb-4">🔍</div>
-          <p class="text-gray-500 dark:text-gray-400 font-medium">No cards match your search</p>
-          <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">
-            Try a different search term or clear the filter.
-          </p>
-        </div>
-      );
-    }
+    if (isFiltering) return <NoSearchResults />;
     return <EmptyState />;
   }
 
@@ -518,17 +514,7 @@ function CategoryView({
     const anyMatch = allCards.some(
       (c) => c.tags.some((t) => t.startsWith(category + ":")) && matchesFilter(c, filterQuery),
     );
-    if (!anyMatch) {
-      return (
-        <div class="flex flex-col items-center justify-center h-64 text-center select-none">
-          <div class="text-5xl mb-4">🔍</div>
-          <p class="text-gray-500 dark:text-gray-400 font-medium">No cards match your search</p>
-          <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">
-            Try a different search term or clear the filter.
-          </p>
-        </div>
-      );
-    }
+    if (!anyMatch) return <NoSearchResults />;
   }
 
   return (
@@ -651,58 +637,53 @@ function App() {
 
   function toggleDark() { setDarkMode((d) => !d); }
 
+  /** Fetch a API endpoint, check for errors, and update board state from the response. */
+  async function apiFetch(url: string, options?: RequestInit): Promise<void> {
+    const res = await fetch(url, options);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setBoard((await res.json()) as Board);
+  }
+
   async function renameBoard(name: string) {
-    const res = await fetch("/api/board", {
+    await apiFetch("/api/board", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    setBoard((await res.json()) as Board);
   }
 
   async function addCard() {
-    const res = await fetch("/api/cards", {
+    await apiFetch("/api/cards", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ text: "" }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    setBoard((await res.json()) as Board);
   }
 
   async function updateCard(id: number, text: string) {
-    const res = await fetch(`/api/cards/${id}`, {
+    await apiFetch(`/api/cards/${id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ text }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    setBoard((await res.json()) as Board);
   }
 
   async function deleteCard(id: number) {
-    const res = await fetch(`/api/cards/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    setBoard((await res.json()) as Board);
+    await apiFetch(`/api/cards/${id}`, { method: "DELETE" });
   }
 
   async function addTag(id: number, tag: string) {
-    const res = await fetch(`/api/cards/${id}/tags`, {
+    await apiFetch(`/api/cards/${id}/tags`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ tag }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    setBoard((await res.json()) as Board);
   }
 
   async function removeTag(id: number, tag: string) {
-    const res = await fetch(`/api/cards/${id}/tags/${encodeURIComponent(tag)}`, {
+    await apiFetch(`/api/cards/${id}/tags/${encodeURIComponent(tag)}`, {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    setBoard((await res.json()) as Board);
   }
 
   async function reorderCards(newOrder: number[]) {
@@ -715,8 +696,9 @@ function App() {
         body: JSON.stringify({ card_order: newOrder }),
       });
       if (res.ok) setBoard((await res.json()) as Board);
-    } catch {
+    } catch (err) {
       // Optimistic update stays; page refresh will restore last saved order.
+      console.error("reorderCards failed:", err);
     }
   }
 
@@ -758,8 +740,8 @@ function App() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ card_order: newGlobalOrder }),
       });
-    } catch {
-      // Fall through to sync
+    } catch (err) {
+      console.error("moveCardToColumn failed:", err);
     }
     // Always sync with server after tag changes to get authoritative state.
     setBoard(await fetchBoard());
