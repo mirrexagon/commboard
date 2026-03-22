@@ -96,7 +96,8 @@ function CardGrid({ cards, allTags, darkMode, onDelete, onUpdate, onReorder, onA
 
   function handleDragEnter(e: DragEvent, id: number) {
     e.preventDefault();
-    if (id !== draggedId) { setDropTargetId(id); setDropAtEnd(false); }
+    setDropTargetId(id !== draggedId ? id : null);
+    setDropAtEnd(false);
   }
 
   function handleDragOver(e: DragEvent) {
@@ -505,12 +506,15 @@ function CategoryView({
               setDragState({ draggedId: cardId, sourceValue: v, targetValue: v, targetCardId: null, atEnd: false });
             }}
             onDragEnterCard={(cardId) => {
-              // Ignore entering the dragged card itself — it's a no-op position.
-              setDragState((prev) =>
-                prev && cardId !== prev.draggedId
-                  ? { ...prev, targetValue: v, targetCardId: cardId, atEnd: false }
-                  : prev,
-              );
+              setDragState((prev) => {
+                if (!prev) return prev;
+                // Re-entering the dragged card clears the drop target so no
+                // other card stays highlighted.
+                if (cardId === prev.draggedId) {
+                  return { ...prev, targetValue: v, targetCardId: null, atEnd: false };
+                }
+                return { ...prev, targetValue: v, targetCardId: cardId, atEnd: false };
+              });
             }}
             onDragEnterEndZone={() => {
               setDragState((prev) =>
