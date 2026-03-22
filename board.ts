@@ -6,11 +6,34 @@ export interface Card {
   tags: string[];
 }
 
+export interface EmbedData {
+  /** The canonical URL that was fetched. */
+  url: string;
+  /** ISO-8601 timestamp of when this embed was last fetched. */
+  fetched_at: string;
+  /** Set when the fetch or parse failed. */
+  error?: string;
+  title?: string;
+  description?: string;
+  /** og:site_name or similar. */
+  site_name?: string;
+  /** Original image URL (og:image or twitter:image). */
+  image_url?: string;
+  /** Base-64 data URL for the og:image, cached for offline use. */
+  image_data?: string;
+  /** Original favicon URL. */
+  favicon_url?: string;
+  /** Base-64 data URL for the favicon, cached for offline use. */
+  favicon_data?: string;
+}
+
 export interface Board {
   name: string;
   cards: Record<string, Card>;
   next_card_id: number;
   card_order: number[];
+  /** Board-level cache of link embeds, keyed by URL. */
+  embed_cache?: Record<string, EmbedData>;
 }
 
 // --- Helpers ---

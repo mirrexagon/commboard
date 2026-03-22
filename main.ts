@@ -2,7 +2,337 @@ import * as esbuild from "npm:esbuild";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
 import { fromFileUrl } from "jsr:@std/path";
 
-import { loadOrCreate, save, type Card } from "./board.ts";
+import { loadOrCreate, save, type Card, type EmbedData } from "./board.ts";
+
+// --- URL extraction ---
+
+/**
+ * Extract all http/https URLs from a block of text (e.g. Markdown).
+ * Strips trailing punctuation that is unlikely to be part of the URL.
+ * Returns a de-duplicated array.
+ */
+export function extractUrls(text: string): string[] {
+    const raw = text.match(/https?:\/\/[^\s\)\]\>"'`\\]+/g) ?? [];
+    const cleaned = raw.map((u) => u.replace(/[.,;:!?'")\]>]+$/, ""));
+    return [...new Set(cleaned)];
+}
+
+// --- HTML parsing helpers ---
+
+function escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function decodeHtmlEntities(s: string): string {
+    return s
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+}
+
+/**
+ * Extract the `content` attribute from the first `<meta>` tag whose
+ * `property` or `name` attribute matches any of the given names (tried
+ * in order). Handles both attribute orderings.
+ */
+function extractMetaContent(
+    html: string,
+    ...names: string[]
+): string | undefined {
+    for (const name of names) {
+        const escaped = escapeRegex(name);
+        // property/name before content
+        let m = html.match(
+            new RegExp(
+                `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["']`,
+                "i",
+            ),
+        );
+        // content before property/name
+        if (!m) {
+            m = html.match(
+                new RegExp(
+                    `<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escaped}["']`,
+                    "i",
+                ),
+            );
+        }
+        if (m?.[1]) return decodeHtmlEntities(m[1]);
+    }
+    return undefined;
+}
+
+function extractTitle(html: string): string | undefined {
+    const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    return m?.[1] ? decodeHtmlEntities(m[1].trim()) : undefined;
+}
+
+/**
+ * Resolve `href` against `base`, handling relative paths and protocol-relative
+ * URLs gracefully.
+ */
+function resolveUrl(href: string, base: string): string {
+    try {
+        return new URL(href, base).href;
+    } catch {
+        return href;
+    }
+}
+
+/**
+ * Find the best favicon URL from a page's HTML, falling back to
+ * `{origin}/favicon.ico`.
+ */
+function extractFaviconUrl(html: string, pageUrl: string): string {
+    const origin = new URL(pageUrl).origin;
+
+    const patterns = [
+        // shortcut icon / icon (normal and reversed attribute order)
+        /<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']+)["']/i,
+        /<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut )?icon["']/i,
+        // apple-touch-icon as fallback
+        /<link[^>]+rel=["']apple-touch-icon(?:-precomposed)?["'][^>]+href=["']([^"']+)["']/i,
+        /<link[^>]+href=["']([^"']+)["'][^>]+rel=["']apple-touch-icon(?:-precomposed)?["']/i,
+    ];
+
+    for (const pat of patterns) {
+        const m = html.match(pat);
+        if (m?.[1]) return resolveUrl(m[1], pageUrl);
+    }
+
+    return `${origin}/favicon.ico`;
+}
+
+// --- Base-64 asset fetching ---
+
+const MAX_ASSET_BYTES = 5 * 1024 * 1024; // 5 MB
+
+/**
+ * Fetch a URL and return it as a base-64 `data:…` string, or `undefined`
+ * if the fetch fails, times out, or the resource is too large.
+ */
+async function fetchAsBase64(url: string): Promise<string | undefined> {
+    try {
+        const res = await fetch(url, {
+            signal: AbortSignal.timeout(15_000),
+            headers: { "User-Agent": "Commboard/1.0 embed-bot" },
+        });
+        if (!res.ok) return undefined;
+
+        const cl = res.headers.get("content-length");
+        if (cl && parseInt(cl, 10) > MAX_ASSET_BYTES) return undefined;
+
+        const buf = await res.arrayBuffer();
+        if (buf.byteLength > MAX_ASSET_BYTES) return undefined;
+
+        const mimeType = (
+            res.headers.get("content-type") ?? "application/octet-stream"
+        )
+            .split(";")[0]
+            .trim();
+
+        // Encode in chunks to avoid call-stack overflow on large buffers.
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        const CHUNK = 8192;
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+            binary += String.fromCharCode(
+                ...bytes.subarray(i, Math.min(i + CHUNK, bytes.length)),
+            );
+        }
+        return `data:${mimeType};base64,${btoa(binary)}`;
+    } catch {
+        return undefined;
+    }
+}
+
+// --- Embed data fetching ---
+
+async function fetchEmbedData(url: string): Promise<EmbedData> {
+    const fetched_at = new Date().toISOString();
+
+    let res: Response;
+    try {
+        res = await fetch(url, {
+            signal: AbortSignal.timeout(15_000),
+            headers: {
+                "User-Agent": "Commboard/1.0 embed-bot",
+                Accept: "text/html,application/xhtml+xml,*/*",
+            },
+        });
+    } catch (err) {
+        return {
+            url,
+            fetched_at,
+            error: err instanceof Error ? err.message : String(err),
+        };
+    }
+
+    if (!res.ok) {
+        return { url, fetched_at, error: `HTTP ${res.status}` };
+    }
+
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("text/html")) {
+        // Non-HTML resource: store minimal metadata without images.
+        return {
+            url,
+            fetched_at,
+            title:
+                new URL(url).pathname.split("/").filter(Boolean).pop() || url,
+            description: `${contentType} resource`,
+        };
+    }
+
+    let html: string;
+    try {
+        html = await res.text();
+    } catch (err) {
+        return {
+            url,
+            fetched_at,
+            error: `Failed to read response: ${err instanceof Error ? err.message : String(err)}`,
+        };
+    }
+
+    const title =
+        extractMetaContent(html, "og:title", "twitter:title") ||
+        extractTitle(html);
+    const description = extractMetaContent(
+        html,
+        "og:description",
+        "twitter:description",
+        "description",
+    );
+    const siteName = extractMetaContent(html, "og:site_name");
+
+    const rawImageUrl = extractMetaContent(html, "og:image", "twitter:image");
+    const imageUrl = rawImageUrl ? resolveUrl(rawImageUrl, url) : undefined;
+    const faviconUrl = extractFaviconUrl(html, url);
+
+    console.log(
+        `  Fetching assets for ${url} (image: ${imageUrl ?? "none"}, favicon: ${faviconUrl})`,
+    );
+    const [imageData, faviconData] = await Promise.all([
+        imageUrl ? fetchAsBase64(imageUrl) : Promise.resolve(undefined),
+        fetchAsBase64(faviconUrl),
+    ]);
+
+    return {
+        url,
+        fetched_at,
+        title,
+        description,
+        site_name: siteName,
+        image_url: imageUrl,
+        image_data: imageData,
+        favicon_url: faviconUrl,
+        favicon_data: faviconData,
+    };
+}
+
+// --- Per-domain rate-limited embed fetch queue ---
+
+const DOMAIN_RATE_LIMIT_MS = 2_000; // min ms between fetches to the same domain
+
+const embedQueue = {
+    pending: [] as string[],
+    processing: null as string | null,
+    /** timestamp of the last fetch dispatched for each domain */
+    domainLastFetch: new Map<string, number>(),
+    running: false,
+};
+
+function getDomain(url: string): string {
+    try {
+        return new URL(url).hostname;
+    } catch {
+        return url;
+    }
+}
+
+/**
+ * Add `url` to the fetch queue. If it is already pending it is moved to
+ * the requested position. If it is currently being processed it is
+ * added to the pending list (so it will be re-fetched afterwards).
+ */
+function enqueueEmbed(url: string, priority: "front" | "back" = "back"): void {
+    // Remove any existing entry so we can re-insert at the desired position.
+    const idx = embedQueue.pending.indexOf(url);
+    if (idx !== -1) embedQueue.pending.splice(idx, 1);
+
+    if (priority === "front") {
+        embedQueue.pending.unshift(url);
+    } else {
+        embedQueue.pending.push(url);
+    }
+
+    processEmbedQueue();
+}
+
+function processEmbedQueue(): void {
+    if (embedQueue.running) return;
+    embedQueue.running = true;
+    runQueueLoop().finally(() => {
+        embedQueue.running = false;
+    });
+}
+
+async function runQueueLoop(): Promise<void> {
+    while (embedQueue.pending.length > 0) {
+        const now = Date.now();
+        let nextIdx = -1;
+        let shortestWait = Infinity;
+
+        for (let i = 0; i < embedQueue.pending.length; i++) {
+            const domain = getDomain(embedQueue.pending[i]);
+            const lastFetch = embedQueue.domainLastFetch.get(domain) ?? 0;
+            const elapsed = now - lastFetch;
+
+            if (elapsed >= DOMAIN_RATE_LIMIT_MS) {
+                nextIdx = i;
+                break;
+            }
+            shortestWait = Math.min(shortestWait, DOMAIN_RATE_LIMIT_MS - elapsed);
+        }
+
+        if (nextIdx === -1) {
+            // All remaining domains are rate-limited; wait for the shortest delay.
+            await sleep(shortestWait);
+            continue;
+        }
+
+        const url = embedQueue.pending.splice(nextIdx, 1)[0];
+        embedQueue.processing = url;
+        embedQueue.domainLastFetch.set(getDomain(url), Date.now());
+
+        try {
+            console.log(`Fetching embed: ${url}`);
+            const data = await fetchEmbedData(url);
+            // Re-read `board` after the await so we merge into the latest state.
+            board = {
+                ...board,
+                embed_cache: { ...(board.embed_cache ?? {}), [url]: data },
+            };
+            await save(boardPath, board);
+            console.log(
+                `Embed cached: ${url} — ${data.error ?? data.title ?? "(no title)"}`,
+            );
+        } catch (err) {
+            console.error(`Queue error for ${url}:`, err);
+        }
+
+        embedQueue.processing = null;
+    }
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // --- CLI ---
 
@@ -200,6 +530,14 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
+        // Enqueue any URLs that appear in the updated text but are not yet cached.
+        const cache = board.embed_cache ?? {};
+        for (const url of extractUrls(text)) {
+            if (!(url in cache)) {
+                enqueueEmbed(url, "back");
+            }
+        }
+
         return jsonOk(board);
     }
 
@@ -331,6 +669,61 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         await save(boardPath, board);
 
         return jsonOk(board);
+    }
+
+    // POST /api/embeds/fetch — enqueue a single URL for fetching / refetching
+    if (pathname === "/api/embeds/fetch" && req.method === "POST") {
+        const body = await parseJson(req);
+        if (body instanceof Response) return body;
+
+        const url = typeof body.url === "string" ? body.url.trim() : null;
+        if (!url) return jsonError("url must be a non-empty string", 400);
+        try {
+            new URL(url);
+        } catch {
+            return jsonError("url is not a valid URL", 400);
+        }
+
+        // Refetch requests jump to the front of the queue so the user gets
+        // feedback quickly; regular on-save enqueues go to the back.
+        const priority = body.refetch === true ? "front" : "back";
+        enqueueEmbed(url, priority);
+
+        return jsonOk({
+            queued: true,
+            pending: embedQueue.pending.length,
+            processing: embedQueue.processing,
+        });
+    }
+
+    // POST /api/embeds/fetch-all — scan all cards and enqueue every uncached URL
+    if (pathname === "/api/embeds/fetch-all" && req.method === "POST") {
+        const cache = board.embed_cache ?? {};
+        const uncached = new Set<string>();
+
+        for (const card of Object.values(board.cards)) {
+            for (const url of extractUrls(card.text)) {
+                if (!(url in cache)) uncached.add(url);
+            }
+        }
+
+        for (const url of uncached) {
+            enqueueEmbed(url, "back");
+        }
+
+        return jsonOk({
+            queued: uncached.size,
+            pending: embedQueue.pending.length,
+            processing: embedQueue.processing,
+        });
+    }
+
+    // GET /api/embeds/queue — return current queue status
+    if (pathname === "/api/embeds/queue" && req.method === "GET") {
+        return jsonOk({
+            pending: embedQueue.pending.length,
+            processing: embedQueue.processing,
+        });
     }
 
     return new Response("Not Found", { status: 404 });

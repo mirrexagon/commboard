@@ -73,7 +73,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
     - Body text
         - [x] Edit
         - [x] Render body text as Markdown
-        - [ ] Fetch and render embeds for links inline in card bodies
+        - [x] Fetch and render embeds for links inline in card bodies
     - [x] Move card up and down in both default and category view (drag-and-drop in global order)
 
 - Tags

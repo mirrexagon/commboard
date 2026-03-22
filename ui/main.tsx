@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 import { Header } from "./components/Header.tsx";
 import { CardItem, type Card } from "./components/CardItem.tsx";
-import type { Board } from "../board.ts";
+import type { Board, EmbedData } from "../board.ts";
 import { tagPalette } from "./lib/colors.ts";
 
 // ---- Filter helper ----
@@ -182,14 +182,16 @@ interface CardGridProps {
   darkMode: boolean;
   /** When set, cards are filtered to those matching this query and drag-and-drop is disabled. */
   filterQuery: string;
+  embedCache: Record<string, EmbedData>;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => void;
   onReorder: (newOrder: number[]) => void;
   onAddTag: (id: number, tag: string) => void;
   onRemoveTag: (id: number, tag: string) => void;
+  onFetchEmbed: (url: string, refetch: boolean) => void;
 }
 
-function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag }: CardGridProps) {
+function CardGrid({ cards, allTags, darkMode, filterQuery, embedCache, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag, onFetchEmbed }: CardGridProps) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
@@ -330,10 +332,12 @@ function CardGrid({ cards, allTags, darkMode, filterQuery, onDelete, onUpdate, o
             darkMode={darkMode}
             isDragging={draggedId === card.id}
             isDropTarget={dropTargetId === card.id}
+            embedCache={embedCache}
             onDelete={() => onDelete(card.id)}
             onUpdate={(text) => onUpdate(card.id, text)}
             onAddTag={(tag) => onAddTag(card.id, tag)}
             onRemoveTag={(tag) => onRemoveTag(card.id, tag)}
+            onFetchEmbed={onFetchEmbed}
             onDragStart={(e) => handleDragStart(e, card.id)}
             onDragEnter={(e) => handleDragEnter(e, card.id)}
             onDragOver={handleDragOver}
@@ -443,6 +447,8 @@ interface CategoryColumnProps {
   onUpdate: (id: number, text: string) => void;
   onAddTag: (id: number, tag: string) => void;
   onRemoveTag: (id: number, tag: string) => void;
+  embedCache: Record<string, EmbedData>;
+  onFetchEmbed: (url: string, refetch: boolean) => void;
 }
 
 function CategoryColumn({
@@ -470,6 +476,8 @@ function CategoryColumn({
   onUpdate,
   onAddTag,
   onRemoveTag,
+  embedCache,
+  onFetchEmbed,
 }: CategoryColumnProps) {
   const { bg: headerBg, text: headerText, border: headerBorder } = tagPalette(category, darkMode);
 
@@ -522,10 +530,12 @@ function CategoryColumn({
               isDragging={activeDragId === card.id}
               isDropTarget={dropTargetCardId === card.id}
               isDragDisabled={isDragDisabled}
+              embedCache={embedCache}
               onDelete={() => onDelete(card.id)}
               onUpdate={(text) => onUpdate(card.id, text)}
               onAddTag={(tag) => onAddTag(card.id, tag)}
               onRemoveTag={(tag) => onRemoveTag(card.id, tag)}
+              onFetchEmbed={onFetchEmbed}
               onDragStart={(e) => onDragStart(card.id, e)}
               onDragEnter={(e) => { e.preventDefault(); onDragEnterCard(card.id); }}
               onDragOver={onDragOver}
@@ -588,6 +598,8 @@ interface CategoryViewProps {
   ) => void;
   onAddTag: (id: number, tag: string) => void;
   onRemoveTag: (id: number, tag: string) => void;
+  embedCache: Record<string, EmbedData>;
+  onFetchEmbed: (url: string, refetch: boolean) => void;
 }
 
 function CategoryView({
@@ -596,12 +608,14 @@ function CategoryView({
   allTags,
   darkMode,
   filterQuery,
+  embedCache,
   onDelete,
   onUpdate,
   onReorder,
   onMoveToColumn,
   onAddTag,
   onRemoveTag,
+  onFetchEmbed,
 }: CategoryViewProps) {
   const [dragState, setDragState] = useState<CategoryDragState | null>(null);
 
@@ -780,6 +794,8 @@ function CategoryView({
             onUpdate={onUpdate}
             onAddTag={onAddTag}
             onRemoveTag={onRemoveTag}
+            embedCache={embedCache}
+            onFetchEmbed={onFetchEmbed}
           />
         );
       })}
@@ -789,6 +805,11 @@ function CategoryView({
 
 // ---- Root ----
 
+interface EmbedQueueStatus {
+  pending: number;
+  processing: string | null;
+}
+
 function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -797,6 +818,48 @@ function App() {
   );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // ── Embed queue state ──
+  const [embedQueueStatus, setEmbedQueueStatus] = useState<EmbedQueueStatus>({
+    pending: 0,
+    processing: null,
+  });
+  /** Interval handle for polling the embed queue while it is active. */
+  const embedPollRef = useRef<number | null>(null);
+
+  function startEmbedPolling() {
+    if (embedPollRef.current !== null) return; // already running
+    embedPollRef.current = setInterval(async () => {
+      try {
+        const qRes = await fetch("/api/embeds/queue");
+        if (!qRes.ok) return;
+        const q = (await qRes.json()) as EmbedQueueStatus;
+        setEmbedQueueStatus(q);
+
+        const isActive = q.pending > 0 || q.processing !== null;
+        if (isActive) {
+          // Refresh board state to pick up newly cached embeds.
+          fetchBoard().then(setBoard).catch(console.error);
+        } else {
+          // Queue finished — do one final board refresh and stop polling.
+          stopEmbedPolling();
+          fetchBoard().then(setBoard).catch(console.error);
+        }
+      } catch (err) {
+        console.error("Embed queue poll failed:", err);
+      }
+    }, 2_000) as unknown as number;
+  }
+
+  function stopEmbedPolling() {
+    if (embedPollRef.current !== null) {
+      clearInterval(embedPollRef.current);
+      embedPollRef.current = null;
+    }
+  }
+
+  // Clean up the polling interval on unmount.
+  useEffect(() => () => stopEmbedPolling(), []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -844,6 +907,16 @@ function App() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ text }),
     });
+    // The server may have enqueued new URLs found in the updated text.
+    // Check the queue and start polling so the UI picks up any new embeds.
+    try {
+      const res = await fetch("/api/embeds/queue");
+      if (res.ok) {
+        const q = (await res.json()) as EmbedQueueStatus;
+        setEmbedQueueStatus(q);
+        if (q.pending > 0 || q.processing !== null) startEmbedPolling();
+      }
+    } catch { /* non-critical, ignore */ }
   }
 
   async function deleteCard(id: number) {
@@ -862,6 +935,36 @@ function App() {
     await apiFetch(`/api/cards/${id}/tags/${encodeURIComponent(tag)}`, {
       method: "DELETE",
     });
+  }
+
+  /** Enqueue a single URL for embed fetching (or refetching). */
+  async function fetchEmbed(url: string, refetch: boolean): Promise<void> {
+    try {
+      const res = await fetch("/api/embeds/fetch", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url, refetch }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { pending: number; processing: string | null };
+      setEmbedQueueStatus({ pending: data.pending, processing: data.processing });
+      startEmbedPolling();
+    } catch (err) {
+      console.error("fetchEmbed failed:", err);
+    }
+  }
+
+  /** Enqueue all uncached URLs found across every card on the board. */
+  async function fetchAllMissingEmbeds(): Promise<void> {
+    try {
+      const res = await fetch("/api/embeds/fetch-all", { method: "POST" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { queued: number; pending: number; processing: string | null };
+      setEmbedQueueStatus({ pending: data.pending, processing: data.processing });
+      startEmbedPolling();
+    } catch (err) {
+      console.error("fetchAllMissingEmbeds failed:", err);
+    }
   }
 
   async function reorderCards(newOrder: number[]) {
@@ -954,6 +1057,10 @@ function App() {
     ...new Set(allTags.map((t) => t.slice(0, t.indexOf(":")))),
   ].sort();
 
+  const embedCache: Record<string, EmbedData> = board.embed_cache ?? {};
+  const embedQueueSize =
+    embedQueueStatus.pending + (embedQueueStatus.processing ? 1 : 0);
+
   return (
     <div class="min-h-screen bg-gray-100 dark:bg-gray-950">
       <Header
@@ -968,6 +1075,8 @@ function App() {
         onSelectCategory={setActiveCategory}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        embedQueueSize={embedQueueSize}
+        onFetchAllEmbeds={fetchAllMissingEmbeds}
       />
       <main class="max-w-screen-2xl mx-auto p-6">
         {activeCategory ? (
@@ -977,12 +1086,14 @@ function App() {
             allTags={allTags}
             darkMode={darkMode}
             filterQuery={searchQuery}
+            embedCache={embedCache}
             onDelete={deleteCard}
             onUpdate={updateCard}
             onReorder={reorderCards}
             onMoveToColumn={moveCardToColumn}
             onAddTag={addTag}
             onRemoveTag={removeTag}
+            onFetchEmbed={fetchEmbed}
           />
         ) : (
           <CardGrid
@@ -990,11 +1101,13 @@ function App() {
             allTags={allTags}
             darkMode={darkMode}
             filterQuery={searchQuery}
+            embedCache={embedCache}
             onDelete={deleteCard}
             onUpdate={updateCard}
             onReorder={reorderCards}
             onAddTag={addTag}
             onRemoveTag={removeTag}
+            onFetchEmbed={fetchEmbed}
           />
         )}
       </main>

@@ -101,6 +101,13 @@ interface Props {
   searchQuery: string;
   /** Called whenever the search query changes. */
   onSearchChange: (query: string) => void;
+  /**
+   * Total number of embed fetches in progress (pending + currently processing).
+   * When > 0, a live counter is shown next to the fetch-all button.
+   */
+  embedQueueSize: number;
+  /** Trigger a batch fetch of all links across all cards that have no cached embed. */
+  onFetchAllEmbeds: () => void;
 }
 
 export function Header({
@@ -115,6 +122,8 @@ export function Header({
   onSelectCategory,
   searchQuery,
   onSearchChange,
+  embedQueueSize,
+  onFetchAllEmbeds,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(boardName);
@@ -244,6 +253,27 @@ export function Header({
             Group by…
           </button>
         )}
+      </div>
+
+      {/* ── Embed fetch controls ── */}
+      <div class="flex items-center gap-2">
+        {embedQueueSize > 0 && (
+          <span class="text-xs text-blue-500 dark:text-blue-400 animate-pulse select-none whitespace-nowrap">
+            Fetching embeds… {embedQueueSize} left
+          </span>
+        )}
+        <button
+          onClick={onFetchAllEmbeds}
+          title="Fetch embeds for all links in all cards that have not been fetched yet"
+          class={[
+            "text-xs px-2.5 py-1 rounded-lg border transition-colors duration-150 select-none whitespace-nowrap",
+            embedQueueSize > 0
+              ? "border-blue-300 dark:border-blue-700 text-blue-500 dark:text-blue-400"
+              : "border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-blue-400 hover:text-blue-500",
+          ].join(" ")}
+        >
+          Fetch all embeds
+        </button>
       </div>
 
       {/* Search / filter input */}

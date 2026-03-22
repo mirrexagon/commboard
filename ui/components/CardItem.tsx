@@ -1,6 +1,8 @@
 import { marked } from "marked";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { tagAccentColor, tagPalette } from "../lib/colors.ts";
+import { extractUrls } from "../lib/urls.ts";
+import type { EmbedData } from "../../board.ts";
 
 // ── Tag input with autocomplete ──────────────────────────────────────────────
 
@@ -96,6 +98,109 @@ function TagInput({ allTags, existingTags, onAdd, onCancel }: TagInputProps) {
   );
 }
 
+// ── EmbedPreview ─────────────────────────────────────────────────────────────
+
+interface EmbedPreviewProps {
+  embed: EmbedData;
+  onRefetch: () => void;
+}
+
+function EmbedPreview({ embed, onRefetch }: EmbedPreviewProps) {
+  const domain = (() => {
+    try {
+      return new URL(embed.url).hostname;
+    } catch {
+      return embed.url;
+    }
+  })();
+
+  const fetchedDate = new Date(embed.fetched_at).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  return (
+    <a
+      href={embed.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      class={[
+        "block rounded-lg border overflow-hidden",
+        "transition-colors duration-150 no-underline",
+        embed.error
+          ? "border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700"
+          : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600",
+      ].join(" ")}
+    >
+      {/* og:image thumbnail — only shown when available and no error */}
+      {!embed.error && embed.image_data && (
+        <img
+          src={embed.image_data}
+          alt=""
+          loading="lazy"
+          class="w-full object-cover max-h-36"
+        />
+      )}
+
+      <div class="px-3 py-2 flex flex-col gap-0.5">
+        {/* Site row: favicon · domain/site_name · refetch button */}
+        <div class="flex items-center gap-1.5 min-w-0">
+          {embed.favicon_data ? (
+            <img
+              src={embed.favicon_data}
+              alt=""
+              loading="lazy"
+              class="w-3.5 h-3.5 rounded-sm flex-shrink-0"
+            />
+          ) : (
+            <span class="text-gray-400 text-xs flex-shrink-0">🔗</span>
+          )}
+          <span class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1 min-w-0">
+            {embed.site_name || domain}
+          </span>
+          <button
+            class="flex-shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-100 cursor-pointer px-1 ml-auto"
+            title="Refetch embed"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRefetch();
+            }}
+          >
+            ↺
+          </button>
+        </div>
+
+        {/* Content */}
+        {embed.error ? (
+          <p class="text-xs text-red-500 dark:text-red-400">
+            Failed: {embed.error}
+          </p>
+        ) : (
+          <>
+            {embed.title && (
+              <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 leading-snug line-clamp-2">
+                {embed.title}
+              </p>
+            )}
+            {embed.description && (
+              <p class="text-xs text-gray-500 dark:text-gray-400 leading-snug line-clamp-3">
+                {embed.description}
+              </p>
+            )}
+          </>
+        )}
+
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          Fetched {fetchedDate}
+        </p>
+      </div>
+    </a>
+  );
+}
+
+// ── CardItem ─────────────────────────────────────────────────────────────────
+
 export interface Card {
   id: number;
   text: string;
@@ -125,10 +230,14 @@ interface Props {
   isDropTarget: boolean;
   /** When true, dragging is completely disabled (e.g. while a search filter is active). */
   isDragDisabled?: boolean;
+  /** Board-level embed cache, keyed by URL. */
+  embedCache: Record<string, EmbedData>;
   onDelete: () => void;
   onUpdate: (text: string) => void;
   onAddTag: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
+  /** Called to enqueue a URL for fetching (new fetch or refetch). */
+  onFetchEmbed: (url: string, refetch: boolean) => void;
   onDragStart: (e: DragEvent) => void;
   onDragEnter: (e: DragEvent) => void;
   onDragOver: (e: DragEvent) => void;
@@ -143,10 +252,12 @@ export function CardItem({
   isDragging,
   isDropTarget,
   isDragDisabled = false,
+  embedCache,
   onDelete,
   onUpdate,
   onAddTag,
   onRemoveTag,
+  onFetchEmbed,
   onDragStart,
   onDragEnter,
   onDragOver,
@@ -228,6 +339,14 @@ export function CardItem({
   // Accent bar: one segment per unique tag category (alphabetical order).
   const accentCategories = [...new Set(tags.map((t) => t.category))];
   const neutralAccentColor = darkMode ? "#374151" : "#e5e7eb"; // gray-700 / gray-200
+
+  // ── Embed data derived from card text ──
+  const allUrls = extractUrls(card.text);
+  const cachedEmbeds = allUrls
+    .filter((u) => u in embedCache)
+    .map((u) => embedCache[u] as EmbedData);
+  const uncachedUrls = allUrls.filter((u) => !(u in embedCache));
+  const hasEmbedContent = cachedEmbeds.length > 0 || uncachedUrls.length > 0;
 
   return (
     <div
@@ -351,6 +470,37 @@ export function CardItem({
           onClick={startEditing}
           dangerouslySetInnerHTML={{ __html: html }}
         />
+      )}
+
+      {/* ── Embeds (view mode only) ── */}
+      {!editing && hasEmbedContent && (
+        <div
+          class="px-3 pb-3 pt-2 flex flex-col gap-2 border-t border-gray-100 dark:border-gray-700"
+          // Prevent clicks in the embed section from entering card-edit mode.
+          onClick={(e) => e.stopPropagation()}
+        >
+          {cachedEmbeds.map((embed) => (
+            <EmbedPreview
+              key={embed.url}
+              embed={embed}
+              onRefetch={() => onFetchEmbed(embed.url, true)}
+            />
+          ))}
+
+          {uncachedUrls.length > 0 && (
+            <button
+              class={[
+                "text-left text-xs text-blue-500 hover:text-blue-600",
+                "dark:text-blue-400 dark:hover:text-blue-300",
+                "transition-colors duration-100 cursor-pointer",
+              ].join(" ")}
+              title={uncachedUrls.join("\n")}
+              onClick={() => uncachedUrls.forEach((u) => onFetchEmbed(u, false))}
+            >
+              Fetch {uncachedUrls.length === 1 ? "1 embed" : `${uncachedUrls.length} embeds`}…
+            </button>
+          )}
+        </div>
       )}
 
       {/* ── Tags ── */}
