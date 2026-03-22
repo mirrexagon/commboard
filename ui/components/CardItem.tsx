@@ -221,13 +221,9 @@ export function CardItem({
   const html = marked.parse(card.text) as string;
   const tags = [...card.tags].sort().map(parseTag);
 
-  // Accent bar: color driven by the first tag's category, or neutral if no tags.
-  const firstCategory = tags.length > 0 ? tags[0].category : null;
-  const accentBg = firstCategory
-    ? tagAccentBg(firstCategory, darkMode)
-    : darkMode
-      ? "bg-gray-700"
-      : "bg-gray-200";
+  // Accent bar: one segment per unique tag category (alphabetical order).
+  const accentCategories = [...new Set(tags.map((t) => t.category))];
+  const neutralAccent = darkMode ? "bg-gray-700" : "bg-gray-200";
 
   return (
     <div
@@ -255,7 +251,18 @@ export function CardItem({
       onDragEnd={editing || addingTag ? undefined : onDragEnd}
     >
       {/* ── Accent bar ── */}
-      <div class={`h-1.5 rounded-t-xl ${accentBg} transition-colors duration-200`} />
+      <div class="h-1.5 rounded-t-xl flex overflow-hidden">
+        {accentCategories.length > 0 ? (
+          accentCategories.map((cat) => (
+            <div
+              key={cat}
+              class={`flex-1 ${tagAccentBg(cat, darkMode)} transition-colors duration-200`}
+            />
+          ))
+        ) : (
+          <div class={`flex-1 ${neutralAccent}`} />
+        )}
+      </div>
 
       {/* ── Card header row: #ID | spacer | edit + delete ── */}
       <div class="flex items-center px-2 pt-1 pb-0.5 min-w-0">
