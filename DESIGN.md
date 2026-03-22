@@ -82,6 +82,8 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
     - [x] Displayed on card
     - [x] Tag colors based on category - autogenerate based on the category text
 
+- [ ] Search/filter - search box to filter displayed cards on tag or body content text
+
 - [ ] Category view
 - [ ] Select category to view, or go back to default view
     - [ ] Autocomplete categories when selecting for category view
