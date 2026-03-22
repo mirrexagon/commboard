@@ -6,6 +6,19 @@ export interface Card {
   tags: string[];
 }
 
+export interface EmbeddedFile {
+  /** Full path within the virtual filesystem, e.g. "image.png" or "notes/sketch.png". */
+  path: string;
+  mime_type: string;
+  uploaded_at: string;
+  /**
+   * Raw base64-encoded file data (no data: URI prefix).
+   * Stored on disk but stripped from API responses to the frontend;
+   * files are served directly via GET /files/:path.
+   */
+  data?: string;
+}
+
 export interface EmbedData {
   /** The canonical URL that was fetched. */
   url: string;
@@ -34,6 +47,8 @@ export interface Board {
   card_order: number[];
   /** Board-level cache of link embeds, keyed by URL. */
   embed_cache?: Record<string, EmbedData>;
+  /** Embedded files keyed by their path within the virtual filesystem. */
+  embedded_files?: Record<string, EmbeddedFile>;
 }
 
 // --- Helpers ---

@@ -2,7 +2,7 @@ import * as esbuild from "npm:esbuild";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
 import { fromFileUrl } from "jsr:@std/path";
 
-import { loadOrCreate, save, type Card, type EmbedData } from "./board.ts";
+import { loadOrCreate, save, type Card, type EmbedData, type EmbeddedFile } from "./board.ts";
 
 // --- URL extraction ---
 
@@ -472,6 +472,43 @@ async function parseJson(
     }
 }
 
+/**
+ * Validate a virtual filesystem path:
+ *   - must be non-empty
+ *   - must not start with "/"
+ *   - each component must be non-empty, not ".", not ".."
+ *   - no control characters or characters illegal on common filesystems
+ */
+function isValidFilePath(path: string): boolean {
+    if (!path) return false;
+    if (path.startsWith("/")) return false;
+    const parts = path.split("/");
+    return parts.every(
+        (p) =>
+            p.length > 0 &&
+            p !== "." &&
+            p !== ".." &&
+            !/[\x00-\x1f<>:"|?*\\]/.test(p),
+    );
+}
+
+/**
+ * Return a version of the board safe to send to the frontend:
+ * the `data` field is stripped from every embedded file so that large
+ * base64 blobs are not included in board API responses.  Files are
+ * served directly via GET /files/:path.
+ */
+function boardForClient(b: typeof board): object {
+    if (!b.embedded_files) return b;
+    const strippedFiles = Object.fromEntries(
+        Object.entries(b.embedded_files).map(([k, v]) => [
+            k,
+            { path: v.path, mime_type: v.mime_type, uploaded_at: v.uploaded_at },
+        ]),
+    );
+    return { ...b, embedded_files: strippedFiles };
+}
+
 const PORT = 8080;
 
 console.log(`Listening at http://localhost:${PORT}`);
@@ -493,8 +530,37 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         });
     }
 
+    // GET /HEAD /files/* — serve an embedded file's raw bytes
+    if (
+        pathname.startsWith("/files/") &&
+        (req.method === "GET" || req.method === "HEAD")
+    ) {
+        const filePath = decodeURIComponent(pathname.slice("/files/".length));
+        const file = (board.embedded_files ?? {})[filePath];
+        if (!file?.data) {
+            return new Response("Not Found", { status: 404 });
+        }
+        let bytes: Uint8Array;
+        try {
+            const binary = atob(file.data);
+            bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+        } catch {
+            return new Response("Internal Server Error", { status: 500 });
+        }
+        return new Response(req.method === "HEAD" ? null : bytes.buffer as ArrayBuffer, {
+            headers: {
+                "content-type": file.mime_type,
+                "content-length": String(bytes.length),
+                "cache-control": "no-cache",
+            },
+        });
+    }
+
     if (pathname === "/api/board" && req.method === "GET") {
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
     }
 
     if (pathname === "/api/board" && req.method === "PATCH") {
@@ -509,7 +575,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         board = { ...board, name };
         await save(boardPath, board);
 
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
     }
 
     // PATCH /api/cards/:id — update a card's text
@@ -544,7 +610,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             }
         }
 
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
     }
 
     // POST /api/cards — add a new card (optional body: { text?: string })
@@ -568,7 +634,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
     }
 
     // POST /api/cards/:id/tags — add a tag to a card
@@ -601,7 +667,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             await save(boardPath, board);
         }
 
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
     }
 
     // DELETE /api/cards/:id/tags/:tag — remove a tag from a card (:tag is URL-encoded)
@@ -625,7 +691,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
     }
 
     // DELETE /api/cards/:id — remove a card
@@ -645,7 +711,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         };
         await save(boardPath, board);
 
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
     }
 
     // PUT /api/card_order — reorder cards
@@ -674,7 +740,129 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         board = { ...board, card_order: newOrder };
         await save(boardPath, board);
 
-        return jsonOk(board);
+        return jsonOk(boardForClient(board));
+    }
+
+    // --- Embedded files ---
+
+    // GET /api/files — list all embedded files (metadata only, no data)
+    if (pathname === "/api/files" && req.method === "GET") {
+        const files = Object.values(board.embedded_files ?? {}).map((f) => ({
+            path: f.path,
+            mime_type: f.mime_type,
+            uploaded_at: f.uploaded_at,
+        }));
+        return jsonOk(files);
+    }
+
+    // POST /api/files — upload an embedded file
+    // Body: { path: string, mime_type: string, data: string (raw base64) }
+    if (pathname === "/api/files" && req.method === "POST") {
+        const body = await parseJson(req);
+        if (body instanceof Response) return body;
+
+        const path = typeof body.path === "string" ? body.path.trim() : null;
+        const mimeType =
+            typeof body.mime_type === "string" ? body.mime_type.trim() : null;
+        const data = typeof body.data === "string" ? body.data : null;
+
+        if (!path || !isValidFilePath(path)) {
+            return jsonError(
+                "path must be a valid relative file path with no .. components",
+                400,
+            );
+        }
+        if (!mimeType) {
+            return jsonError("mime_type must be a non-empty string", 400);
+        }
+        if (!data) {
+            return jsonError("data must be a non-empty base64 string", 400);
+        }
+
+        const file: EmbeddedFile = {
+            path,
+            mime_type: mimeType,
+            uploaded_at: new Date().toISOString(),
+            data,
+        };
+        board = {
+            ...board,
+            embedded_files: { ...(board.embedded_files ?? {}), [path]: file },
+        };
+        await save(boardPath, board);
+
+        return jsonOk(boardForClient(board));
+    }
+
+    // PATCH /api/files/:path  — rename / move an embedded file
+    // Body: { new_path: string }
+    // Also updates every occurrence of the old path in card bodies.
+    if (pathname.startsWith("/api/files/") && req.method === "PATCH") {
+        const oldPath = decodeURIComponent(
+            pathname.slice("/api/files/".length),
+        );
+        const files = board.embedded_files ?? {};
+        if (!files[oldPath]) {
+            return jsonError("File not found", 404);
+        }
+
+        const body = await parseJson(req);
+        if (body instanceof Response) return body;
+
+        const newPath =
+            typeof body.new_path === "string" ? body.new_path.trim() : null;
+        if (!newPath || !isValidFilePath(newPath)) {
+            return jsonError(
+                "new_path must be a valid relative file path with no .. components",
+                400,
+            );
+        }
+        if (newPath === oldPath) {
+            return jsonOk(boardForClient(board));
+        }
+        if (files[newPath]) {
+            return jsonError("A file already exists at that path", 409);
+        }
+
+        // Update the file registry.
+        const { [oldPath]: fileToMove, ...remainingFiles } = files;
+        const renamedFile: EmbeddedFile = { ...fileToMove, path: newPath };
+        const updatedFiles = { ...remainingFiles, [newPath]: renamedFile };
+
+        // Update all Markdown references in card bodies.
+        const oldRef = `/files/${oldPath}`;
+        const newRef = `/files/${newPath}`;
+        const updatedCards = { ...board.cards };
+        for (const [id, card] of Object.entries(updatedCards)) {
+            if (card.text.includes(oldRef)) {
+                updatedCards[id] = {
+                    ...card,
+                    text: card.text.replaceAll(oldRef, newRef),
+                };
+            }
+        }
+
+        board = { ...board, embedded_files: updatedFiles, cards: updatedCards };
+        await save(boardPath, board);
+
+        return jsonOk(boardForClient(board));
+    }
+
+    // DELETE /api/files/:path — remove an embedded file
+    if (pathname.startsWith("/api/files/") && req.method === "DELETE") {
+        const filePath = decodeURIComponent(
+            pathname.slice("/api/files/".length),
+        );
+        const files = board.embedded_files ?? {};
+        if (!files[filePath]) {
+            return jsonError("File not found", 404);
+        }
+
+        const { [filePath]: _removed, ...remainingFiles } = files;
+        board = { ...board, embedded_files: remainingFiles };
+        await save(boardPath, board);
+
+        return jsonOk(boardForClient(board));
     }
 
     // POST /api/embeds/fetch — enqueue a single URL for fetching / refetching
