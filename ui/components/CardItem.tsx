@@ -345,9 +345,11 @@ function injectEmbedsIntoHtml(
   embedCache: Record<string, EmbedData>,
   embeddedFiles: Record<string, EmbeddedFile>,
 ): string {
+  // seenFetch deduplicates fetch buttons only: one "↓ embed" button per
+  // uncached URL is sufficient regardless of how many times it appears.
+  // Embed/file cards are NOT deduplicated — every occurrence of a URL gets
+  // its own card so that links used in multiple places all render inline.
   const seenFetch = new Set<string>();
-  const seenEmbed = new Set<string>();
-  const seenFile = new Set<string>();
 
   // Pass 1: inline fetch buttons for uncached external URLs.
   let result = html.replace(
@@ -368,8 +370,7 @@ function injectEmbedsIntoHtml(
       let m: RegExpExecArray | null;
       while ((m = linkRe.exec(blockMatch)) !== null) {
         const href = m[1];
-        if (seenEmbed.has(href) || !(href in embedCache)) continue;
-        seenEmbed.add(href);
+        if (!(href in embedCache)) continue;
         embeds.push(generateEmbedHtml(embedCache[href] as EmbedData));
       }
       return embeds.length ? blockMatch + embeds.join("") : blockMatch;
@@ -386,8 +387,6 @@ function injectEmbedsIntoHtml(
       while ((m = linkRe.exec(blockMatch)) !== null) {
         const href = m[1];
         const encodedPath = m[2];
-        if (seenFile.has(href)) continue;
-        seenFile.add(href);
         const filePath = decodeURIComponent(encodedPath);
         const file = embeddedFiles[filePath];
         fileEmbeds.push(generateFileEmbedHtml(href, filePath, file?.mime_type));

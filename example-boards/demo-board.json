@@ -58,13 +58,19 @@
       "id": 8,
       "text": "# Local picture\n\n[Energy crystal](/files/energycrystal.png)",
       "tags": []
+    },
+    "9": {
+      "id": 9,
+      "text": "# Other files\n\n- Local text file: /files/notes/hello.txt\n- Local text file link: [link](/files/notes/hello.txt)\n- Bare link to an image without any percent encoding: https://derpicdn.net/img/view/2017/12/31/1620303.png\n- The same image again: https://derpicdn.net/img/view/2017/12/31/1620303.png",
+      "tags": []
     }
   },
-  "next_card_id": 9,
+  "next_card_id": 10,
   "card_order": [
     3,
     2,
     5,
+    9,
     1,
     4,
     6,
@@ -123,6 +129,13 @@
       "title": "mirrexagon_-_upper_hand.ogg",
       "description": "audio/ogg resource",
       "content_type": "audio/ogg"
+    },
+    "https://derpicdn.net/img/view/2017/12/31/1620303.png": {
+      "url": "https://derpicdn.net/img/view/2017/12/31/1620303.png",
+      "fetched_at": "2026-03-22T09:55:12.618Z",
+      "title": "1620303.png",
+      "description": "image/png resource",
+      "content_type": "image/png"
     }
   }
 }
