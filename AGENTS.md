@@ -3,6 +3,7 @@
 - DESIGN.md is the hub for design and development documentation.
 - After implementing a feature, if it is listed in DESIGN.md, check it off.
 - Update AGENTS.md if something in it goes out of date or new things are added that should be there.
+- You have `python` at your disposal, for calculations and things.
 
 ## Tech stack
 
