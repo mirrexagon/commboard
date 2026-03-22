@@ -105,6 +105,8 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
         - This logic should also apply to links directly to files outside the embedded filesystem, eg. embedded links
     - [x] Paste images and possibly other files that can be put into a clipboard into a card to add them as embedded files
 
+- [ ] Garbage-collect stale cached embeds
+
 - [ ] Use external editor (configure via config file) instead of web one
     - Requires server to notify UI when editing is done, so it can update state
 
