@@ -106,15 +106,20 @@ function extractFaviconUrl(html: string, pageUrl: string): string {
     return `${origin}/favicon.ico`;
 }
 
-// --- Base-64 asset fetching ---
+// --- Asset fetching ---
 
 const MAX_ASSET_BYTES = 5 * 1024 * 1024; // 5 MB
 
+interface AssetBytes {
+    bytes: Uint8Array;
+    mimeType: string;
+}
+
 /**
- * Fetch a URL and return its content as a base-64 `data:…` string, or an
- * error message if the fetch fails, times out, or the resource is too large.
+ * Fetch a URL and return its raw bytes plus MIME type, or an error string if
+ * the fetch fails, times out, or the resource is too large.
  */
-async function fetchAsBase64(url: string): Promise<{ data?: string; error?: string }> {
+async function fetchAsBytes(url: string): Promise<{ asset?: AssetBytes; error?: string }> {
     try {
         const res = await fetch(url, {
             signal: AbortSignal.timeout(15_000),
@@ -138,24 +143,62 @@ async function fetchAsBase64(url: string): Promise<{ data?: string; error?: stri
             .split(";")[0]
             .trim();
 
-        // Encode in chunks to avoid call-stack overflow on large buffers.
-        const bytes = new Uint8Array(buf);
-        let binary = "";
-        const CHUNK = 8192;
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-            binary += String.fromCharCode(
-                ...bytes.subarray(i, Math.min(i + CHUNK, bytes.length)),
-            );
-        }
-        return { data: `data:${mimeType};base64,${btoa(binary)}` };
+        return { asset: { bytes: new Uint8Array(buf), mimeType } };
     } catch (err) {
         return { error: err instanceof Error ? err.message : String(err) };
     }
 }
 
+// --- Embed content filename helpers ---
+
+/**
+ * Map common image MIME types to file extensions.
+ * Returns an empty string for unrecognised types (file will have no extension).
+ */
+function mimeToExt(mime: string): string {
+    const m = mime.toLowerCase().split(";")[0].trim();
+    const map: Record<string, string> = {
+        "image/jpeg":                ".jpg",
+        "image/jpg":                 ".jpg",
+        "image/png":                 ".png",
+        "image/gif":                 ".gif",
+        "image/webp":                ".webp",
+        "image/svg+xml":             ".svg",
+        "image/x-icon":              ".ico",
+        "image/vnd.microsoft.icon":  ".ico",
+        "image/bmp":                 ".bmp",
+        "image/avif":                ".avif",
+    };
+    return map[m] ?? "";
+}
+
+/**
+ * Derive a stable filename for a cached embed asset.
+ * Format: SHA-256(assetUrl) + native extension from MIME type.
+ */
+async function assetUrlToFilename(assetUrl: string, mimeType: string): Promise<string> {
+    const hash = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(assetUrl),
+    );
+    const hex = Array.from(new Uint8Array(hash))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    return hex + mimeToExt(mimeType);
+}
+
 // --- Embed data fetching ---
 
-async function fetchEmbedData(url: string): Promise<EmbedData> {
+interface EmbedFetchResult {
+    /** Metadata to store in board.json (no binary blobs). */
+    data: EmbedData;
+    /** Raw OG image bytes, if successfully fetched. */
+    imageAsset?: AssetBytes;
+    /** Raw favicon bytes, if successfully fetched. */
+    faviconAsset?: AssetBytes;
+}
+
+async function fetchEmbedData(url: string): Promise<EmbedFetchResult> {
     const fetched_at = new Date().toISOString();
 
     let res: Response;
@@ -169,14 +212,16 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
         });
     } catch (err) {
         return {
-            url,
-            fetched_at,
-            error: err instanceof Error ? err.message : String(err),
+            data: {
+                url,
+                fetched_at,
+                error: err instanceof Error ? err.message : String(err),
+            },
         };
     }
 
     if (!res.ok) {
-        return { url, fetched_at, error: `HTTP ${res.status}` };
+        return { data: { url, fetched_at, error: `HTTP ${res.status}` } };
     }
 
     const contentType = res.headers.get("content-type") ?? "";
@@ -185,12 +230,14 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
         // the frontend can render it as a file card rather than an embed card.
         const mimeType = contentType.split(";")[0].trim() || "application/octet-stream";
         return {
-            url,
-            fetched_at,
-            title:
-                new URL(url).pathname.split("/").filter(Boolean).pop() || url,
-            description: `${mimeType} resource`,
-            content_type: mimeType,
+            data: {
+                url,
+                fetched_at,
+                title:
+                    new URL(url).pathname.split("/").filter(Boolean).pop() || url,
+                description: `${mimeType} resource`,
+                content_type: mimeType,
+            },
         };
     }
 
@@ -199,9 +246,11 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
         html = await res.text();
     } catch (err) {
         return {
-            url,
-            fetched_at,
-            error: `Failed to read response: ${err instanceof Error ? err.message : String(err)}`,
+            data: {
+                url,
+                fetched_at,
+                error: `Failed to read response: ${err instanceof Error ? err.message : String(err)}`,
+            },
         };
     }
 
@@ -224,8 +273,8 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
         `  Fetching assets for ${url} (image: ${imageUrl ?? "none"}, favicon: ${faviconUrl})`,
     );
     const [imageResult, faviconResult] = await Promise.all([
-        imageUrl ? fetchAsBase64(imageUrl) : Promise.resolve<{ data?: string; error?: string }>({}),
-        fetchAsBase64(faviconUrl),
+        imageUrl ? fetchAsBytes(imageUrl) : Promise.resolve<{ asset?: AssetBytes; error?: string }>({}),
+        fetchAsBytes(faviconUrl),
     ]);
 
     if (imageResult.error) {
@@ -236,17 +285,19 @@ async function fetchEmbedData(url: string): Promise<EmbedData> {
     }
 
     return {
-        url,
-        fetched_at,
-        title,
-        description,
-        site_name: siteName,
-        image_url: imageUrl,
-        image_data: imageResult.data,
-        image_data_error: imageResult.error,
-        favicon_url: faviconUrl,
-        favicon_data: faviconResult.data,
-        favicon_data_error: faviconResult.error,
+        data: {
+            url,
+            fetched_at,
+            title,
+            description,
+            site_name: siteName,
+            image_url: imageUrl,
+            image_data_error: imageResult.error,
+            favicon_url: faviconUrl,
+            favicon_data_error: faviconResult.error,
+        },
+        imageAsset: imageResult.asset,
+        faviconAsset: faviconResult.asset,
     };
 }
 
@@ -327,13 +378,42 @@ async function runQueueLoop(): Promise<void> {
 
         try {
             console.log(`Fetching embed: ${url}`);
-            const data = await fetchEmbedData(url);
-            // Re-read `board` after the await so we merge into the latest state.
+            const { data, imageAsset, faviconAsset } = await fetchEmbedData(url);
+
+            // Save binary assets to <boardDir>/embed-content/ and record filenames.
+            const embedContentDir = `${boardDir}/embed-content`;
+            let image_file: string | undefined;
+            let image_mime: string | undefined;
+            if (imageAsset && data.image_url) {
+                await Deno.mkdir(embedContentDir, { recursive: true });
+                image_file = await assetUrlToFilename(data.image_url, imageAsset.mimeType);
+                image_mime = imageAsset.mimeType;
+                await Deno.writeFile(`${embedContentDir}/${image_file}`, imageAsset.bytes);
+            }
+
+            let favicon_file: string | undefined;
+            let favicon_mime: string | undefined;
+            if (faviconAsset && data.favicon_url) {
+                await Deno.mkdir(embedContentDir, { recursive: true });
+                favicon_file = await assetUrlToFilename(data.favicon_url, faviconAsset.mimeType);
+                favicon_mime = faviconAsset.mimeType;
+                await Deno.writeFile(`${embedContentDir}/${favicon_file}`, faviconAsset.bytes);
+            }
+
+            const cacheEntry: EmbedData = {
+                ...data,
+                image_file,
+                image_mime,
+                favicon_file,
+                favicon_mime,
+            };
+
+            // Re-read `board` after the awaits so we merge into the latest state.
             board = {
                 ...board,
-                embed_cache: { ...(board.embed_cache ?? {}), [url]: data },
+                embed_cache: { ...(board.embed_cache ?? {}), [url]: cacheEntry },
             };
-            await save(boardPath, board);
+            await save(boardDir, board);
             console.log(
                 `Embed cached: ${url} — ${data.error ?? data.title ?? "(no title)"}`,
             );
@@ -351,11 +431,11 @@ function sleep(ms: number): Promise<void> {
 
 // --- CLI ---
 
-const boardPath = Deno.args[0];
+const boardDir = Deno.args[0];
 const noSave = Deno.args.includes("--no-save");
 
-if (!boardPath) {
-    console.error("Usage: commboard <path to board file>");
+if (!boardDir) {
+    console.error("Usage: commboard <path to board directory>");
     Deno.exit(1);
 }
 
@@ -363,7 +443,7 @@ if (noSave) {
     console.warn("WARNING: --no-save is active. No changes will be written to disk.");
 }
 
-let board = await loadOrCreate(boardPath);
+let board = await loadOrCreate(boardDir);
 console.log(`Board: "${board.name}" — ${board.card_order.length} card(s)`);
 
 // --- Debounced save ---
@@ -381,7 +461,7 @@ async function flushSave(): Promise<void> {
     if (!_pendingSave) return;
     if (_saveTimer !== null) { clearTimeout(_saveTimer); _saveTimer = null; }
     _pendingSave = false;
-    await saveBoard(boardPath, board);
+    await saveBoard(boardDir, board);
     console.log("Board saved.");
 }
 
@@ -390,7 +470,7 @@ async function flushSave(): Promise<void> {
  * happens in the background SAVE_DEBOUNCE_MS after the last call.
  * When --no-save is active this is always a no-op.
  */
-function save(_path: string, _b: Parameters<typeof saveBoard>[1]): Promise<void> {
+function save(_dir: string, _b: Parameters<typeof saveBoard>[1]): Promise<void> {
     if (noSave) return Promise.resolve();
     _pendingSave = true;
     if (_saveTimer !== null) clearTimeout(_saveTimer);
@@ -560,69 +640,31 @@ function isValidFilePath(path: string): boolean {
 }
 
 /**
- * Return a version of the board safe to send to the frontend:
+ * Return a version of the board safe to send to the frontend.
  *
- * - `embedded_files[*].data` is stripped; files are served via GET /files/:path.
- * - `embed_cache[*].image_data` and `.favicon_data` are stripped; the cached
- *   assets are served via GET /api/embeds/image and /api/embeds/favicon.
- *   Boolean `image_cached` / `favicon_cached` flags are injected so the
- *   frontend knows whether the asset is available on the server.
+ * - `embed_cache` entries get computed `image_cached` / `favicon_cached` boolean
+ *   flags injected based on whether `image_file` / `favicon_file` are set.
+ *   The `image_file` / `favicon_file` / `image_mime` / `favicon_mime` fields
+ *   are internal implementation details and are stripped from the client view.
+ * - `embedded_files` are passed through as-is (no binary data to strip).
  */
 function boardForClient(b: typeof board): object {
     const result: Record<string, unknown> = { ...b };
 
-    if (b.embedded_files) {
-        result.embedded_files = Object.fromEntries(
-            Object.entries(b.embedded_files).map(([k, v]) => [
-                k,
-                { path: v.path, mime_type: v.mime_type, uploaded_at: v.uploaded_at },
-            ]),
-        );
-    }
-
     if (b.embed_cache) {
         result.embed_cache = Object.fromEntries(
             Object.entries(b.embed_cache).map(([url, entry]) => {
-                const { image_data, favicon_data, ...rest } = entry;
+                const { image_file, image_mime, favicon_file, favicon_mime, ...rest } = entry;
                 return [url, {
                     ...rest,
-                    image_cached: !!image_data,
-                    favicon_cached: !!favicon_data,
+                    image_cached: !!image_file,
+                    favicon_cached: !!favicon_file,
                 }];
             }),
         );
     }
 
     return result;
-}
-
-/**
- * Decode a `data:<mime>;base64,<b64>` string and return it as a binary
- * HTTP response with the appropriate Content-Type.  Used to serve cached
- * embed assets (OG images, favicons) via dedicated endpoints.
- */
-function serveDataUrl(dataUrl: string, headOnly: boolean): Response {
-    const commaIdx = dataUrl.indexOf(",");
-    if (commaIdx === -1) return new Response("Internal Server Error", { status: 500 });
-    const meta = dataUrl.slice("data:".length, commaIdx); // e.g. "image/png;base64"
-    const mimeType = meta.split(";")[0] || "application/octet-stream";
-    const b64 = dataUrl.slice(commaIdx + 1);
-    let bytes: Uint8Array;
-    try {
-        const binary = atob(b64);
-        bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    } catch {
-        return new Response("Internal Server Error", { status: 500 });
-    }
-    return new Response(headOnly ? null : bytes.buffer as ArrayBuffer, {
-        headers: {
-            "content-type": mimeType,
-            "content-length": String(bytes.length),
-            // Embed assets are re-fetched on demand, so a modest browser cache is fine.
-            "cache-control": "public, max-age=3600",
-        },
-    });
 }
 
 const PORT = 8080;
@@ -644,25 +686,21 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         });
     }
 
-    // GET /HEAD /files/* — serve an embedded file's raw bytes
+    // GET / HEAD /files/* — serve an embedded file's raw bytes from disk
     if (
         pathname.startsWith("/files/") &&
         (req.method === "GET" || req.method === "HEAD")
     ) {
         const filePath = decodeURIComponent(pathname.slice("/files/".length));
         const file = (board.embedded_files ?? {})[filePath];
-        if (!file?.data) {
+        if (!file) {
             return new Response("Not Found", { status: 404 });
         }
         let bytes: Uint8Array;
         try {
-            const binary = atob(file.data);
-            bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) {
-                bytes[i] = binary.charCodeAt(i);
-            }
+            bytes = await Deno.readFile(`${boardDir}/files/${filePath}`);
         } catch {
-            return new Response("Internal Server Error", { status: 500 });
+            return new Response("Not Found", { status: 404 });
         }
         return new Response(req.method === "HEAD" ? null : bytes.buffer as ArrayBuffer, {
             headers: {
@@ -687,7 +725,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         }
 
         board = { ...board, name };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
@@ -714,7 +752,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             ...board,
             cards: { ...board.cards, [String(id)]: updatedCard },
         };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         // Enqueue any URLs that appear in the updated text but are not yet cached.
         const cache = board.embed_cache ?? {};
@@ -746,7 +784,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             next_card_id: board.next_card_id + 1,
             card_order: [id, ...board.card_order],
         };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
@@ -778,7 +816,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
                 ...board,
                 cards: { ...board.cards, [String(id)]: updatedCard },
             };
-            await save(boardPath, board);
+            await save(boardDir, board);
         }
 
         return jsonOk(boardForClient(board));
@@ -803,7 +841,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             ...board,
             cards: { ...board.cards, [String(id)]: updatedCard },
         };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
@@ -823,7 +861,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             cards: remainingCards,
             card_order: board.card_order.filter((cid) => cid !== id),
         };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
@@ -852,7 +890,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         }
 
         board = { ...board, card_order: newOrder };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
@@ -893,17 +931,31 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             return jsonError("data must be a non-empty base64 string", 400);
         }
 
+        // Decode base64 and write raw bytes to disk.
+        let bytes: Uint8Array;
+        try {
+            const binary = atob(data);
+            bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        } catch {
+            return jsonError("data is not valid base64", 400);
+        }
+
+        const destPath = `${boardDir}/files/${path}`;
+        const destDir = destPath.split("/").slice(0, -1).join("/");
+        await Deno.mkdir(destDir, { recursive: true });
+        await Deno.writeFile(destPath, bytes);
+
         const file: EmbeddedFile = {
             path,
             mime_type: mimeType,
             uploaded_at: new Date().toISOString(),
-            data,
         };
         board = {
             ...board,
             embedded_files: { ...(board.embedded_files ?? {}), [path]: file },
         };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
@@ -938,6 +990,13 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             return jsonError("A file already exists at that path", 409);
         }
 
+        // Move the file on disk.
+        const oldDiskPath = `${boardDir}/files/${oldPath}`;
+        const newDiskPath = `${boardDir}/files/${newPath}`;
+        const newDiskDir = newDiskPath.split("/").slice(0, -1).join("/");
+        await Deno.mkdir(newDiskDir, { recursive: true });
+        await Deno.rename(oldDiskPath, newDiskPath);
+
         // Update the file registry.
         const { [oldPath]: fileToMove, ...remainingFiles } = files;
         const renamedFile: EmbeddedFile = { ...fileToMove, path: newPath };
@@ -957,7 +1016,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         }
 
         board = { ...board, embedded_files: updatedFiles, cards: updatedCards };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
@@ -972,14 +1031,17 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             return jsonError("File not found", 404);
         }
 
+        // Remove from disk (best-effort; don't fail the request if already gone).
+        await Deno.remove(`${boardDir}/files/${filePath}`).catch(() => {});
+
         const { [filePath]: _removed, ...remainingFiles } = files;
         board = { ...board, embedded_files: remainingFiles };
-        await save(boardPath, board);
+        await save(boardDir, board);
 
         return jsonOk(boardForClient(board));
     }
 
-    // GET /HEAD /api/embeds/image?url=<encoded> — serve a cached OG image
+    // GET / HEAD /api/embeds/image?url=<encoded> — serve a cached OG image from disk
     if (
         pathname === "/api/embeds/image" &&
         (req.method === "GET" || req.method === "HEAD")
@@ -987,11 +1049,23 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const embedUrl = new URL(req.url).searchParams.get("url");
         if (!embedUrl) return jsonError("url query parameter is required", 400);
         const entry = (board.embed_cache ?? {})[embedUrl];
-        if (!entry?.image_data) return new Response("Not Found", { status: 404 });
-        return serveDataUrl(entry.image_data, req.method === "HEAD");
+        if (!entry?.image_file) return new Response("Not Found", { status: 404 });
+        let bytes: Uint8Array;
+        try {
+            bytes = await Deno.readFile(`${boardDir}/embed-content/${entry.image_file}`);
+        } catch {
+            return new Response("Not Found", { status: 404 });
+        }
+        return new Response(req.method === "HEAD" ? null : bytes.buffer as ArrayBuffer, {
+            headers: {
+                "content-type": entry.image_mime ?? "application/octet-stream",
+                "content-length": String(bytes.length),
+                "cache-control": "public, max-age=3600",
+            },
+        });
     }
 
-    // GET /HEAD /api/embeds/favicon?url=<encoded> — serve a cached favicon
+    // GET / HEAD /api/embeds/favicon?url=<encoded> — serve a cached favicon from disk
     if (
         pathname === "/api/embeds/favicon" &&
         (req.method === "GET" || req.method === "HEAD")
@@ -999,8 +1073,20 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const embedUrl = new URL(req.url).searchParams.get("url");
         if (!embedUrl) return jsonError("url query parameter is required", 400);
         const entry = (board.embed_cache ?? {})[embedUrl];
-        if (!entry?.favicon_data) return new Response("Not Found", { status: 404 });
-        return serveDataUrl(entry.favicon_data, req.method === "HEAD");
+        if (!entry?.favicon_file) return new Response("Not Found", { status: 404 });
+        let bytes: Uint8Array;
+        try {
+            bytes = await Deno.readFile(`${boardDir}/embed-content/${entry.favicon_file}`);
+        } catch {
+            return new Response("Not Found", { status: 404 });
+        }
+        return new Response(req.method === "HEAD" ? null : bytes.buffer as ArrayBuffer, {
+            headers: {
+                "content-type": entry.favicon_mime ?? "application/octet-stream",
+                "content-length": String(bytes.length),
+                "cache-control": "public, max-age=3600",
+            },
+        });
     }
 
     // POST /api/embeds/fetch — enqueue a single URL for fetching / refetching

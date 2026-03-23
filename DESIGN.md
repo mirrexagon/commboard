@@ -22,7 +22,7 @@ Cards can have multiple tags with the same category and different values. This w
 
 ### Usage
 
-Run `commboard <path to board file>` or equivalent. If the board file doesn't exist, it will be created.
+Run `commboard <path to board directory>` or equivalent. If the board directory doesn't exist, it will be created.
 
 The UI will be displayed or served. Changes to the board are saved automatically to the specified board file.
 
@@ -33,7 +33,27 @@ The user can exit the program at any time with Ctrl-C in the terminal and all ch
 - Is it sufficient to have a single total ordering for all cards, and moving the card in any view moves it in the total ordering? Or would I like to be able to have different orders in different category views?
     - Initially, just do a single total ordering and see how it goes.
 
-## File format
+## Board layout on disk
+
+```
+<board-dir>/
+  board.json          — all JSON: cards, tags, order, embed cache metadata, file metadata
+  embed-content/      — cached embed images and favicons (can be git-ignored)
+    <sha256-of-asset-url>.png
+    <sha256-of-asset-url>.ico
+    ...
+  files/              — uploaded embedded files, preserving virtual path structure
+    image.png
+    notes/sketch.png
+    ...
+```
+
+`board.json` contains no binary blobs. Embed asset filenames are SHA-256 of the
+asset URL with a native extension derived from the MIME type.
+
+A migration script (`migrate.py`) converts the old single-file format to this layout.
+
+## Old single-file format (historical reference)
 
 In a previous incarnation, Commboard wrote JSON files that looked like this:
 
@@ -107,7 +127,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
 
 - [ ] Track card last edit date/time and display on card
 
-- [ ] Move embed and virtual filesystem files out of the board JSON file to make it smaller and take less time to save
+- [x] Move embed and virtual filesystem files out of the board JSON file to make it smaller and take less time to save
 - [ ] Garbage-collect stale cached embeds
 
 - [ ] Use external editor (configure via config file) instead of web one

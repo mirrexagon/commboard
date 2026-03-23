@@ -37,13 +37,17 @@ frontend defines its own copies of the `Board` / `Card` interfaces.
 ## Running the app
 
 ```bash
-deno task start path/to/board.json
+deno task start path/to/board-dir
 ```
 
 This is equivalent to:
 ```bash
-deno run --allow-read --allow-write --allow-net --allow-run --allow-env main.ts path/to/board.json
+deno run --allow-read --allow-write --allow-net --allow-run --allow-env main.ts path/to/board-dir
 ```
+
+The CLI argument is now a **directory**, not a file. The directory is created if it
+does not exist. Inside it, `board.json` holds all JSON data; `files/` holds
+uploaded embedded files; `embed-content/` holds cached embed images/favicons.
 
 `--allow-run` is required because `npm:esbuild` spawns a native esbuild binary.
 

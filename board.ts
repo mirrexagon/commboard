@@ -11,12 +11,8 @@ export interface EmbeddedFile {
   path: string;
   mime_type: string;
   uploaded_at: string;
-  /**
-   * Raw base64-encoded file data (no data: URI prefix).
-   * Stored on disk but stripped from API responses to the frontend;
-   * files are served directly via GET /files/:path.
-   */
-  data?: string;
+  // Raw file content is stored on disk at <boardDir>/files/<path>.
+  // It is never written into board.json.
 }
 
 export interface EmbedData {
@@ -32,14 +28,24 @@ export interface EmbedData {
   site_name?: string;
   /** Original image URL (og:image or twitter:image). */
   image_url?: string;
-  /** Base-64 data URL for the og:image, cached for offline use. */
-  image_data?: string;
-  /** Reason the OG image asset could not be fetched/cached (e.g. "Asset too large"). */
+  /**
+   * Filename inside <boardDir>/embed-content/ for the cached OG image.
+   * Named as SHA-256(image_url) + native extension derived from MIME type.
+   */
+  image_file?: string;
+  /** MIME type of the cached image file, e.g. "image/png". */
+  image_mime?: string;
+  /** Reason the OG image asset could not be fetched/cached. */
   image_data_error?: string;
   /** Original favicon URL. */
   favicon_url?: string;
-  /** Base-64 data URL for the favicon, cached for offline use. */
-  favicon_data?: string;
+  /**
+   * Filename inside <boardDir>/embed-content/ for the cached favicon.
+   * Named as SHA-256(favicon_url) + native extension derived from MIME type.
+   */
+  favicon_file?: string;
+  /** MIME type of the cached favicon file. */
+  favicon_mime?: string;
   /** Reason the favicon asset could not be fetched/cached. */
   favicon_data_error?: string;
   /**
@@ -48,13 +54,11 @@ export interface EmbedData {
    */
   content_type?: string;
   /**
-   * Set by boardForClient (not stored on disk): true when image_data is
-   * available server-side and can be fetched via GET /api/embeds/image.
+   * Set by boardForClient (not stored on disk): true when image_file is set.
    */
   image_cached?: boolean;
   /**
-   * Set by boardForClient (not stored on disk): true when favicon_data is
-   * available server-side and can be fetched via GET /api/embeds/favicon.
+   * Set by boardForClient (not stored on disk): true when favicon_file is set.
    */
   favicon_cached?: boolean;
 }
@@ -82,21 +86,34 @@ function emptyBoard(name: string): Board {
 }
 
 function basename(path: string): string {
-  return path.split(/[/\\]/).pop() ?? path;
+  // Strip trailing slash before splitting so "path/to/dir/" works correctly.
+  return path.replace(/[/\\]+$/, "").split(/[/\\]/).pop() ?? path;
 }
 
 // --- Persistence ---
 
-export async function loadOrCreate(path: string): Promise<Board> {
+/**
+ * Load the board from `boardDir/board.json`, creating the directory and an
+ * empty board file if they do not yet exist.
+ *
+ * Board layout:
+ *   <boardDir>/board.json          — all JSON data (no binary blobs)
+ *   <boardDir>/embed-content/      — cached embed images and favicons
+ *   <boardDir>/files/              — uploaded embedded files (real directory tree)
+ */
+export async function loadOrCreate(boardDir: string): Promise<Board> {
+  const jsonPath = `${boardDir}/board.json`;
+
   let text: string;
   try {
-    text = await Deno.readTextFile(path);
+    text = await Deno.readTextFile(jsonPath);
   } catch (err) {
     if (err instanceof Deno.errors.NotFound) {
-      const name = basename(path).replace(/\.json$/i, "");
+      const name = basename(boardDir);
       const board = emptyBoard(name);
-      await save(path, board);
-      console.log(`Created new board file: ${path}`);
+      await Deno.mkdir(boardDir, { recursive: true });
+      await Deno.writeTextFile(jsonPath, JSON.stringify(board, null, 2));
+      console.log(`Created new board: ${boardDir}`);
       return board;
     }
     throw err;
@@ -105,10 +122,13 @@ export async function loadOrCreate(path: string): Promise<Board> {
   try {
     return JSON.parse(text) as Board;
   } catch {
-    throw new Error(`Board file is not valid JSON: ${path}`);
+    throw new Error(`Board file is not valid JSON: ${jsonPath}`);
   }
 }
 
-export async function save(path: string, board: Board): Promise<void> {
-  await Deno.writeTextFile(path, JSON.stringify(board, null, 2));
+export async function save(boardDir: string, board: Board): Promise<void> {
+  await Deno.writeTextFile(
+    `${boardDir}/board.json`,
+    JSON.stringify(board, null, 2),
+  );
 }
