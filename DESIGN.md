@@ -105,6 +105,8 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
         - This logic should also apply to links directly to files outside the embedded filesystem, eg. embedded links
     - [x] Paste images and possibly other files that can be put into a clipboard into a card to add them as embedded files
 
+- [ ] Track card last edit date/time and display on card
+
 - [ ] Move embed and virtual filesystem files out of the board JSON file to make it smaller and take less time to save
 - [ ] Garbage-collect stale cached embeds
 
