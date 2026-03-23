@@ -4,6 +4,8 @@ export interface Card {
   id: number;
   text: string;
   tags: string[];
+  /** ISO-8601 timestamp of the last time the card body text was edited. */
+  last_edit_time?: string;
 }
 
 export interface EmbeddedFile {

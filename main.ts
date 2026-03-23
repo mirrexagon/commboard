@@ -747,7 +747,12 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             return jsonError("text must be a string", 400);
         }
 
-        const updatedCard: Card = { ...board.cards[String(id)], text };
+        const existing = board.cards[String(id)];
+        const updatedCard: Card = {
+            ...existing,
+            text,
+            last_edit_time: text !== existing.text ? new Date().toISOString() : existing.last_edit_time,
+        };
         board = {
             ...board,
             cards: { ...board.cards, [String(id)]: updatedCard },
@@ -776,7 +781,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
         const text = typeof body.text === "string" ? body.text : "";
         const id = board.next_card_id;
-        const newCard: Card = { id, text, tags: [] };
+        const newCard: Card = { id, text, tags: [], last_edit_time: new Date().toISOString() };
 
         board = {
             ...board,
@@ -811,7 +816,11 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
 
         const card = board.cards[String(id)];
         if (!card.tags.includes(tag)) {
-            const updatedCard: Card = { ...card, tags: [...card.tags, tag] };
+            const updatedCard: Card = {
+                ...card,
+                tags: [...card.tags, tag],
+                last_edit_time: new Date().toISOString(),
+            };
             board = {
                 ...board,
                 cards: { ...board.cards, [String(id)]: updatedCard },
@@ -836,6 +845,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
         const updatedCard: Card = {
             ...card,
             tags: card.tags.filter((t) => t !== tag),
+            last_edit_time: new Date().toISOString(),
         };
         board = {
             ...board,

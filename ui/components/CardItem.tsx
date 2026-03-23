@@ -431,6 +431,7 @@ export interface Card {
   id: number;
   text: string;
   tags: string[];
+  last_edit_time?: string;
 }
 
 interface ParsedTag {
@@ -443,6 +444,25 @@ function parseTag(raw: string): ParsedTag {
   const colon = raw.indexOf(":");
   if (colon === -1) return { category: raw, value: "", raw };
   return { category: raw.slice(0, colon), value: raw.slice(colon + 1), raw };
+}
+
+/**
+ * Format a card's `last_edit_time` ISO timestamp into a compact human-readable
+ * string for display in the card header:
+ *  - Today → time only, e.g. "2:34 PM"
+ *  - This year → "Mar 22"
+ *  - Older → "Mar 22, 2024"
+ */
+function formatEditedAt(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString(undefined, { timeStyle: "short" });
+  }
+  if (d.getFullYear() === now.getFullYear()) {
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  return d.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 
 interface Props {
@@ -700,6 +720,14 @@ export function CardItem({
         <span class="w-6 h-6 flex items-center justify-center text-xs text-gray-400 dark:text-gray-500 font-mono select-none leading-none shrink-0">
           #{card.id}
         </span>
+        {card.last_edit_time && (
+          <span
+            class="ml-1.5 text-xs text-gray-300 dark:text-gray-600 select-none leading-none shrink-0"
+            title={`Last edited: ${new Date(card.last_edit_time).toLocaleString()}`}
+          >
+            {formatEditedAt(card.last_edit_time)}
+          </span>
+        )}
         <div class="flex-1" />
         <div
           class={[
