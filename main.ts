@@ -627,8 +627,6 @@ function serveDataUrl(dataUrl: string, headOnly: boolean): Response {
 
 const PORT = 8080;
 
-console.log(`Listening at http://localhost:${PORT}`);
-
 Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
     const { pathname } = new URL(req.url);
 
