@@ -492,8 +492,11 @@ export function CardItem({
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [addingTag, setAddingTag] = useState(false);
+  const [deletingTagIndex, setDeletingTagIndex] = useState<number | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
   const [draft, setDraft] = useState(card.text);
   const dragDisabled = editing || addingTag || isDragDisabled;
+  const cardRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -514,6 +517,69 @@ export function CardItem({
     el.style.height = `${el.scrollHeight}px`;
   }
 
+  // Tags array (sorted) — used by key handlers and render alike.
+  const tags = [...card.tags].sort().map(parseTag);
+
+  // ── Focus tracking ──────────────────────────────────────────────────────────
+
+  function handleFocus() {
+    setIsFocused(true);
+  }
+
+  function handleBlur(e: FocusEvent) {
+    // Stay "focused" when focus moves to a child element (e.g. textarea, TagInput).
+    const related = e.relatedTarget as Element | null;
+    if (cardRef.current && related && cardRef.current.contains(related)) return;
+    setIsFocused(false);
+    setDeletingTagIndex(null);
+  }
+
+  // ── Card-level keyboard shortcuts ───────────────────────────────────────────
+
+  function handleCardKeyDown(e: KeyboardEvent) {
+    // Let modifier-key combos (browser shortcuts, Ctrl+Enter save, etc.) pass through.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // Let the textarea / tag-input handle their own events.
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (editing || addingTag) return;
+
+    if (deletingTagIndex !== null) {
+      // ── Delete-tag mode navigation ──
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setDeletingTagIndex((i) => Math.min((i ?? 0) + 1, tags.length - 1));
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setDeletingTagIndex((i) => Math.max((i ?? 0) - 1, 0));
+      } else if (e.key === "Enter" || e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        const idx = deletingTagIndex;
+        if (idx >= 0 && idx < tags.length) {
+          const tagToRemove = tags[idx].raw;
+          const newCount = tags.length - 1;
+          setDeletingTagIndex(newCount === 0 ? null : Math.min(idx, newCount - 1));
+          onRemoveTag(tagToRemove);
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setDeletingTagIndex(null);
+      }
+      return;
+    }
+
+    // ── Normal-mode shortcuts ──
+    if (e.key === "Enter") {
+      e.preventDefault();
+      startEditing();
+    } else if (e.key === "a" || e.key === "A") {
+      e.preventDefault();
+      setAddingTag(true);
+    } else if ((e.key === "d" || e.key === "D") && tags.length > 0) {
+      e.preventDefault();
+      setDeletingTagIndex(0);
+    }
+  }
+
   function startEditing() {
     setDraft(card.text);
     setEditing(true);
@@ -527,11 +593,13 @@ export function CardItem({
     }
     setEditing(false);
     if (trimmed !== card.text) onUpdate(trimmed);
+    cardRef.current?.focus();
   }
 
   function cancel() {
     setDraft(card.text);
     setEditing(false);
+    cardRef.current?.focus();
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -576,26 +644,34 @@ export function CardItem({
   // Used for the per-card "Fetch N embeds" button.
   const uncachedUrls = extractUrls(card.text).filter((u) => !(u in embedCache));
 
-  const tags = [...card.tags].sort().map(parseTag);
   const accentCategories = [...new Set(tags.map((t) => t.category))];
   const neutralAccentColor = darkMode ? "#374151" : "#e5e7eb";
 
   return (
     <div
+      ref={cardRef}
+      tabIndex={0}
       data-card-id={card.id}
       class={[
         "group bg-white dark:bg-gray-800 rounded-xl shadow-sm",
         "flex flex-col min-w-0",
         "transition-all duration-150",
+        "focus:outline-none",
         editing
           ? "ring-2 ring-blue-400 ring-offset-1 shadow-md"
           : isDropTarget
             ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg"
-            : "ring-1 ring-black/[0.07] dark:ring-white/[0.08] hover:shadow-md",
+            : isFocused
+              ? "ring-2 ring-blue-300 dark:ring-blue-600 ring-offset-1 shadow-md"
+              : "ring-1 ring-black/[0.07] dark:ring-white/[0.08] hover:shadow-md",
         isDragging ? "opacity-40" : "",
         editing || isDragDisabled ? "cursor-default" : "cursor-grab active:cursor-grabbing select-none",
       ].join(" ")}
       draggable={!dragDisabled}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onKeyDown={handleCardKeyDown}
+      onClick={() => { if (!editing) cardRef.current?.focus(); }}
       onDragStart={dragDisabled ? undefined : onDragStart}
       onDragEnter={dragDisabled ? undefined : onDragEnter}
       onDragOver={dragDisabled ? undefined : onDragOver}
@@ -625,8 +701,8 @@ export function CardItem({
         <div class="flex-1" />
         <div
           class={[
-            "flex gap-1",
-            editing ? "" : "opacity-0 group-hover:opacity-100 transition-opacity duration-100",
+            "flex gap-1 transition-opacity duration-100",
+            editing ? "" : (isFocused ? "opacity-60 group-hover:opacity-100" : "opacity-0 group-hover:opacity-100"),
             isDragging ? "!opacity-0" : "",
           ].join(" ")}
         >
@@ -742,19 +818,28 @@ export function CardItem({
             : "",
         ].join(" ")}
       >
-        {tags.map(({ category, value, raw }) => {
+        {tags.map(({ category, value, raw }, i) => {
           const { bg, text, border } = tagPalette(category, darkMode);
+          const isActiveDelete = deletingTagIndex === i;
           return (
             <span
               key={raw}
-              class="group/tag inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium"
+              class={[
+                "group/tag inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium transition-shadow duration-100",
+                isActiveDelete ? "ring-2 ring-red-400 ring-offset-1" : "",
+              ].join(" ")}
               style={{ backgroundColor: bg, color: text, borderColor: border }}
             >
               <span class="opacity-50 font-normal">{category}</span>
               {value && <span>{value}</span>}
               {!editing && (
                 <button
-                  class="ml-0.5 opacity-0 group-hover/tag:opacity-100 transition-opacity duration-100 hover:text-red-500 leading-none cursor-pointer"
+                  class={[
+                    "ml-0.5 transition-opacity duration-100 hover:text-red-500 leading-none cursor-pointer",
+                    deletingTagIndex !== null
+                      ? "opacity-100"
+                      : "opacity-0 group-hover/tag:opacity-100",
+                  ].join(" ")}
                   title={`Remove tag "${raw}"`}
                   aria-label={`Remove tag ${raw}`}
                   onClick={(e) => { e.stopPropagation(); onRemoveTag(raw); }}
@@ -766,14 +851,21 @@ export function CardItem({
           );
         })}
 
-        {!editing && (
+        {/* Keyboard hint shown while in delete-tag mode */}
+        {deletingTagIndex !== null && (
+          <p class="w-full text-xs text-gray-400 dark:text-gray-500 mt-0.5 select-none">
+            ←→ navigate · ↵ or Del to remove · Esc to cancel
+          </p>
+        )}
+
+        {!editing && deletingTagIndex === null && (
           addingTag ? (
             <TagInput
               allTags={allTags}
               tagCounts={tagCounts}
               existingTags={card.tags}
-              onAdd={(tag) => { setAddingTag(false); onAddTag(tag); }}
-              onCancel={() => setAddingTag(false)}
+              onAdd={(tag) => { setAddingTag(false); onAddTag(tag); cardRef.current?.focus(); }}
+              onCancel={() => { setAddingTag(false); cardRef.current?.focus(); }}
             />
           ) : (
             <button
@@ -783,9 +875,9 @@ export function CardItem({
                 "text-gray-400 dark:text-gray-500",
                 "hover:text-blue-500 hover:border-blue-400",
                 "transition-colors duration-100 cursor-pointer",
-                tags.length > 0
-                  ? "opacity-0 group-hover:opacity-100"
-                  : "opacity-60 group-hover:opacity-100",
+                isFocused || tags.length === 0
+                  ? "opacity-60 group-hover:opacity-100"
+                  : "opacity-0 group-hover:opacity-100",
               ].join(" ")}
               title="Add tag"
               aria-label="Add tag"
