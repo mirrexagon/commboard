@@ -16,7 +16,7 @@ interface TagInputProps {
 
 function TagInput({ allTags, tagCounts, existingTags, onAdd, onCancel }: TagInputProps) {
   const [value, setValue] = useState("");
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ function TagInput({ allTags, tagCounts, existingTags, onAdd, onCancel }: TagInpu
 
   function handleInput(e: Event) {
     setValue((e.target as HTMLInputElement).value);
-    setActiveIndex(-1);
+    setActiveIndex(0);
   }
 
   return (
@@ -547,9 +547,11 @@ export function CardItem({
       // ── Delete-tag mode navigation ──
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
+        e.stopPropagation(); // don't let the grid also navigate away
         setDeletingTagIndex((i) => Math.min((i ?? 0) + 1, tags.length - 1));
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
+        e.stopPropagation();
         setDeletingTagIndex((i) => Math.max((i ?? 0) - 1, 0));
       } else if (e.key === "Enter" || e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();

@@ -346,11 +346,89 @@ function CardGrid({ cards, allTags, tagCounts, darkMode, filterQuery, embedCache
   // Height of the fixed drop-zone bar (also used as bottom padding while dragging).
   const DROP_BAR_HEIGHT = "5rem"; // h-20
 
+  // ── Arrow-key navigation between cards ──────────────────────────────────────
+  //
+  // Left/Right  → previous/next card in DOM (reading) order.
+  // Up/Down     → card in the adjacent row whose horizontal centre is closest
+  //               to the current card's horizontal centre.  Uses bounding rects
+  //               so it works for any auto-fill column count.
+
+  function handleGridKeyDown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || active.tagName === "INPUT" || active.tagName === "TEXTAREA") return;
+    const cardEl = active.closest("[data-card-id]") as HTMLElement | null;
+    if (!cardEl) return;
+
+    const container = e.currentTarget as HTMLElement;
+    const allCardEls = Array.from(
+      container.querySelectorAll("[data-card-id]"),
+    ) as HTMLElement[];
+    const currentIndex = allCardEls.indexOf(cardEl);
+    if (currentIndex === -1) return;
+
+    let nextEl: HTMLElement | null = null;
+
+    if (e.key === "ArrowLeft") {
+      nextEl = allCardEls[currentIndex - 1] ?? null;
+    } else if (e.key === "ArrowRight") {
+      nextEl = allCardEls[currentIndex + 1] ?? null;
+    } else {
+      const currentRect = cardEl.getBoundingClientRect();
+      const cx = currentRect.left + currentRect.width / 2;
+
+      if (e.key === "ArrowUp") {
+        // Cards whose bottom edge is at or above this card's top edge.
+        const above = allCardEls.filter(
+          (el) => el.getBoundingClientRect().bottom <= currentRect.top + 8,
+        );
+        if (above.length > 0) {
+          // The immediately preceding row has the highest bottom values.
+          const maxBottom = Math.max(...above.map((el) => el.getBoundingClientRect().bottom));
+          const row = above.filter((el) => el.getBoundingClientRect().bottom >= maxBottom - 8);
+          nextEl = row.reduce((best, el) => {
+            const er = el.getBoundingClientRect();
+            const br = best.getBoundingClientRect();
+            return Math.abs(er.left + er.width / 2 - cx) <
+              Math.abs(br.left + br.width / 2 - cx)
+              ? el
+              : best;
+          });
+        }
+      } else {
+        // ArrowDown: cards whose top edge is at or below this card's bottom edge.
+        const below = allCardEls.filter(
+          (el) => el.getBoundingClientRect().top >= currentRect.bottom - 8,
+        );
+        if (below.length > 0) {
+          const minTop = Math.min(...below.map((el) => el.getBoundingClientRect().top));
+          const row = below.filter((el) => el.getBoundingClientRect().top <= minTop + 8);
+          nextEl = row.reduce((best, el) => {
+            const er = el.getBoundingClientRect();
+            const br = best.getBoundingClientRect();
+            return Math.abs(er.left + er.width / 2 - cx) <
+              Math.abs(br.left + br.width / 2 - cx)
+              ? el
+              : best;
+          });
+        }
+      }
+    }
+
+    if (nextEl) {
+      e.preventDefault();
+      nextEl.focus();
+      nextEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
   return (
     <div
       class="flex flex-col gap-4"
       // Push content up so the last row of cards isn't hidden behind the fixed bar.
       style={draggedId !== null ? { paddingBottom: DROP_BAR_HEIGHT } : undefined}
+      onKeyDown={handleGridKeyDown}
     >
       <div
         class="grid gap-4 items-start"
@@ -531,7 +609,7 @@ function CategoryColumn({
   ].join(" ");
 
   return (
-    <div class="flex flex-col gap-3 w-72 flex-shrink-0">
+    <div class="flex flex-col gap-3 w-72 flex-shrink-0" data-column-value={value}>
       {/* Column header */}
       <div
         class="flex items-center gap-2 px-3 py-1.5 rounded-lg border font-semibold text-sm select-none"
@@ -753,8 +831,62 @@ function CategoryView({
     if (!anyMatch) return <NoSearchResults />;
   }
 
+  // ── Arrow-key navigation between cards ──────────────────────────────────────
+  //
+  // Up/Down    → previous/next card within the same column.
+  // Left/Right → same row-index in the adjacent column (clamped to its length).
+
+  function handleCategoryKeyDown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || active.tagName === "INPUT" || active.tagName === "TEXTAREA") return;
+    const cardEl = active.closest("[data-card-id]") as HTMLElement | null;
+    if (!cardEl) return;
+    const colEl = cardEl.closest("[data-column-value]") as HTMLElement | null;
+    if (!colEl) return;
+
+    const container = e.currentTarget as HTMLElement;
+    // Only rendered columns (filtered columns are absent from the DOM).
+    const allColEls = Array.from(
+      container.querySelectorAll("[data-column-value]"),
+    ) as HTMLElement[];
+    const currentColIndex = allColEls.indexOf(colEl);
+
+    const colCardEls = Array.from(
+      colEl.querySelectorAll("[data-card-id]"),
+    ) as HTMLElement[];
+    const currentCardIndex = colCardEls.indexOf(cardEl);
+
+    let nextEl: HTMLElement | null = null;
+
+    if (e.key === "ArrowUp") {
+      nextEl = colCardEls[currentCardIndex - 1] ?? null;
+    } else if (e.key === "ArrowDown") {
+      nextEl = colCardEls[currentCardIndex + 1] ?? null;
+    } else {
+      // ArrowLeft / ArrowRight — jump to adjacent column, same row position.
+      const targetColEl =
+        e.key === "ArrowLeft"
+          ? allColEls[currentColIndex - 1] ?? null
+          : allColEls[currentColIndex + 1] ?? null;
+      if (!targetColEl) return;
+      const targetCardEls = Array.from(
+        targetColEl.querySelectorAll("[data-card-id]"),
+      ) as HTMLElement[];
+      if (targetCardEls.length === 0) return;
+      nextEl = targetCardEls[Math.min(currentCardIndex, targetCardEls.length - 1)];
+    }
+
+    if (nextEl) {
+      e.preventDefault();
+      nextEl.focus();
+      nextEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
+  }
+
   return (
-    <div class="flex gap-4 overflow-x-auto items-start min-h-64 px-1 py-1 pb-4">
+    <div class="flex gap-4 overflow-x-auto items-start min-h-64 px-1 py-1 pb-4" onKeyDown={handleCategoryKeyDown}>
       {values.map((v) => {
         const tag = `${category}:${v}`;
         const columnCards = allCards.filter((c) => c.tags.includes(tag));
@@ -868,6 +1000,21 @@ function App() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [newlyAddedCardId, setNewlyAddedCardId] = useState<number | null>(null);
+  const [pickingCategory, setPickingCategory] = useState(false);
+
+  // ── Global "C" shortcut — open the category picker from anywhere ─────────────
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key !== "c" && e.key !== "C") return;
+      const active = document.activeElement;
+      if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return;
+      e.preventDefault();
+      setPickingCategory(true);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // ── Embed queue state ──
   const [embedQueueStatus, setEmbedQueueStatus] = useState<EmbedQueueStatus>({
@@ -1278,6 +1425,8 @@ function App() {
         allCategories={allCategories}
         categoryCounts={categoryCounts}
         onSelectCategory={setActiveCategory}
+        pickingCategory={pickingCategory}
+        onSetPickingCategory={setPickingCategory}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         embedQueueSize={embedQueueSize}

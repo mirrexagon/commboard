@@ -11,7 +11,7 @@ interface CategorySelectorProps {
 
 function CategorySelector({ allCategories, categoryCounts, onSelect, onCancel }: CategorySelectorProps) {
   const [value, setValue] = useState("");
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ function CategorySelector({ allCategories, categoryCounts, onSelect, onCancel }:
 
   function handleInput(e: Event) {
     setValue((e.target as HTMLInputElement).value);
-    setActiveIndex(-1);
+    setActiveIndex(0);
   }
 
   return (
@@ -124,6 +124,10 @@ interface Props {
   /** Number of cards that have at least one tag in each category. */
   categoryCounts: Record<string, number>;
   onSelectCategory: (category: string | null) => void;
+  /** Whether the category picker dropdown is currently open. */
+  pickingCategory: boolean;
+  /** Open or close the category picker dropdown. */
+  onSetPickingCategory: (open: boolean) => void;
   /** Current search/filter query string. */
   searchQuery: string;
   /** Called whenever the search query changes. */
@@ -154,6 +158,8 @@ export function Header({
   allCategories,
   categoryCounts,
   onSelectCategory,
+  pickingCategory,
+  onSetPickingCategory,
   searchQuery,
   onSearchChange,
   embedQueueSize,
@@ -165,7 +171,6 @@ export function Header({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(boardName);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [pickingCategory, setPickingCategory] = useState(false);
 
   // Keep draft in sync when the prop changes externally.
   useEffect(() => {
@@ -297,7 +302,7 @@ export function Header({
       <div class="flex items-center gap-1.5">
         {/* "All cards" button */}
         <button
-          onClick={() => { onSelectCategory(null); setPickingCategory(false); }}
+          onClick={() => { onSelectCategory(null); onSetPickingCategory(false); }}
           class={[
             "text-xs px-2.5 py-1 rounded-lg font-medium transition-colors duration-150 select-none",
             !activeCategory
@@ -329,14 +334,14 @@ export function Header({
             allCategories={allCategories}
             categoryCounts={categoryCounts}
             onSelect={(cat) => {
-              setPickingCategory(false);
+              onSetPickingCategory(false);
               onSelectCategory(cat);
             }}
-            onCancel={() => setPickingCategory(false)}
+            onCancel={() => onSetPickingCategory(false)}
           />
         ) : (
           <button
-            onClick={() => setPickingCategory(true)}
+            onClick={() => onSetPickingCategory(true)}
             title="Group cards by a category"
             class={[
               "text-xs px-2.5 py-1 rounded-lg font-medium border transition-colors duration-150 select-none",
