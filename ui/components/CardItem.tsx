@@ -16,6 +16,7 @@ interface TagInputProps {
 
 function TagInput({ allTags, tagCounts, existingTags, onAdd, onCancel }: TagInputProps) {
   const [value, setValue] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -42,13 +43,28 @@ function TagInput({ allTags, tagCounts, existingTags, onAdd, onCancel }: TagInpu
   }
 
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
-      submit(value);
+      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < suggestions.length) {
+        submit(suggestions[activeIndex]);
+      } else {
+        submit(value);
+      }
     } else if (e.key === "Escape") {
       e.preventDefault();
       onCancel();
     }
+  }
+
+  function handleInput(e: Event) {
+    setValue((e.target as HTMLInputElement).value);
+    setActiveIndex(-1);
   }
 
   return (
@@ -57,7 +73,7 @@ function TagInput({ allTags, tagCounts, existingTags, onAdd, onCancel }: TagInpu
         ref={inputRef}
         type="text"
         value={value}
-        onInput={(e) => setValue((e.target as HTMLInputElement).value)}
+        onInput={handleInput}
         onKeyDown={handleKeyDown}
         onBlur={onCancel}
         placeholder="category:value"
@@ -78,10 +94,15 @@ function TagInput({ allTags, tagCounts, existingTags, onAdd, onCancel }: TagInpu
             "rounded-lg shadow-lg overflow-hidden w-48",
           ].join(" ")}
         >
-          {suggestions.map((tag) => (
+          {suggestions.map((tag, i) => (
             <button
               key={tag}
-              class="flex items-center gap-2 w-full text-left text-xs px-3 py-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-700 dark:text-gray-300 cursor-pointer"
+              class={[
+                "flex items-center gap-2 w-full text-left text-xs px-3 py-1.5 text-gray-700 dark:text-gray-300 cursor-pointer",
+                i === activeIndex
+                  ? "bg-blue-100 dark:bg-blue-900/50"
+                  : "hover:bg-blue-50 dark:hover:bg-blue-900/30",
+              ].join(" ")}
               onMouseDown={(e) => {
                 e.preventDefault();
                 submit(tag);
