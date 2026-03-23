@@ -14,14 +14,15 @@ Install [Deno](https://deno.com/).
 If you have the repository cloned locally:
 
 ```bash
-deno task start path/to/board.json
+deno task start path/to/my-board
 ```
+
+The argument is the path to a board directory. It will be created if it doesn't exist.
 
 ### Usage notes
 
-- The board file will be created if it doesn't exist.
 - The server starts on http://localhost:8080 - navigate there in a web browser to see the UI.
-- There are example board files in the `example-boards/` directory to try out.
+- There are example boards in the `example-boards/` directory to try out.
 
 ## Basics
 
