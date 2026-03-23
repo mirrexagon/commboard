@@ -1,0 +1,142 @@
+{
+  "name": "Test Board",
+  "cards": {
+    "1": {
+      "id": 1,
+      "text": "# Clothing idea\n\nLook into linen shirts for summer. Light, breathable, and they look great.\n\n- White\n- Navy\n- Olive",
+      "tags": [
+        "idea:clothing",
+        "status:todo",
+        "tre:345r",
+        "safd:4t",
+        "gvfcdv:34t"
+      ]
+    },
+    "2": {
+      "id": 2,
+      "text": "# The types of cheese\n\nHere is a good link: https://en.wikipedia.org/wiki/Cheese\n\nFavourites so far: **Comté**, **Manchego**, *Brie*.",
+      "tags": [
+        "legacy:reference",
+        "topic:food"
+      ]
+    },
+    "3": {
+      "id": 3,
+      "text": "# Fix login bug\n\nUsers occasionally see a 403 on first load after a long session. Likely a token refresh race condition.\n\n```\nGET /api/user → 403\n```",
+      "tags": [
+        "status:in-progress",
+        "type:bug",
+        "git:2"
+      ]
+    },
+    "4": {
+      "id": 4,
+      "text": "# Read *Thinking, Fast and Slow*\n\nDaniel Kahneman. On the reading list for ages.\n\n[mirrexagon_-_rise.mp3](/files/mirrexagon_-_rise.mp3)",
+      "tags": [
+        "status:todo",
+        "type:book"
+      ]
+    },
+    "5": {
+      "id": 5,
+      "text": "# Weekend trip ideas\n\n> Where should we go next?\n\n- [Lisbon](https://en.wikipedia.org/wiki/Lisbon)\n- Porto\n- Seville\n- Paris: [Eiffel tower](https://upload.wikimedia.org/wikipedia/commons/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg)\n- Bare direct link to image: https://upload.wikimedia.org/wikipedia/commons/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg",
+      "tags": [
+        "idea:travel"
+      ]
+    },
+    "6": {
+      "id": 6,
+      "text": "# Energy crystal\n\n![Energy crystal](files/energycrystal.png)",
+      "tags": []
+    },
+    "7": {
+      "id": 7,
+      "text": "# Music\n\n- [Link to music](https://s3-ap-southeast-2.amazonaws.com/lmirx.net/music/mirrexagon_-_upper_hand.ogg)\n- Embedded music: [Rise](/files/mirrexagon_-_rise.mp3)",
+      "tags": []
+    },
+    "8": {
+      "id": 8,
+      "text": "# Local picture\n\n[Energy crystal](/files/energycrystal.png)",
+      "tags": []
+    },
+    "9": {
+      "id": 9,
+      "text": "# Other files\n\n- Local text file: /files/long/notes/hello.thisisreallylongpathiwonderwhatitlookslike.txt\n- Local text file link: [link](/files/long/notes/hello.thisisreallylongpathiwonderwhatitlookslike.txt)\n- Bare link to an image without any percent encoding: https://derpicdn.net/img/view/2017/12/31/1620303.png\n- The same image again: https://derpicdn.net/img/view/2017/12/31/1620303.png",
+      "tags": []
+    }
+  },
+  "next_card_id": 10,
+  "card_order": [
+    3,
+    2,
+    5,
+    9,
+    1,
+    4,
+    7,
+    6,
+    8
+  ],
+  "embed_cache": {
+    "https://en.wikipedia.org/wiki/Cheese": {
+      "url": "https://en.wikipedia.org/wiki/Cheese",
+      "fetched_at": "2026-03-22T09:31:51.394Z",
+      "title": "Cheese - Wikipedia",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Cheese_platter.jpg",
+      "favicon_url": "https://en.wikipedia.org/static/favicon/wikipedia.ico",
+      "image_file": "f0d3c7d84cc64f0f25b691ef4caaa4745d3b8218e9b8dd0b46bb291605c8cfd7.jpg",
+      "image_mime": "image/jpeg",
+      "favicon_file": "d4007aad56bcd6a88dc7869180c0a41f19a09a1830926be69b640255a6aa11c6.ico",
+      "favicon_mime": "image/vnd.microsoft.icon"
+    },
+    "https://en.wikipedia.org/wiki/Lisbon": {
+      "url": "https://en.wikipedia.org/wiki/Lisbon",
+      "fetched_at": "2026-03-22T09:32:39.841Z",
+      "title": "Lisbon - Wikipedia",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Lisboa_-_Portugal_%2852597836992%29.jpg/1280px-Lisboa_-_Portugal_%2852597836992%29.jpg",
+      "favicon_url": "https://en.wikipedia.org/static/favicon/wikipedia.ico",
+      "image_file": "ab072251392e8d864c5cf96da101d867b9df810946c5bfe3a6f7f4c9e04a739c.jpg",
+      "image_mime": "image/jpeg",
+      "favicon_file": "d4007aad56bcd6a88dc7869180c0a41f19a09a1830926be69b640255a6aa11c6.ico",
+      "favicon_mime": "image/vnd.microsoft.icon"
+    },
+    "https://upload.wikimedia.org/wikipedia/commons/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg",
+      "fetched_at": "2026-03-22T09:33:36.410Z",
+      "title": "Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg",
+      "description": "image/jpeg resource",
+      "content_type": "image/jpeg"
+    },
+    "https://s3-ap-southeast-2.amazonaws.com/lmirx.net/music/mirrexagon_-_upper_hand.ogg": {
+      "url": "https://s3-ap-southeast-2.amazonaws.com/lmirx.net/music/mirrexagon_-_upper_hand.ogg",
+      "fetched_at": "2026-03-22T09:39:37.340Z",
+      "title": "mirrexagon_-_upper_hand.ogg",
+      "description": "audio/ogg resource",
+      "content_type": "audio/ogg"
+    },
+    "https://derpicdn.net/img/view/2017/12/31/1620303.png": {
+      "url": "https://derpicdn.net/img/view/2017/12/31/1620303.png",
+      "fetched_at": "2026-03-22T09:55:12.618Z",
+      "title": "1620303.png",
+      "description": "image/png resource",
+      "content_type": "image/png"
+    }
+  },
+  "embedded_files": {
+    "energycrystal.png": {
+      "path": "energycrystal.png",
+      "mime_type": "image/png",
+      "uploaded_at": "2026-03-22T06:54:06.161Z"
+    },
+    "mirrexagon_-_rise.mp3": {
+      "path": "mirrexagon_-_rise.mp3",
+      "mime_type": "audio/mpeg",
+      "uploaded_at": "2026-03-22T09:40:06.924Z"
+    },
+    "long/notes/hello.thisisreallylongpathiwonderwhatitlookslike.txt": {
+      "path": "long/notes/hello.thisisreallylongpathiwonderwhatitlookslike.txt",
+      "mime_type": "text/plain",
+      "uploaded_at": "2026-03-22T06:38:43.051Z"
+    }
+  }
+}
