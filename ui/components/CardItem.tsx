@@ -192,7 +192,7 @@ function generateEmbedHtml(embed: EmbedData): string {
         `<button data-refetch-url="${url}" ` +
         `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1" ` +
         `title="Refetch">↺</button>` +
-        `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">File</span>` +
+        `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">🌐 File</span>` +
         `</div>` +
         `</div>`
       );
@@ -214,7 +214,7 @@ function generateEmbedHtml(embed: EmbedData): string {
       `<button data-refetch-url="${url}" ` +
       `class="shrink-0 text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer px-1" ` +
       `title="Refetch">↺</button>` +
-      `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">File</span>` +
+      `<span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-medium">🌐 File</span>` +
       `</div>` +
       `</a>`
     );
