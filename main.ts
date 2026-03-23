@@ -746,7 +746,7 @@ Deno.serve({ port: PORT }, async (req: Request): Promise<Response> => {
             ...board,
             cards: { ...board.cards, [String(id)]: newCard },
             next_card_id: board.next_card_id + 1,
-            card_order: [...board.card_order, id],
+            card_order: [id, ...board.card_order],
         };
         await save(boardPath, board);
 

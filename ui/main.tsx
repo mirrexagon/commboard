@@ -193,15 +193,40 @@ interface CardGridProps {
   onAddTag: (id: number, tag: string) => void;
   onRemoveTag: (id: number, tag: string) => void;
   onFetchEmbed: (url: string, refetch: boolean) => void;
+  /** When set, scroll this card into view once it appears in the DOM. */
+  newlyAddedCardId?: number | null;
+  onScrolledToNewCard?: () => void;
 }
 
-function CardGrid({ cards, allTags, tagCounts, darkMode, filterQuery, embedCache, embeddedFiles, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag, onFetchEmbed }: CardGridProps) {
+function CardGrid({ cards, allTags, tagCounts, darkMode, filterQuery, embedCache, embeddedFiles, onDelete, onUpdate, onReorder, onAddTag, onRemoveTag, onFetchEmbed, newlyAddedCardId, onScrolledToNewCard }: CardGridProps) {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
   const [dropAtEnd, setDropAtEnd] = useState(false);
   const [dropAtPosition, setDropAtPosition] = useState(false);
   /** When non-null, the "move to position" dialog is shown for this card id. */
   const [moveToPositionCardId, setMoveToPositionCardId] = useState<number | null>(null);
+  /** When non-null, scroll this card into view after the next render (post-reorder). */
+  const [scrollToCardId, setScrollToCardId] = useState<number | null>(null);
+
+  // Scroll a newly added card into view once it appears in the DOM.
+  useEffect(() => {
+    if (newlyAddedCardId == null) return;
+    const el = document.querySelector(`[data-card-id="${newlyAddedCardId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      onScrolledToNewCard?.();
+    }
+  }, [newlyAddedCardId]);
+
+  // Scroll a just-moved card into view after the reorder has been applied.
+  useEffect(() => {
+    if (scrollToCardId == null) return;
+    const el = document.querySelector(`[data-card-id="${scrollToCardId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setScrollToCardId(null);
+    }
+  }, [scrollToCardId]);
 
   const isFiltering = filterQuery.trim().length > 0;
   const displayCards = isFiltering
@@ -271,15 +296,17 @@ function CardGrid({ cards, allTags, tagCounts, darkMode, filterQuery, embedCache
   function handleEndZoneDrop(e: DragEvent) {
     e.preventDefault();
     if (draggedId === null) { reset(); return; }
+    const movedId = draggedId;
     const filteredIds = displayCards.map((c) => c.id);
-    const newFilteredIds = filteredIds.filter((id) => id !== draggedId);
-    newFilteredIds.push(draggedId);
+    const newFilteredIds = filteredIds.filter((id) => id !== movedId);
+    newFilteredIds.push(movedId);
     onReorder(
       isFiltering
         ? reorderInCategory(cards.map((c) => c.id), filteredIds, newFilteredIds)
         : newFilteredIds,
     );
     reset();
+    setScrollToCardId(movedId);
   }
 
   function handlePositionZoneDragEnter(e: DragEvent) {
@@ -311,6 +338,7 @@ function CardGrid({ cards, allTags, tagCounts, darkMode, filterQuery, embedCache
     const ids = cards.map((c) => c.id).filter((cid) => cid !== id);
     ids.splice(newPosition - 1, 0, id);
     onReorder(ids);
+    setScrollToCardId(id);
   }
 
   function reset() { setDraggedId(null); setDropTargetId(null); setDropAtEnd(false); setDropAtPosition(false); }
@@ -839,6 +867,7 @@ function App() {
   );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [newlyAddedCardId, setNewlyAddedCardId] = useState<number | null>(null);
 
   // ── Embed queue state ──
   const [embedQueueStatus, setEmbedQueueStatus] = useState<EmbedQueueStatus>({
@@ -1006,11 +1035,17 @@ function App() {
   }
 
   async function addCard() {
-    await apiFetch("/api/cards", {
+    const res = await fetch("/api/cards", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ text: "" }),
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const newBoard = (await res.json()) as Board;
+    setBoard(newBoard);
+    // The new card is now first in card_order (prepended server-side).
+    const newId = newBoard.card_order[0];
+    if (newId !== undefined) setNewlyAddedCardId(newId);
   }
 
   async function updateCard(id: number, text: string) {
@@ -1287,6 +1322,8 @@ function App() {
                 onAddTag={addTag}
                 onRemoveTag={removeTag}
                 onFetchEmbed={fetchEmbed}
+                newlyAddedCardId={newlyAddedCardId}
+                onScrolledToNewCard={() => setNewlyAddedCardId(null)}
               />
             )}
           </div>

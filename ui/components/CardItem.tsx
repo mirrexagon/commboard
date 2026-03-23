@@ -561,6 +561,7 @@ export function CardItem({
 
   return (
     <div
+      data-card-id={card.id}
       class={[
         "group bg-white dark:bg-gray-800 rounded-xl shadow-sm",
         "flex flex-col min-w-0",
