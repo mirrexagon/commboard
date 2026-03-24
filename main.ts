@@ -453,7 +453,7 @@ console.log(`Board: "${board.name}" — ${board.card_order.length} card(s)`);
 // write only happens once things go quiet for SAVE_DEBOUNCE_MS.  A flush
 // is also forced on SIGINT / SIGTERM so Ctrl-C never loses data.
 
-const SAVE_DEBOUNCE_MS = 10_000; // 10 s
+const SAVE_DEBOUNCE_MS = 5_000;
 let _saveTimer: number | null = null;
 let _pendingSave = false;
 
