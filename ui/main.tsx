@@ -1161,7 +1161,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (board) document.title = board.name;
+    if (board) document.title = board.name + " - Commboard";
   }, [board?.name]);
 
   function toggleDark() { setDarkMode((d) => !d); }
