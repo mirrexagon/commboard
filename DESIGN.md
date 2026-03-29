@@ -128,7 +128,7 @@ In a previous incarnation, Commboard wrote JSON files that looked like this:
 
 - [x] Track card last edit date/time and display on card
 
-- [ ] Collapse cards, limit body area displayed to some maximum size, and allow expanding and collapsing them individually
+- [x] Collapse cards, limit body area displayed to some maximum size, and allow expanding and collapsing them individually
 
 - [x] Move embed and virtual filesystem files out of the board JSON file to make it smaller and take less time to save
 - [ ] Garbage-collect stale cached embeds

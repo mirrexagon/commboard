@@ -425,6 +425,9 @@ function injectEmbedsIntoHtml(
   return result;
 }
 
+/** Maximum height (px) of a collapsed card body — roughly 12 rem / ~4 lines of body + embeds. */
+const COLLAPSED_HEIGHT = 192;
+
 // ── CardItem ─────────────────────────────────────────────────────────────────
 
 export interface Card {
@@ -515,13 +518,31 @@ export function CardItem({
   const [deletingTagIndex, setDeletingTagIndex] = useState<number | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [draft, setDraft] = useState(card.text);
+  /** Whether this card's body is in the collapsed (height-limited) state. */
+  const [collapsed, setCollapsed] = useState(true);
+  /** Whether the body content actually overflows the collapsed height threshold. */
+  const [collapsible, setCollapsible] = useState(false);
   const dragDisabled = editing || addingTag || isDragDisabled;
   const cardRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const proseRef = useRef<HTMLDivElement>(null);
+
+  // Compute rendered HTML early so it can be referenced by effects below.
+  const rawHtml = marked.parse(card.text) as string;
+  const html = injectEmbedsIntoHtml(rawHtml, embedCache, embeddedFiles);
 
   useEffect(() => {
     if (!editing) setDraft(card.text);
   }, [card.text, editing]);
+
+  // Detect whether the rendered body content overflows the collapsed height.
+  // scrollHeight always reflects the full content height even when overflow is
+  // hidden, so comparing it against COLLAPSED_HEIGHT works in all states.
+  useEffect(() => {
+    const el = proseRef.current;
+    if (!el || editing) return;
+    setCollapsible(el.scrollHeight > COLLAPSED_HEIGHT);
+  }, [html, editing]);
 
   useEffect(() => {
     if (editing && textareaRef.current) {
@@ -599,6 +620,9 @@ export function CardItem({
     } else if ((e.key === "d" || e.key === "D") && tags.length > 0) {
       e.preventDefault();
       setDeletingTagIndex(0);
+    } else if ((e.key === "x" || e.key === "X") && collapsible) {
+      e.preventDefault();
+      setCollapsed((c) => !c);
     }
   }
 
@@ -659,9 +683,6 @@ export function CardItem({
       return;
     }
   }
-
-  const rawHtml = marked.parse(card.text) as string;
-  const html = injectEmbedsIntoHtml(rawHtml, embedCache, embeddedFiles);
 
   // Used for the per-card "Fetch N embeds" button.
   const uncachedUrls = extractUrls(card.text).filter((u) => !(u in embedCache));
@@ -816,11 +837,37 @@ export function CardItem({
         </div>
       ) : (
         /* View mode — handleProseClick handles embed button clicks via delegation. */
-        <div
-          class="card-prose px-4 pt-1 pb-2 flex-1 min-w-0 break-words"
-          onClick={handleProseClick}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div class="relative flex-1 min-w-0">
+          <div
+            ref={proseRef}
+            class="card-prose px-4 pt-1 pb-2 break-words"
+            style={
+              collapsed && collapsible
+                ? { maxHeight: `${COLLAPSED_HEIGHT}px`, overflow: "hidden" }
+                : undefined
+            }
+            onClick={handleProseClick}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+          {/* Gradient fade at the bottom when collapsed and overflowing */}
+          {collapsed && collapsible && (
+            <div class="absolute bottom-0 left-0 right-0 h-12 pointer-events-none bg-gradient-to-b from-transparent to-white dark:to-gray-800" />
+          )}
+        </div>
+      )}
+
+      {/* ── Collapse / expand toggle ── */}
+      {!editing && collapsible && (
+        <button
+          class={[
+            "px-4 pb-1 text-xs cursor-pointer transition-colors duration-100 text-left block",
+            "text-blue-400 hover:text-blue-600 dark:text-blue-500 dark:hover:text-blue-300",
+          ].join(" ")}
+          title={collapsed ? "Expand card body (X)" : "Collapse card body (X)"}
+          onClick={(e) => { e.stopPropagation(); setCollapsed((c) => !c); }}
+        >
+          {collapsed ? "Show more…" : "Show less"}
+        </button>
       )}
 
       {/* ── Per-card "Fetch all missing embeds" shortcut ── */}
