@@ -1,4 +1,4 @@
-import * as esbuild from "npm:esbuild";
+import * as esbuild from "npm:esbuild@0.27.2";
 import { denoPlugins } from "jsr:@luca/esbuild-deno-loader";
 
 import { loadOrCreate, save as saveBoard, type Card, type EmbedData, type EmbeddedFile } from "./board.ts";
