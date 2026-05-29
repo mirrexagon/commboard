@@ -9,9 +9,8 @@
     "jsr:@std/path@^1.0.6": "1.1.1",
     "npm:esbuild@*": "0.27.2",
     "npm:esbuild@0.27.2": "0.27.2",
-    "npm:marked@*": "15.0.12",
-    "npm:marked@15": "15.0.12",
-    "npm:preact@10": "10.29.0"
+    "npm:marked@15.0.12": "15.0.12",
+    "npm:preact@10.29.0": "10.29.0"
   },
   "jsr": {
     "@luca/esbuild-deno-loader@0.11.1": {
@@ -212,8 +211,8 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:marked@15",
-      "npm:preact@10"
+      "npm:marked@15.0.12",
+      "npm:preact@10.29.0"
     ]
   }
 }
